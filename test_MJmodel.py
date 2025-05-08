@@ -156,8 +156,8 @@ def detect_tiles_from_screenshot_inference_sdk():
                 text_bbox = draw.textbbox((x0, y0 - FONT_SIZE - 2), label, font=font)
                 draw.rectangle(text_bbox, fill="lime")
             except AttributeError: # Pillow < 8.0.0
-                 text_width, text_height = draw.textsize(label, font=font)
-                 draw.rectangle([x0, y0 - FONT_SIZE - 2, x0 + text_width, y0 - 2], fill="lime")
+                text_width, text_height = draw.textsize(label, font=font)
+                draw.rectangle([x0, y0 - FONT_SIZE - 2, x0 + text_width, y0 - 2], fill="lime")
 
             draw.text((x0, y0 - FONT_SIZE - 2), label, fill="black", font=font)
 
