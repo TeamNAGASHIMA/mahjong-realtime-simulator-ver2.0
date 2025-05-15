@@ -1,0 +1,31 @@
+{% load static %}
+{% load render_bundle from webpack_loader %} {# webpack_loaderのタグをロード #}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django + CRA (with webpack_loader)</title>
+
+    {# CSSバンドルを読み込む #}
+    {# 'main' はCRAのデフォルトのエントリーポイント名。変更した場合は合わせる。 #}
+    {% render_bundle 'main' 'css' %}
+</head>
+<body>
+    <header>
+        <h1>Django + CRA (webpack_loader)</h1>
+    </header>
+
+    <main>
+        <div id="react-app">
+            Loading React App (via webpack_loader)...
+        </div>
+    </main>
+
+    {{ initial_react_data|json_script:"react-initial-data" }} {# データ受け渡し #}
+
+    {# JSバンドルを読み込む #}
+    {% render_bundle 'main' 'js' %}
+</body>
+</html>
