@@ -11,17 +11,17 @@ REM Electronアプリのディレクトリ (バッチファイルのある場所
 set ELECTRON_APP_SUBDIR=electron-app
 set ELECTRON_APP_PATH=%BASE_PATH%%ELECTRON_APP_SUBDIR%
 
-REM DjangoのPython仮想環境のサブディレクトリ名 (もし存在する場合)
-REM 画像からは見えませんが、もし 'env' という名前の仮想環境フォルダが
-REM %BASE_PATH% (つまり manage.py と同じ階層) にあれば、それを指定します。
-set DJANGO_VENV_SUBDIR=env
-set DJANGO_VENV_ACTIVATE=%DJANGO_PROJECT_PATH%%DJANGO_VENV_SUBDIR%\Scripts\activate.bat
+REM 仮想環境はバッチファイルの親ディレクトリにある 'env' フォルダ
+set DJANGO_VENV_PATH=%BASE_PATH%..\env
+set DJANGO_VENV_ACTIVATE=%DJANGO_VENV_PATH%\Scripts\activate.bat
 REM --- 設定ここまで ---
 
 echo Current Directory: %CD%
 echo Base Path (Script Directory): %BASE_PATH%
 echo Django Project Path: %DJANGO_PROJECT_PATH%
 echo Electron App Path: %ELECTRON_APP_PATH%
+echo Django Venv Path: %DJANGO_VENV_PATH%
+echo Django Venv Activate: %DJANGO_VENV_ACTIVATE%
 
 :START_DJANGO
 echo.
@@ -30,6 +30,11 @@ cd /d "%DJANGO_PROJECT_PATH%"
 IF EXIST "%DJANGO_VENV_ACTIVATE%" (
     echo Activating Django virtual environment from: %DJANGO_VENV_ACTIVATE%
     call "%DJANGO_VENV_ACTIVATE%"
+    IF "%ERRORLEVEL%" NEQ "0" (
+        echo Error activating virtual environment. Please check the path.
+        pause
+        goto :END
+    )
 ) ELSE (
     echo Warning: Django venv activate script not found at %DJANGO_VENV_ACTIVATE%.
     echo               Will try to run 'python' from system PATH or already active venv.
@@ -40,14 +45,14 @@ start "" /b python manage.py runserver
 
 REM Djangoサーバーが起動するまで少し待つ (秒数は調整してください)
 echo.
-echo Waiting for Django server to initialize (e.g., 15 seconds)...
+echo Waiting for Django server to initialize (e.g., 10 seconds)...
 timeout /t 10 /nobreak > nul
 
 :START_ELECTRON
 echo.
 echo Starting Electron application...
 cd /d "%ELECTRON_APP_PATH%"
-IF NOT EXIST "package.json" (
+IF NOT EXIST "%ELECTRON_APP_PATH%\package.json" (
     echo ERROR: package.json not found in %ELECTRON_APP_PATH%.
     echo               Please check the ELECTRON_APP_SUBDIR setting or your project structure.
     pause
