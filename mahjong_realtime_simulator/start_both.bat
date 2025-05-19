@@ -32,15 +32,15 @@ IF EXIST "%DJANGO_VENV_ACTIVATE%" (
     call "%DJANGO_VENV_ACTIVATE%"
 ) ELSE (
     echo Warning: Django venv activate script not found at %DJANGO_VENV_ACTIVATE%.
-    echo          Will try to run 'python' from system PATH or already active venv.
+    echo               Will try to run 'python' from system PATH or already active venv.
 )
 echo Running command: python manage.py runserver
-REM 新しいウィンドウでDjangoサーバーを起動し、ウィンドウが閉じないように /k を使用
-start "Django Server" cmd /k "python manage.py runserver"
+REM Djangoサーバーをバックグラウンドで起動 (ウィンドウは表示しない)
+start "" /b python manage.py runserver
 
 REM Djangoサーバーが起動するまで少し待つ (秒数は調整してください)
 echo.
-echo Waiting for Django server to initialize (e.g., 10 seconds)...
+echo Waiting for Django server to initialize (e.g., 15 seconds)...
 timeout /t 10 /nobreak > nul
 
 :START_ELECTRON
@@ -49,17 +49,17 @@ echo Starting Electron application...
 cd /d "%ELECTRON_APP_PATH%"
 IF NOT EXIST "package.json" (
     echo ERROR: package.json not found in %ELECTRON_APP_PATH%.
-    echo        Please check the ELECTRON_APP_SUBDIR setting or your project structure.
+    echo               Please check the ELECTRON_APP_SUBDIR setting or your project structure.
     pause
     goto :END
 )
 echo Running command: npm start
-REM 新しいウィンドウでElectronアプリを起動
-start "Electron App" cmd /c "npm start"
+REM Electronアプリをバックグラウンドで起動 (ウィンドウは表示しない)
+start "" /b npm start
 
 echo.
-echo Both processes have been initiated in new windows.
-echo To stop them, close their respective command prompt windows.
+echo Both processes have been initiated in the background.
+echo To stop them, you will need to find their processes (e.g., using Task Manager) and terminate them.
 
 :END
 echo.
