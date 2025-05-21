@@ -38,7 +38,7 @@ start "" /b python manage.py runserver 8010
 REM Djangoサーバーが起動するまで少し待つ
 echo.
 echo Waiting for Django server to initialize...
-timeout /t 5 /nobreak > nul
+timeout /t 10 /nobreak > nul
 
 :START_ELECTRON
 echo.
