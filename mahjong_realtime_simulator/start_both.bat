@@ -79,6 +79,7 @@ echo Both processes have been initiated in the background.
 echo Waiting for Electron app to close before stopping Django server...
 
 :WAIT_ELECTRON
+timeout /t 10 /nobreak > nul
 tasklist /fi "imagename eq electron.exe" | find /i "electron.exe" > nul
 IF ERRORLEVEL 1 (
     echo Electron app has closed. Stopping Django server...
