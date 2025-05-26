@@ -38,7 +38,7 @@ start "" /b python manage.py runserver 8010
 REM Djangoサーバーが起動するまで少し待つ
 echo.
 echo Waiting for Django server to initialize...
-timeout /t 10 /nobreak > nul
+timeout /t 15 /nobreak > nul
 
 :START_ELECTRON
 echo.
@@ -85,7 +85,7 @@ goto :WAIT_ELECTRON
 echo.
 echo Stopping Django development server on port 8002...
 FOR /F "tokens=5" %%P IN ('netstat -ano ^| findstr ":8010" ^| findstr "LISTENING"') DO (
-    ECHO Found Django process on port 8002 with PID: %%P
+    ECHO Found Django process on port 8010 with PID: %%P
     taskkill /PID %%P /F
     IF "%ERRORLEVEL%" NEQ "0" (
         echo Failed to terminate Django process with PID: %%P
