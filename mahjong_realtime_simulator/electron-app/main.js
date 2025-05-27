@@ -11,7 +11,8 @@ function createWindow() {
   });
 
   // DjangoアプリケーションのURLをロードします
-  mainWindow.loadURL('http://127.0.0.1:8010/admin'); // Djangoの開発サーバーのURLに合わせてください
+  // mainWindow.loadURL('http://127.0.0.1:8010/admin'); // Djangoの開発サーバーのURLに合わせてください
+  mainWindow.loadURL('http://127.0.0.1:8010/app/test/');
 
   // デベロッパーツールを開く (開発時のみ)
   // mainWindow.webContents.openDevTools();

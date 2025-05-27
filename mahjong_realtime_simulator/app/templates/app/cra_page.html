@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Django with CRA Integration</title>
+    <!-- three.jsを読み込む -->
+    <script type="importmap">
+        {
+            "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="{% static "js/script.js" %}"></script>
 
     {# --- CSSファイルの読み込み --- #}
     {# CRA の場合、ファイル名のハッシュ部分はビルドごとに変わります。 #}
@@ -15,50 +24,51 @@
     {# このプレースホルダーは、ビルド後に実際のファイル名に置き換えてください。 #}
     <link rel="stylesheet" href="{% static 'static/css/PLACEHOLDER_FOR_MAIN_CSS.css' %}">
 </head>
-<body>
-    <header>
-        <h1>Djangoが提供するページです</h1>
-        <p>（Djangoテンプレートのコンテンツ）</p>
-    </header>
+    <body>
+        <header>
+            <h1>Djangoが提供するページです</h1>
+            <p>（Djangoテンプレートのコンテンツ）</p>
+        </header>
 
-    <main>
-        <p>この下にCRAで作成したReactコンポーネントが表示されます。</p>
-        <div id="react-app">
-            <!-- Reactがロードされるまでのローディング表示などをここに書けます -->
-            Loading React App...
-        </div>
-        <p>ここはReactコンポーネントの外のDjangoテンプレートのコンテンツです。</p>
-    </main>
+        <main>
+            <p>この下にCRAで作成したReactコンポーネントが表示されます。</p>
+            <div id="react-app">
+                <canvas id="myCanvas"></canvas>
+                <!-- Reactがロードされるまでのローディング表示などをここに書けます -->
+                Loading React App...
+            </div>
+            <p>ここはReactコンポーネントの外のDjangoテンプレートのコンテンツです。</p>
+        </main>
 
-    <footer>
-        <p>Djangoフッター</p>
-    </footer>
+        <footer>
+            <p>Djangoフッター</p>
+        </footer>
 
-    {# --- JavaScriptファイルの読み込み --- #}
-    {# CRA の場合、複数のJSファイル (チャンクなど) が生成されることがあります。 #}
-    {# `frontend/build/asset-manifest.json` の "entrypoints" を参照して、 #}
-    {# 必要なJSファイルを順番に読み込みます。通常は main.<hash>.js が主要なエントリーポイントです。 #}
-    {# 例: <script defer="defer" src="{% static 'static/js/main.12345abc.js' %}"></script> #}
-    {#     <script defer="defer" src="{% static 'static/js/787.fedcba98.chunk.js' %}"></script> #}
-    {# `defer` 属性は、HTMLのパースをブロックせずにスクリプトを読み込むために推奨されます。 #}
+        {# --- JavaScriptファイルの読み込み --- #}
+        {# CRA の場合、複数のJSファイル (チャンクなど) が生成されることがあります。 #}
+        {# `frontend/build/asset-manifest.json` の "entrypoints" を参照して、 #}
+        {# 必要なJSファイルを順番に読み込みます。通常は main.<hash>.js が主要なエントリーポイントです。 #}
+        {# 例: <script defer="defer" src="{% static 'static/js/main.12345abc.js' %}"></script> #}
+        {#     <script defer="defer" src="{% static 'static/js/787.fedcba98.chunk.js' %}"></script> #}
+        {# `defer` 属性は、HTMLのパースをブロックせずにスクリプトを読み込むために推奨されます。 #}
 
-    {# このプレースホルダーは、ビルド後に実際のファイル名に置き換えてください。 #}
-    {# asset-manifest.json の "entrypoints" 配列の順番で読み込むと良いでしょう。 #}
-    <script defer="defer" src="{% static 'static/js/PLACEHOLDER_FOR_CHUNK_JS.js' %}"></script> {# 存在する場合 #}
-    <script defer="defer" src="{% static 'static/js/PLACEHOLDER_FOR_MAIN_JS.js' %}"></script>
+        {# このプレースホルダーは、ビルド後に実際のファイル名に置き換えてください。 #}
+        {# asset-manifest.json の "entrypoints" 配列の順番で読み込むと良いでしょう。 #}
+        <script defer="defer" src="{% static 'static/js/PLACEHOLDER_FOR_CHUNK_JS.js' %}"></script> {# 存在する場合 #}
+        <script defer="defer" src="{% static 'static/js/PLACEHOLDER_FOR_MAIN_JS.js' %}"></script>
 
 
-    {# --- 手動更新を避けるための注意点 --- #}
-    <p style="color: red; font-weight: bold; margin-top: 20px;">
-        注意: 上記のCSSおよびJSファイルのプレースホルダーは、CRAのビルドを実行するたびに、
-        <code>frontend/build/asset-manifest.json</code> を確認して、
-        最新のハッシュ付きファイル名に手動で更新する必要があります。
-        この手動作業を自動化するには、<code>django-webpack-loader</code> の導入を検討してください。
-    </p>
-		{# ... (headタグやreact-app divなど) ... #}
-		
-		{{ initial_react_data|json_script:"react-initial-data" }}
-		
-		{# ... ReactのJSファイル読み込み (<script>タグ) ... #}
-</body>
+        {# --- 手動更新を避けるための注意点 --- #}
+        <p style="color: red; font-weight: bold; margin-top: 20px;">
+            注意: 上記のCSSおよびJSファイルのプレースホルダーは、CRAのビルドを実行するたびに、
+            <code>frontend/build/asset-manifest.json</code> を確認して、
+            最新のハッシュ付きファイル名に手動で更新する必要があります。
+            この手動作業を自動化するには、<code>django-webpack-loader</code> の導入を検討してください。
+        </p>
+            {# ... (headタグやreact-app divなど) ... #}
+
+            {{ initial_react_data|json_script:"react-initial-data" }}
+
+            {# ... ReactのJSファイル読み込み (<script>タグ) ... #}
+        </body>
 </html>
