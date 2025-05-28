@@ -20,3 +20,6 @@ def cra_page_loader_view(request):
     }
     # テンプレート名は実際のファイル名に合わせてください
     return render(request, 'app/cra_page_loader.html', {'initial_react_data': initial_data})
+
+def test(request):
+    return render(request, 'app/test.html')
