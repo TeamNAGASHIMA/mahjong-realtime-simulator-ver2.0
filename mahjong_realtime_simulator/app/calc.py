@@ -159,7 +159,7 @@ def calc_remaining_tiles(hand_tiles, dora_indicators, melded_blocks, river_tiles
 
     return counts
 
-# 結果の出力
+# 結果の整形
 def print_result(result):
     result_type = result["result_type"]  # 結果の種類
     syanten = result["syanten"]  # 向聴数
