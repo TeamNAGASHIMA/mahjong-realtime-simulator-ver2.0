@@ -1,7 +1,7 @@
-import asyncio
+import json
+import requests
 
 # 麻雀牌定義
-# fmt:off
 class Tile:
     Null = -1
     Manzu1 = 0      # 一萬
@@ -50,18 +50,14 @@ class Tile:
         "白","発","中",
         "赤五萬","赤五筒","赤五索"
     ]
-# fmt:on
 
 # 聴牌タイプ
-# fmt:off
 class SyantenType:
     Normal = 1 # 通常手
     Tiitoi = 2 # 七対子手
     Kokusi = 4 # 国士無双手
-# fmt:on
 
 # 期待値オプション(ビットフラグ)
-# fmt:off
 class ExpOption:
     CalcSyantenDown = 1      # 向聴落とし考慮
     CalcTegawari = 1 << 1    # 手変わり考慮
@@ -71,7 +67,6 @@ class ExpOption:
     CalcUradora = 1 << 5     # 裏ドラ考慮
     CalcAkaTileTumo = 1 << 6 # 赤牌自摸考慮
     MaximaizeWinProb = 1 << 7 # 和了確率を最大化 (指定されていない場合は期待値を最大化)
-# fmt:on
 
 # メンツ種類定義
 class MeldType:
@@ -164,6 +159,61 @@ def calc_remaining_tiles(hand_tiles, dora_indicators, melded_blocks, river_tiles
 
     return counts
 
+# 結果の出力
+def print_result(result):
+    result_type = result["result_type"]  # 結果の種類
+    syanten = result["syanten"]  # 向聴数
+    time_us = result["time"]  # 計算時間 (マイクロ秒)
+
+    print(
+        f"向聴数: {syanten['syanten']}"
+        f" (通常手: {syanten['normal']}, 七対子手: {syanten['tiitoi']}, 国士無双手: {syanten['kokusi']})"
+    )
+    print(f"計算時間: {time_us / 1e6}秒")
+
+    if result_type == 0:
+        #
+        # 手牌の枚数が13枚の場合、有効牌、期待値、和了確率、聴牌確率が得られる。
+        #
+        required_tiles = result["required_tiles"]  # 有効牌
+        exp_values = result["exp_values"]  # 期待値 (1~17巡目)
+        win_probs = result["win_probs"]  # 和了確率 (1~17巡目)
+        tenpai_probs = result["tenpai_probs"]  # 聴牌確率 (1~17巡目)
+
+        tiles = [f"{tile['tile']}: {tile['count']}枚" for tile in required_tiles]
+        print(f"  有効牌: {', '.join(tiles)}")
+
+        for turn, (exp, win_prop, tenpai_prop) in enumerate(
+            zip(exp_values, win_probs, tenpai_probs), 1
+        ):
+            print(
+                f"  {turn}巡目 期待値: {exp:.0f}点, 和了確率: {win_prop:.1%}, 聴牌確率: {tenpai_prop:.1%}"
+            )
+
+    elif result_type == 1:
+        #
+        # 手牌の枚数が14枚の場合、打牌候補ごとに有効牌、期待値、和了確率、聴牌確率が得られる。
+        #
+        for candidate in result["candidates"]:
+            tile = candidate["tile"]  # 打牌候補
+            syanten_down = candidate["syanten_down"]  # 向聴戻しとなる打牌かどうか
+            required_tiles = candidate["required_tiles"]  # 有効牌
+            exp_values = candidate["exp_values"]  # 期待値 (1~17巡目)
+            win_probs = candidate["win_probs"]  # 和了確率 (1~17巡目)
+            tenpai_probs = candidate["tenpai_probs"]  # 聴牌確率 (1~17巡目)
+
+            print(f"打牌候補: {Tile.Name[tile]} (向聴落とし: {syanten_down})")
+
+            tiles = [f"{tile['tile']}: {tile['count']}枚" for tile in required_tiles]
+            print(f"  有効牌: {', '.join(tiles)}")
+
+            for turn, (exp, win_prop, tenpai_prop) in enumerate(
+                zip(exp_values, win_probs, tenpai_probs), 1
+            ):
+                print(
+                    f"  {turn}巡目 期待値: {exp:.0f}点, 和了確率: {win_prop:.1%}, 聴牌確率: {tenpai_prop:.1%}"
+                )
+
 # 期待値計算
 async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
     """
@@ -175,7 +225,7 @@ async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles,
     hand_tiles:[Tile.Manzu1, Tile.Manzu2, Tile.Manzu3,
                         Tile.Pinzu4, Tile.Pinzu5, Tile.Pinzu6,
                         Tile.Haku], 
-    # 鳴き牌 (牌のリストのリスト)
+    # 鳴き牌
     raw_melded_blocks:[[Tile.Ton, Tile.Ton, Tile.Ton],[Tile.Sya, Tile.Sya, Tile.Sya]], 
     # 河牌
     river_tiles:[Tile.Pinzu1, Tile.Pinzu2, Tile.Pinzu3, Tile.Pinzu4, Tile.Pinzu5], 
@@ -203,47 +253,23 @@ async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles,
         "melded_blocks": melded_blocks, 
         "counts": counts,
     }
-    return req_data
+    # return req_data
 
+    payload = json.dumps(req_data)
+    # リクエストを送信する。
+    res = requests.post(
+        "http://localhost:8888", payload, headers={"Content-Type": "application/json"}
+    )
+    res_data = res.json()
 
-    # payload = json.dumps(req_data)
-    # # リクエストを送信する。
-    # res = requests.post(
-    #     "http://localhost:8888", payload, headers={"Content-Type": "application/json"}
-    # )
-    # res_data = res.json()
-
-    # ########################################
-    # # 結果出力
-    # ########################################
-    # if not res_data["success"]:
-    #     emit('error', {'error': f"計算の実行に失敗しました。(理由: {res_data['err_msg']})"})
-    #     raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
+    # 結果出力
+    if not res_data["success"]:
+        error_msg = ('error', {'error': f"計算の実行に失敗しました。(理由: {res_data['err_msg']})"})
+        return error_msg
+        # raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
     
-    # result = res_data["response"]
-    # # result_emit = print_result(result)
+    result = res_data["response"]
+    
+    # result_msg = ('result', {'result': result})
+    return result
 
-    # # emit('result', {'result': result_emit})
-    # emit('result', {'result': result})
-
-
-# 期待値計算のtest
-doraList = [Tile.Manzu5]
-hand_tiles = [
-    Tile.Manzu1, Tile.Manzu2, Tile.Manzu3,     
-    Tile.Pinzu4, Tile.Pinzu5, Tile.Pinzu6,
-    Tile.Haku
-]
-raw_melded_blocks = [
-    [Tile.Ton, Tile.Ton, Tile.Ton],
-    [Tile.Sya, Tile.Sya, Tile.Sya]
-]
-river_tiles = [Tile.Pinzu1, Tile.Pinzu2, Tile.Pinzu3, Tile.Pinzu4, Tile.Pinzu5]
-turn = 1
-syanten_Type = SyantenType.Normal
-flag = ExpOption.CalcSyantenDown | ExpOption.CalcTegawari
-
-# asyncio.runを使って非同期関数を実行
-req_data = asyncio.run(async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag))
-print("期待値計算のリクエストデータ:")
-print(req_data)
