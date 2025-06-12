@@ -1,18 +1,28 @@
+# crop_open_detection.py
+# 画像の鳴き牌部分を切り出す
+
 import cv2
 import numpy as np
 
-def find_all_tile_faces(image_path, debug=False):
-    """
-    麻雀画像から牌の表面候補を検出する。
-    連結した鳴き牌の塊を優先し、単体置きの字牌（例：東）や正方形に近い点棒は除外する。
-    """
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"エラー: 画像が見つかりません - {image_path}")
-        return None, None
+def find_all_tile_faces(image_np: np.ndarray, debug=False) -> tuple[list, np.ndarray]:
+    """麻雀画像 (NumPy配列) から牌の表面候補を検出する。
 
-    original_image_for_drawing = image.copy()
-    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    連結した鳴き牌の塊を優先し、単体置きの字牌（例：東）や正方形に近い点棒は除外する。
+
+    Args:
+        image_np (np.ndarray): 入力画像データ (NumPy配列)。
+        debug (bool): デバッグ情報を表示するかどうかのフラグ。
+
+    Returns:
+        tuple[list, np.ndarray]: 検出された牌候補の情報のリストと、描画用画像のNumPy配列。
+                                検出できなかった場合は空のリストとNoneを返す。
+    """
+    if image_np is None or image_np.size == 0:
+        print("エラー: 入力画像が空または不正です。")
+        return [], None
+
+    original_image_for_drawing = image_np.copy()
+    hsv_image = cv2.cvtColor(image_np, cv2.COLOR_BGR2HSV)
 
     lower_white = np.array([0, 0, 150])
     upper_white = np.array([180, 80, 255])
@@ -54,7 +64,7 @@ def find_all_tile_faces(image_path, debug=False):
                     print(f"  Passed Area Filter. Rect: ({x},{y},{w},{h}), Aspect Ratio: {aspect_ratio:.2f}")
 
                 is_ar_valid = (min_valid_ar1 < aspect_ratio < max_valid_ar1) or \
-                              (min_valid_ar2 < aspect_ratio < max_valid_ar2)
+                                (min_valid_ar2 < aspect_ratio < max_valid_ar2)
 
                 if is_ar_valid:
                     cv2.rectangle(original_image_for_drawing, (x, y), (x + w, y + h), (0, 0, 255), 2) # Red: Accepted
@@ -86,17 +96,35 @@ def find_all_tile_faces(image_path, debug=False):
 
     return detected_tiles, original_image_for_drawing
 
-def is_plausible_tile_bundle(bundle_w, bundle_h, num_tiles_estimate, orientation,
-                             single_tile_w_ref, single_tile_h_ref,
-                             single_tile_ar_horizontal_ref,
-                             dim_tolerance_ratio=0.35, debug=False):
+def is_plausible_tile_bundle(bundle_w: int, bundle_h: int, num_tiles_estimate: int, orientation: str,
+                            single_tile_w_ref: int, single_tile_h_ref: int,
+                            single_tile_ar_horizontal_ref: float,
+                            dim_tolerance_ratio: float = 0.35, debug=False) -> bool:
+    """検出された塊が、推定される枚数と向きに対して妥当なサイズであるかをチェックする。
+
+    Args:
+        bundle_w (int): 塊の幅。
+        bundle_h (int): 塊の高さ。
+        num_tiles_estimate (int): 推定される牌の枚数。
+        orientation (str): 牌の向き ('horizontal' または 'vertical')。
+        single_tile_w_ref (int): 単一の縦置き牌の参照幅。
+        single_tile_h_ref (int): 単一の縦置き牌の参照高さ。
+        single_tile_ar_horizontal_ref (float): 単一の横置き牌の参照アスペクト比 (幅/高さ)。
+        dim_tolerance_ratio (float): 寸法許容誤差の比率。
+        debug (bool): デバッグ情報を表示するかどうかのフラグ。
+
+    Returns:
+        bool: 妥当なサイズであればTrue、そうでなければFalse。
+    """
     if num_tiles_estimate <= 0: return False
-    expected_w, expected_h = 0, 0
+    expected_w, expected_h = 0.0, 0.0 # float型として初期化
+
     if orientation == 'horizontal':
         if num_tiles_estimate == 0: return False
         expected_single_h_for_horizontal = single_tile_w_ref / single_tile_ar_horizontal_ref
         expected_w = single_tile_w_ref * num_tiles_estimate
         expected_h = expected_single_h_for_horizontal
+        
         if not (expected_w * (1 - dim_tolerance_ratio) < bundle_w < expected_w * (1 + dim_tolerance_ratio)):
             if debug: print(f"      Plausibility Fail (H_Bundle Width): Est.num={num_tiles_estimate}, BundleW={bundle_w:.0f}, ExpectedW={expected_w:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
             return False
@@ -104,11 +132,12 @@ def is_plausible_tile_bundle(bundle_w, bundle_h, num_tiles_estimate, orientation
             if debug: print(f"      Plausibility Fail (H_Bundle Height): Est.num={num_tiles_estimate}, BundleH={bundle_h:.0f}, ExpectedH={expected_h:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
             return False
     elif orientation == 'vertical':
-        if num_tiles_estimate != 1:
+        if num_tiles_estimate != 1: # 縦置きは1枚のみを想定
             if debug: print(f"      Plausibility Fail (V_Bundle Est.Num): Est.num={num_tiles_estimate} != 1 for vertical check")
             return False
-        expected_w = single_tile_w_ref
-        expected_h = single_tile_h_ref
+        expected_w = float(single_tile_w_ref)
+        expected_h = float(single_tile_h_ref)
+        
         if not (expected_w * (1 - dim_tolerance_ratio) < bundle_w < expected_w * (1 + dim_tolerance_ratio)):
             if debug: print(f"      Plausibility Fail (V_Bundle Width): Est.num={num_tiles_estimate}, BundleW={bundle_w:.0f}, ExpectedW={expected_w:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
             return False
@@ -118,16 +147,31 @@ def is_plausible_tile_bundle(bundle_w, bundle_h, num_tiles_estimate, orientation
     else:
         if debug: print(f"      Plausibility Fail: Unknown orientation '{orientation}'")
         return False
+    
     if debug: print(f"      Plausibility OK: Est.num={num_tiles_estimate}, Orient={orientation}")
     return True
 
-def estimate_connected_tiles(tile_info,
-                             avg_single_vertical_tile_w, avg_single_vertical_tile_h,
-                             avg_single_horizontal_tile_ar,
-                             debug=False):
+def estimate_connected_tiles(tile_info: dict,
+                            avg_single_vertical_tile_w: int, avg_single_vertical_tile_h: int,
+                            avg_single_horizontal_tile_ar: float,
+                            debug=False) -> tuple[int, str]:
+    """検出された単一の牌候補の長方形から、それが何枚の牌が連結した塊であるかを推定する。
+
+    Args:
+        tile_info (dict): 牌候補の情報（x, y, w, h, orientationなど）。
+        avg_single_vertical_tile_w (int): 単一の縦置き牌の平均幅。
+        avg_single_vertical_tile_h (int): 単一の縦置き牌の平均高さ。
+        avg_single_horizontal_tile_ar (float): 単一の横置き牌の平均アスペクト比 (幅/高さ)。
+        debug (bool): デバッグ情報を表示するかどうかのフラグ。
+
+    Returns:
+        tuple[int, str]: 推定された牌の枚数と、処理された牌の向き。
+                        推定できなかった場合は枚数0を返す。
+    """
     num_estimated = 0
     orientation = tile_info['orientation']
     w, h = tile_info['w'], tile_info['h']
+
     if orientation == 'horizontal':
         num_tiles_candidate = round(w / avg_single_vertical_tile_w)
         if num_tiles_candidate > 0:
@@ -137,26 +181,38 @@ def estimate_connected_tiles(tile_info,
                                         dim_tolerance_ratio=0.40, debug=debug):
                 num_estimated = int(num_tiles_candidate)
     elif orientation == 'vertical':
+        # 縦置きは1枚のみを想定して、サイズが妥当かチェック
         if is_plausible_tile_bundle(w, h, 1, 'vertical',
                                     avg_single_vertical_tile_w, avg_single_vertical_tile_h,
                                     avg_single_horizontal_tile_ar,
                                     dim_tolerance_ratio=0.30, debug=debug):
             num_estimated = 1
+    
     if debug:
         print(f"    Estimate for Rect=({tile_info['x']},{tile_info['y']},{w},{h}), AR={tile_info['aspect_ratio']:.2f}, Orient={orientation}: Est枚数={num_estimated}")
     return num_estimated, orientation
 
-def find_naki_sets(original_full_image, detected_tiles_step1, image_to_draw_on, debug=False): # original_full_image を追加
-    """
-    検出された牌候補のリストから、鳴きセットを検出し、その領域を切り出す。
-    original_full_image: 切り出し元の、加工されていないオリジナル画像
+def find_naki_sets(original_full_image_np: np.ndarray, detected_tiles_step1: list, image_to_draw_on_np: np.ndarray, debug=False) -> tuple[dict, np.ndarray, list]:
+    """検出された牌候補のリストから、鳴きセットを検出し、その領域を切り出す。
+
+    Args:
+        original_full_image_np (np.ndarray): 切り出し元の、加工されていないオリジナル画像 (NumPy配列)。
+        detected_tiles_step1 (list): find_all_tile_facesで検出された牌候補のリスト。
+        image_to_draw_on_np (np.ndarray): 描画用のベース画像 (NumPy配列)。
+        debug (bool): デバッグ情報を表示するかどうかのフラグ。
+
+    Returns:
+        tuple[dict, np.ndarray, list]: 検出された鳴きセットのカテゴリ別辞書, 描画後の画像, 切り出された鳴き牌の画像リスト。
     """
     naki_sets_found = {'chi': [], 'pon': [], 'kan_ming': [], 'kan_an': []}
     cropped_naki_images = [] # 切り出した画像を格納するリスト
 
-    AVG_SINGLE_VERTICAL_TILE_W = 100
-    AVG_SINGLE_VERTICAL_TILE_H = 100
-    AVG_SINGLE_HORIZONTAL_TILE_AR = 0.82
+    # 牌の平均的なサイズ（これらは画像の解像度や牌の写り込み方によって調整が必要です）
+    # 例として一般的な値を使用
+    AVG_SINGLE_VERTICAL_TILE_W = 100 
+    AVG_SINGLE_VERTICAL_TILE_H = 100 
+    # 横置きの牌のW/H比。例: 牌の幅が高さの約0.82倍（日本の一般的な牌）
+    AVG_SINGLE_HORIZONTAL_TILE_AR = 0.82 
 
     if debug:
         print(f"\n--- Analyzing candidates for Naki Sets ---")
@@ -179,28 +235,30 @@ def find_naki_sets(original_full_image, detected_tiles_step1, image_to_draw_on, 
 
     if not plausible_tile_bundles:
         if debug: print("  No plausible tile bundles found to form naki sets.")
-        return naki_sets_found, image_to_draw_on, cropped_naki_images # 3つの値を返す
+        return naki_sets_found, image_to_draw_on_np, cropped_naki_images
 
     crop_margin = 5 # 切り出し時のマージン
 
     for bundle in plausible_tile_bundles:
+        # 現時点では、単純に横置き3枚の塊を「チー」の候補として扱う。
+        # ポンやカンの横置きもこの条件に合致するが、詳細な区別は後段の牌認識に委ねる。
         if bundle['num_actual_tiles'] == 3 and bundle['processed_orientation'] == 'horizontal':
-            naki_sets_found['chi'].append(bundle) # ポン横置きもここに含まれる
+            naki_sets_found['chi'].append(bundle) # 仮にチーとして登録
             if debug:
                 print(f"    ★★★ Potential CHI or PON (3 horizontal) FOUND ★★★")
                 print(f"      Bundle: x={bundle['x']}, y={bundle['y']}, w={bundle['w']}, h={bundle['h']}")
-                cv2.rectangle(image_to_draw_on, (bundle['x'], bundle['y']),
-                              (bundle['x'] + bundle['w'], bundle['y'] + bundle['h']),
-                              (0, 255, 0), 3) # Green for Chi/Pon_H
+                cv2.rectangle(image_to_draw_on_np, (bundle['x'], bundle['y']),
+                            (bundle['x'] + bundle['w'], bundle['y'] + bundle['h']),
+                            (0, 255, 0), 3) # Green for Chi/Pon_H
 
             # --- 切り出し処理 ---
             bx, by, bw, bh = bundle['x'], bundle['y'], bundle['w'], bundle['h']
             crop_x1 = max(0, bx - crop_margin)
             crop_y1 = max(0, by - crop_margin)
-            crop_x2 = min(original_full_image.shape[1], bx + bw + crop_margin)
-            crop_y2 = min(original_full_image.shape[0], by + bh + crop_margin)
+            crop_x2 = min(original_full_image_np.shape[1], bx + bw + crop_margin)
+            crop_y2 = min(original_full_image_np.shape[0], by + bh + crop_margin)
 
-            cropped_img = original_full_image[crop_y1:crop_y2, crop_x1:crop_x2]
+            cropped_img = original_full_image_np[crop_y1:crop_y2, crop_x1:crop_x2]
             if cropped_img.size > 0: # 空の画像でないことを確認
                 cropped_naki_images.append(cropped_img)
                 if debug:
@@ -208,86 +266,92 @@ def find_naki_sets(original_full_image, detected_tiles_step1, image_to_draw_on, 
             elif debug:
                 print(f"      Cropping resulted in an empty image for bundle at ({bx},{by}).")
 
-
-    # (ポンやカンの詳細ロジックと、それに対応する切り出し処理をここに追加していく)
-    # ...
-
     if debug:
         if not any(naki_sets_found['chi'] + naki_sets_found['pon'] + naki_sets_found['kan_ming'] + naki_sets_found['kan_an']):
             print("  No specific naki patterns (Chi, Pon, Kan) were identified from plausible bundles.")
 
-    return naki_sets_found, image_to_draw_on, cropped_naki_images # 切り出し画像のリストも返す
+    return naki_sets_found, image_to_draw_on_np, cropped_naki_images
 
-# (find_all_tile_faces, is_plausible_tile_bundle, estimate_connected_tiles, find_naki_sets 関数の定義は変更なし)
+def main(image_np: np.ndarray, debug=False) -> list[np.ndarray]:
+    """麻雀画像 (NumPy配列) の解析パイプラインを実行し、鳴き牌の切り出し画像リストを返す。
 
-def main(image_path, debug=False):
+    Args:
+        image_np (np.ndarray): 入力画像データ (NumPy配列)。
+        debug (bool): デバッグ情報を表示するかどうかのフラグ。Trueの場合、詳細なログが表示される。
+
+    Returns:
+        list[np.ndarray]: 切り出された鳴き牌の領域の画像データ (NumPy配列) のリスト。
+                        検出できなかった場合は空のリストを返す。
     """
-    麻雀画像の解析パイプラインを実行し、結果を表示・保存する。
-    """
-    # 1. 元画像の読み込み (後続の処理で使用)
-    original_image = cv2.imread(image_path)
-    if original_image is None:
-        print(f"致命的エラー: 元画像が読み込めません - {image_path}")
-        return
+    if image_np is None or image_np.size == 0:
+        print("致命的エラー: 元画像が空または不正です。")
+        return []
 
-    # 2. ステップ1: 牌の表面候補をすべて検出
-    print("\n--- Step 1: 牌の表面候補を検出中... ---")
-    detected_tiles, step1_image = find_all_tile_faces(image_path, debug=debug)
+    # 1. ステップ1: 牌の表面候補をすべて検出
+    if debug: print("\n--- Step 1: 牌の表面候補を検出中... ---")
+    detected_tiles, step1_image_for_debug = find_all_tile_faces(image_np, debug=debug)
 
     # 牌候補が見つからなければ処理を終了
     if not detected_tiles:
-        print("牌の候補が見つかりませんでした。")
-        if debug and step1_image is not None:
-            cv2.imshow("Step 1: No Tile Candidates Found", step1_image)
-            cv2.waitKey(0) # ウィンドウを表示したままにする
-        return
+        if debug: print("牌の候補が見つかりませんでした。")
+        if debug and step1_image_for_debug is not None:
+            cv2.imshow("Step 1: No Tile Candidates Found", step1_image_for_debug)
+            cv2.waitKey(0)
+        return []
 
-    print(f"ステップ1で {len(detected_tiles)} 個の牌候補を検出しました。")
+    if debug: print(f"ステップ1で {len(detected_tiles)} 個の牌候補を検出しました。")
 
-    # 3. ステップ2: 鳴きセットを検出し、画像を切り出す
-    print("\n--- Step 2: 鳴きセットを検出中... ---")
+    # 2. ステップ2: 鳴きセットを検出し、画像を切り出す
+    if debug: print("\n--- Step 2: 鳴きセットを検出中... ---")
     # 描画用のベース画像を準備 (ステップ1の候補を薄く描画)
-    step2_drawing_base = original_image.copy()
+    step2_drawing_base = image_np.copy()
     for tile in detected_tiles:
         cv2.rectangle(step2_drawing_base, (tile['x'], tile['y']), (tile['x'] + tile['w'], tile['y'] + tile['h']), (255, 150, 0), 1)
 
-    naki_sets, step2_image, cropped_images = find_naki_sets(
-        original_image, detected_tiles, step2_drawing_base, debug=debug
+    naki_sets, step2_image_for_debug, cropped_images = find_naki_sets(
+        image_np, detected_tiles, step2_drawing_base, debug=debug
     )
 
-    # 4. 結果のサマリー表示と画像の保存
-    print("\n--- 解析結果 ---")
-    if cropped_images:
-        print(f"成功: {len(cropped_images)} 個の鳴きセットを切り出し、保存します。")
-        for i, img in enumerate(cropped_images):
-            output_filename = f"cropped_naki_{i+1}.jpg"
-            try:
-                cv2.imwrite(output_filename, img)
-                print(f"  -> 保存完了: {output_filename}")
-            except Exception as e:
-                print(f"  -> 保存失敗: {output_filename} ({e})")
-    else:
-        print("切り出し対象の鳴きセットは見つかりませんでした。")
+    # 3. 結果のサマリー表示 (デバッグ用)
+    if debug:
+        print("\n--- 解析結果 ---")
+        if cropped_images:
+            print(f"成功: {len(cropped_images)} 個の鳴きセットを切り出しました。")
+        else:
+            print("切り出し対象の鳴きセットは見つかりませんでした。")
 
-    # 5. デバッグ用の画像を一括表示
+    # 4. デバッグ用の画像を一括表示
     if debug:
         print("\nデバッグウィンドウを表示します。いずれかのキーを押して終了してください。")
-        # 各関数内でimshowが呼ばれる場合があるが、ここでまとめて表示・待機するのが確実
-        if step1_image is not None:
-            cv2.imshow("Step 1: Tile Candidates (Red=Accepted)", step1_image)
-        if step2_image is not None:
-            cv2.imshow("Step 2: Naki Sets (Green=Detected)", step2_image)
+        if step1_image_for_debug is not None:
+            cv2.imshow("Step 1: Tile Candidates (Red=Accepted)", step1_image_for_debug)
+        if step2_image_for_debug is not None:
+            cv2.imshow("Step 2: Naki Sets (Green=Detected)", step2_image_for_debug)
         for i, img in enumerate(cropped_images):
             cv2.imshow(f"Cropped Naki Set #{i+1}", img)
         
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+    
+    return cropped_images
 
 
+# --- スクリプトのエントリーポイント ---
 if __name__ == '__main__':
     # --- 設定 ---
-    IMAGE_FILE = 'test_mahjong_open_1.jpg'
-    DEBUG_MODE = False
+    IMAGE_FILE = 'test_mahjong_open_1.jpg' # テスト用画像パス
+    DEBUG_MODE = True # テスト時はTrueにして動作確認推奨
     
     # --- 実行 ---
-    main(image_path=IMAGE_FILE, debug=DEBUG_MODE)
+    input_image_np = cv2.imread(IMAGE_FILE)
+
+    if input_image_np is None:
+        print(f"エラー: 画像ファイル '{IMAGE_FILE}' が見つからないか、読み込めません。")
+    else:
+        result_cropped_naki_list = main(image_np=input_image_np, debug=DEBUG_MODE)
+
+        # テストの成否を示すメッセージは残す
+        if result_cropped_naki_list:
+            print(f"テスト完了: {len(result_cropped_naki_list)} 個の鳴き牌画像データがNumPy配列リストとして返されました。")
+        else:
+            print("テスト完了: 鳴き牌は検出されませんでした。")
