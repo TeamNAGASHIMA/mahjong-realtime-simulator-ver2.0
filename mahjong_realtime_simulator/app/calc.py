@@ -140,25 +140,119 @@ def print_result(result):
 # 期待値計算
 async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
     """
-    async_score_clac
-    (
-    # ドラ
-    doralist:[Tile.Manzu5], 
-    # 手牌
-    hand_tiles:[Tile.Manzu1, Tile.Manzu2, Tile.Manzu3,
-                        Tile.Pinzu4, Tile.Pinzu5, Tile.Pinzu6,
-                        Tile.Haku], 
-    # 鳴き牌
-    raw_melded_blocks:[[Tile.Ton, Tile.Ton, Tile.Ton],[Tile.Sya, Tile.Sya, Tile.Sya]], 
-    # 河牌
-    river_tiles:[Tile.Pinzu1, Tile.Pinzu2, Tile.Pinzu3, Tile.Pinzu4, Tile.Pinzu5], 
-    # 現在の局
-    turn:1,
-    # 聴牌タイプ
-    syanten_Type:SyantenType.Normal,
-    # 設定フラグ
-    flag:ExpOption.CalcSyantenDown + ExpOption.CalcTegawari
+    引数:
+    - doraList: ドラ
+    - hand_tiles: 手牌
+    - raw_melded_blocks: 鳴き牌
+    - river_tiles: 河牌
+    - turn: 巡目
+    - syanten_Type: 聴牌タイプ
+    - flag: 設定フラグ
+
+    async_score_calc(
+        doraList:[Tile.Manzu5], 
+        hand_tiles:[
+            Tile.Manzu1, 
+            Tile.Manzu2, 
+            Tile.Manzu3,
+            Tile.Pinzu4, 
+            Tile.Pinzu5, 
+            Tile.Pinzu6,
+            Tile.Haku
+        ], 
+        raw_melded_blocks:[
+            [Tile.Ton, Tile.Ton, Tile.Ton],
+            [Tile.Sya, Tile.Sya, Tile.Sya]
+        ], 
+        river_tiles:[
+            Tile.Pinzu1, 
+            Tile.Pinzu2, 
+            Tile.Pinzu3, 
+            Tile.Pinzu4, 
+            Tile.Pinzu5
+        ], 
+        turn:1,
+        syanten_Type:SyantenType.Normal,
+        flag:ExpOption.CalcSyantenDown + ExpOption.CalcTegawari
     )
+
+    戻り値:
+    - tile: 打牌する牌
+    - required_tiles
+    - count: 残り枚数
+    - tile: 有効牌
+    - syanten_down: 向聴戻しになるかどうか
+    - exp_values: 1~17 巡目における期待値
+    - win_probs: 1~17 巡目における和了確率
+    - tenpai_probs: 1~17 巡目における聴牌確率
+
+    {
+        "tile": 1,
+        "required_tiles": [
+            {"count": 3, "tile": 1},
+            {"count": 4, "tile": 4},
+            {"count": 3, "tile": 16},
+            {"count": 3, "tile": 25},
+        ],
+        "syanten_down": True,
+        "exp_values": [
+            3891.424884520901,
+            3611.387861422344,
+            3324.9602806561834,
+            3032.9968246078943,
+            2736.61314257078,
+            2437.2401686922626,
+            2136.6891411450547,
+            1837.2294593562674,
+            1541.681958625137,
+            1253.5307198421215,
+            977.0571881068047,
+            717.5011748665181,
+            481.2542973307469,
+            276.0926081180646,
+            111.45663941547303,
+            0.0,
+            0.0,
+        ],
+        "win_probs": [
+            0.28676429520079144,
+            0.2648826688812986,
+            0.2425884467324838,
+            0.21996018286576025,
+            0.19709834604910853,
+            0.17412977831069812,
+            0.15121302315346807,
+            0.12854469610673472,
+            0.10636710599982613,
+            0.08497737871415958,
+            0.06473838800697322,
+            0.046091862473938344,
+            0.029574116525271518,
+            0.015834949744313175,
+            0.005660377358490566,
+            0.0,
+            0.0,
+        ],
+        "tenpai_probs": [
+            0.86033118739783,
+            0.8433620793246688,
+            0.8241517682984493,
+            0.802380082468734,
+            0.7776775927773254,
+            0.7496174831278617,
+            0.7177059858794518,
+            0.6813711127748264,
+            0.6399493574355539,
+            0.5926699801291114,
+            0.5386364060646058,
+            0.47680417182584156,
+            0.40595473676059113,
+            0.32466433231730357,
+            0.23126684636118597,
+            0.1238095238095238,
+            0.0,
+        ],
+    }
     """
     melded_blocks = [create_meld_block(block_tiles) for block_tiles in raw_melded_blocks]
 
@@ -195,4 +289,3 @@ async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles,
     
     # result_msg = ('result', {'result': result})
     return result
-
