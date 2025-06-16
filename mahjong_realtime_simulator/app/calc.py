@@ -1,6 +1,6 @@
 import json
 import requests
-from mrs_class import *
+from .mrs_class import *
 
 # メンツ種類推測
 def infer_meld_type(tiles, type):
