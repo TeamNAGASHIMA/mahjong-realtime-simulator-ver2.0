@@ -47,7 +47,7 @@ def _get_crop_coordinates(image_np: np.ndarray,
     return start_x, start_y, crop_w, crop_h
 
 
-def main(image_np: np.ndarray) -> dict[str, np.ndarray]:
+def crop_discard_main(image_np: np.ndarray) -> dict[str, np.ndarray]:
     """盤面画像から4人分の捨て牌領域を個別に検出・切り出します。
 
     各プレイヤーの捨て牌（河）の位置は、盤面全体の画像サイズに対する
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     else:
         print("discard_detectionのテストを開始します。")
         # main関数を呼び出すだけ (imshowは内部で実行されない)
-        result_cropped_dict = main(input_image_np)
+        result_cropped_dict = crop_discard_main(input_image_np)
 
         if result_cropped_dict:
             print("\nテスト完了: 4人分の捨て牌領域が切り出され、辞書として返されました。")
