@@ -12,9 +12,9 @@ import re
 # .env ファイルの読み込み
 load_dotenv()
 
-import crop_open_detection
-import crop_dora_detection
-import crop_discard_detection
+from .crop_open_detection import *
+from .crop_dora_detection import *
+from .crop_discard_detection import *
 
 # 牌種類変換表
 tile_convert = {
