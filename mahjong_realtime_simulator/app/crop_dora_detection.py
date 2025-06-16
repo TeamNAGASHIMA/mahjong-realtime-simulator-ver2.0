@@ -207,7 +207,7 @@ def find_and_crop_dora_indicator(image_np: np.ndarray, debug=False) -> np.ndarra
     return cropped_dora_area
 
 
-def main(image_np: np.ndarray, debug=False) -> np.ndarray:
+def crop_dora_main(image_np: np.ndarray, debug=False) -> np.ndarray:
     """指定された画像 (NumPy配列) からドラ表示牌を検出し、切り出した画像 (NumPy配列) を返すメイン処理。
 
     ファイルを保存する代わりにNumPy配列で結果を返します。
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     if input_image_np is None:
         print(f"エラー: 画像ファイル '{IMAGE_FILE}' が見つからないか、読み込めません。")
     else:
-        result_cropped_np = main(image_np=input_image_np, debug=DEBUG_MODE)
+        result_cropped_np = crop_dora_main(image_np=input_image_np, debug=DEBUG_MODE)
 
         # テストの成否を示すメッセージは残す
         if result_cropped_np is not None:

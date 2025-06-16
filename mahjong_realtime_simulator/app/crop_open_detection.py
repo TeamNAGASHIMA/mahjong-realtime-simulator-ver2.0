@@ -272,7 +272,7 @@ def find_naki_sets(original_full_image_np: np.ndarray, detected_tiles_step1: lis
 
     return naki_sets_found, image_to_draw_on_np, cropped_naki_images
 
-def main(image_np: np.ndarray, debug=False) -> list[np.ndarray]:
+def crop_open_main(image_np: np.ndarray, debug=False) -> list[np.ndarray]:
     """麻雀画像 (NumPy配列) の解析パイプラインを実行し、鳴き牌の切り出し画像リストを返す。
 
     Args:
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     if input_image_np is None:
         print(f"エラー: 画像ファイル '{IMAGE_FILE}' が見つからないか、読み込めません。")
     else:
-        result_cropped_naki_list = main(image_np=input_image_np, debug=DEBUG_MODE)
+        result_cropped_naki_list = crop_open_main(image_np=input_image_np, debug=DEBUG_MODE)
 
         # テストの成否を示すメッセージは残す
         if result_cropped_naki_list:

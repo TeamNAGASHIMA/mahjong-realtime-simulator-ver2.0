@@ -249,12 +249,12 @@ def dora_detection(board_image_np: np.ndarray) -> list:
         list: 検出されたドラ表示牌のIDのリスト（昇順にソートされます）。
 
     Raises:
-        ValueError: `crop_dora_detection.main` から無効な画像が返された場合、
+        ValueError: `crop_dora_main` から無効な画像が返された場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
-    # crop_dora_detection.main(board_image_np) は、NumPy配列を受け取り、
+    # crop_dora_main(board_image_np) は、NumPy配列を受け取り、
     # ドラ表示牌の領域をNumPy配列として返す
-    cropped_dora_np = crop_dora_detection.main(board_image_np)
+    cropped_dora_np = crop_dora_main(board_image_np)
 
     # 切り出し画像が有効であることを確認
     if not isinstance(cropped_dora_np, np.ndarray) or cropped_dora_np.size == 0:
@@ -288,12 +288,12 @@ def open_detection(board_image_np: np.ndarray) -> list[list[int]]:
                         その内部リストは昇順にソートされます。
 
     Raises:
-        ValueError: `crop_open_detection.main` から無効な結果が返された場合、
+        ValueError: `crop_open_main` から無効な結果が返された場合、
                     リスト内の個々の画像が無効な場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
-    # crop_open_detection.main(board_image_np) は、NumPy配列のリストを返す
-    cropped_naki_image_list = crop_open_detection.main(board_image_np)
+    # crop_open_main(board_image_np) は、NumPy配列のリストを返す
+    cropped_naki_image_list = crop_open_main(board_image_np)
 
     all_melded_sets_structured = [] # 各鳴きセットごとの牌リストを格納する
 
@@ -341,13 +341,13 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
                 例: {"discard_tiles_bottom": [1, 2, 3], "discard_tiles_top": [10, 11], ...}。
 
     Raises:
-        ValueError: `crop_discard_detection.main` から無効な結果が返された場合、
+        ValueError: `crop_discard_main` から無効な結果が返された場合、
                     辞書内の個々の画像が無効な場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
-    # crop_discard_detection.main から各プレイヤーの切り出し画像を取得
+    # crop_discard_main から各プレイヤーの切り出し画像を取得
     # これが {'bottom': img_np, 'right': img_np, 'top': img_np, 'left': img_np} の形式で返される
-    cropped_discard_areas_dict = crop_discard_detection.main(board_image_np)
+    cropped_discard_areas_dict = crop_discard_main(board_image_np)
 
     # プレイヤーゾーンごとの捨て牌リストを初期化
     discard_by_player_zone = {
