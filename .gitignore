@@ -174,3 +174,9 @@ cython_debug/
 .pypirc
 
 node_modules/
+
+# detect test files
+images_data/
+mahjong_realtime_simulator/app/test_mahjong_tehai_1.jpg
+mahjong_realtime_simulator/app/test_mahjong.jpg
+mahjong_realtime_simulator/app/call_test.py
