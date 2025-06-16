@@ -280,14 +280,18 @@ async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles,
     res_data = res.json()
 
     # 結果出力
+    result = {"message": "", "status": "", "result": ""}
+    # error
     if not res_data["success"]:
-        error_msg = ('error', {'error': f"計算の実行に失敗しました。(理由: {res_data['err_msg']})"})
-        return error_msg
+        result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
+        result["status"] = "400"
+        result["result"] = ""
+        return result
         # raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
-    
-    result = res_data["response"]
-    
-    # result_msg = ('result', {'result': result})
+    # success
+    result["message"] = ""
+    result["status"] = "200"
+    result["result"] = res_data["response"]
     return result
 
 # 期待値計算(直接呼び出し)
@@ -425,12 +429,16 @@ def score_calc(data, river_tiles):
     res_data = res.json()
 
     # 結果出力
+    result = {"message": "", "status": "", "result": ""}
+    # error
     if not res_data["success"]:
-        error_msg = ('error', {'error': f"計算の実行に失敗しました。(理由: {res_data['err_msg']})"})
-        return error_msg
+        result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
+        result["status"] = "400"
+        result["result"] = ""
+        return result
         # raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
-    
-    result = res_data["response"]
-    
-    # result_msg = ('result', {'result': result})
+    # success
+    result["message"] = ""
+    result["status"] = "200"
+    result["result"] = res_data["response"]
     return result
