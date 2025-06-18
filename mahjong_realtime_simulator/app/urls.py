@@ -1,8 +1,11 @@
-from django.urls import path
-from .views import cra_page_view, cra_page_loader_view, test
+from django.urls import path, include
+from .views import mahjong_render, main
+from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path('cra-demo/', cra_page_view, name='cra_demo'),
-    path('cra-demo2/', cra_page_loader_view, name='cra_demo2'),
-    path('test/', test, name='test'),
-]
+    path('mahjong_render/', mahjong_render, name='mahjong_render'),
+    path('main/', main, name='main'),
+    path('admin/', admin.site.urls),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
