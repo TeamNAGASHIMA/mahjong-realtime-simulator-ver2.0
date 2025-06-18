@@ -138,7 +138,7 @@ def print_result(result):
                 )
 
 # 期待値計算
-async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
+def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
     """
     引数:
     - doraList: ドラ
