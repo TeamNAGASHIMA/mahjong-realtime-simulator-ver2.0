@@ -18,6 +18,8 @@ def main(request):
         try:
             Img_FILES = request.FILES
             Req_BODY = request.POST
+            print(Img_FILES)
+            print(Req_BODY)
             # 手牌画像が取得できていなければエラーを返す
             if 'hand_tiles_image' not in Img_FILES:
                 message = "No images of the hand cards included."
@@ -61,7 +63,16 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
-                    print("1111111111111111")
+                    print("データ表示")
+                    print(doraList)
+                    print(hand_tiles)
+                    print(raw_melded_blocks)
+                    print(river_tiles)
+                    print(turn)
+                    print(syanten_Type)
+                    print(flag)
+
+                    print("データ型表示")
                     print(type(doraList))
                     print(type(hand_tiles))
                     print(type(raw_melded_blocks))
@@ -74,8 +85,8 @@ def main(request):
                             doraList,
                             hand_tiles,
                             raw_melded_blocks,
-                            river_tiles,
-                            turn,
+                            [],# river_tiles,
+                            0,# turn,
                             syanten_Type,
                             flag
                         )
@@ -106,7 +117,7 @@ def main(request):
                         'detection_result': detection_result
                         }, status=result_calc["status"])
                 else:
-                    JsonResponse({'message': result_calc["message"]}, status=result_calc["status"])
+                    return JsonResponse({'message': result_calc["message"]}, status=result_calc["status"])
 
         except Exception as e:
             message = "Exception error"
@@ -115,25 +126,21 @@ def main(request):
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 def imageChangeNp(request_image):
-    # # 保存先のフルパスを作成（例: media/uploads/filename.png）
-    # save_path = os.path.join(settings.MEDIA_ROOT, request_image.name)
+    # 保存先のフルパスを作成（例: media/uploads/filename.png）
+    path = os.path.join(settings.MEDIA_ROOT, request_image.name)
 
-    # # ディレクトリがなければ作成
-    # os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    # ディレクトリがなければ作成
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
-    # # ファイルを書き込み
-    # with open(save_path, "wb+") as destination:
-    #     for chunk in request_image.chunks():
-    #         destination.write(chunk)
-    
-    # image_path = os.path.join(settings.MEDIA_ROOT, request_image.name)
+    # ファイルを書き込み
+    with open(path, "wb+") as destination:
+        for chunk in request_image.chunks():
+            destination.write(chunk)
 
-    # print(image_path)
+    # OpenCVで読み込み（BGR形式のnp.ndarray）
+    np_request_image = cv2.imread(path)
 
-    # # OpenCVで読み込み（BGR形式のnp.ndarray）
-    # np_request_image = cv2.imread(image_path)
+    # request_image_bytes = np.frombuffer(request_image.read(), np.uint8)
+    # np_request_image_bgr = cv2.imdecode(request_image_bytes, cv2.IMREAD_COLOR)
 
-    request_image_bytes = np.frombuffer(request_image.read(), np.uint8)
-    np_request_image_bgr = cv2.imdecode(request_image_bytes, cv2.IMREAD_COLOR)
-
-    return np_request_image_bgr
+    return np_request_image

@@ -28,16 +28,16 @@
 
 
         <h1>カメラ撮影</h1>
-        <video id="video" width="320" height="240" autoplay></video>
+        <video id="video" width="640" height="360" autoplay></video>
         <input type="button" value="計算実行" id="calc">
         <br>撮影した画像<br>
         <p>手牌</p>
         <img src="{% static "testIMG/test_mahjong_tehai_1.jpg" %}" id="hand_tiles" alt="手牌画像">
-        <canvas id="hand_tiles_canvas" style="display:none;"></canvas>
+        <canvas id="hand_tiles_canvas" style="display:none;" width="640" height="360"></canvas>
 
         <p>盤面</p>
         <img src="{% static "testIMG/test_mahjong.jpg" %}" id="board_tiles" alt="盤面画像">
-        <canvas id="board_tiles_canvas" style="display:none;"></canvas>
+        <canvas id="board_tiles_canvas" style="display:none;" width="640" height="360"></canvas>
 
         <p id="result"></p>
 

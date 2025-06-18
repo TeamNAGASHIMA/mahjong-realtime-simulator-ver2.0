@@ -82,11 +82,15 @@ calcButton.addEventListener('click', async () => {
 
     // 手牌画像の取得
     const hand_tiles_context = hand_tiles_canvas.getContext('2d');
-    hand_tiles_context.drawImage(hand_tiles_img, 0, 0, hand_tiles_canvas.width, hand_tiles_canvas.height);
+    hand_tiles_canvas.width = hand_tiles_img.naturalWidth;
+    hand_tiles_canvas.height = hand_tiles_img.naturalHeight;
+    hand_tiles_context.drawImage(hand_tiles_img, 0, 0);
 
     // 盤面画像の取得
     const board_tiles_context = board_tiles_canvas.getContext('2d');
-    board_tiles_context.drawImage(board_tiles_img, 0, 0, board_tiles_canvas.width, board_tiles_canvas.height);
+    board_tiles_canvas.width = board_tiles_img.naturalWidth
+    board_tiles_canvas.height = board_tiles_img.naturalHeight
+    board_tiles_context.drawImage(board_tiles_img, 0, 0);
 
     const [hand_tiles_blob, board_tiles_blob] = await Promise.all([
         getBlobFromCanvas(hand_tiles_canvas),
@@ -94,11 +98,11 @@ calcButton.addEventListener('click', async () => {
     ]);
 
     // 手牌画像をFormDataに追加
-    formData.append('hand_tiles_image', hand_tiles_blob, "hand_tiles_image.jpg");
+    formData.append('hand_tiles_image', hand_tiles_blob, "hand_tiles_image.jpeg");
 
     // 盤面画像をFormDataに追加
     if (board_tiles_blob) {
-        formData.append("board_tiles_image", board_tiles_blob, "board_tiles_image.jpg");
+        formData.append("board_tiles_image", board_tiles_blob, "board_tiles_image.jpeg");
     }
 
     formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
