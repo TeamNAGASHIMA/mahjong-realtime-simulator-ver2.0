@@ -7,7 +7,7 @@ set ELECTRON_APP_SUBDIR=electron-app
 set ELECTRON_APP_PATH=%BASE_PATH%%ELECTRON_APP_SUBDIR%
 set DJANGO_VENV_PATH=%BASE_PATH%..\env
 set DJANGO_VENV_ACTIVATE=%DJANGO_VENV_PATH%\Scripts\activate.bat
-set SERVER_EXE_PATH=%BASE_PATH%server.exe
+set SERVER_EXE_PATH=%BASE_PATH%\mahjong_cpp\server.exe
 REM --- 設定ここまで ---
 
 echo Current Directory: %CD%
