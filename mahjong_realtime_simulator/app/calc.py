@@ -280,17 +280,16 @@ async def async_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles,
     res_data = res.json()
 
     # 結果出力
-    result = {"message": "", "status": "", "result": ""}
+    result = {"message": "", "status": None, "result": ""}
     # error
     if not res_data["success"]:
         result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = "400"
+        result["status"] = 400
         result["result"] = ""
         return result
-        # raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
     # success
-    result["message"] = ""
-    result["status"] = "200"
+    result["message"] = "calculation_success"
+    result["status"] = 200
     result["result"] = res_data["response"]
     return result
 
@@ -436,9 +435,8 @@ def score_calc(data, river_tiles):
         result["status"] = "400"
         result["result"] = ""
         return result
-        # raise RuntimeError(f"計算の実行に失敗しました。(理由: {res_data['err_msg']})")
     # success
-    result["message"] = ""
-    result["status"] = "200"
+    result["message"] = "calculation_success"
+    result["status"] = 200
     result["result"] = res_data["response"]
     return result
