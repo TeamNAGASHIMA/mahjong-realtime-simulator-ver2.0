@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django with CRA Integration</title>
+    <script type="importmap">
+        {
+            "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="{% static "js/script.js" %}"></script>
+</head>
+    <body>
+        <h1>TEST</h1>
+        <main>
+            <div id="react-app">
+                <canvas id="myCanvas"></canvas>
+            </div>
+        </main>
+        <input type="text" id="inputName" placeholder="名前を入力" />
+        <button id="sendData">送信</button>
+
+        <p id="responseMessage">ここに結果が入ります</p>
+
+
+        <h1>カメラ撮影</h1>
+        <video id="video" width="320" height="240" autoplay></video>
+        <input type="button" value="計算実行" id="calc">
+        <br>撮影した画像<br>
+        <p>手牌</p>
+        <img src="{% static "testIMG/test_mahjong_tehai_1.jpg" %}" id="hand_tiles" alt="手牌画像">
+        <canvas id="hand_tiles_canvas" style="display:none;"></canvas>
+
+        <p>盤面</p>
+        <img src="{% static "testIMG/test_mahjong.jpg" %}" id="board_tiles" alt="盤面画像">
+        <canvas id="board_tiles_canvas" style="display:none;"></canvas>
+
+        <p id="result"></p>
+
+        <div id="react-root"></div>
+    </body>
+    <script type="module" src="{% static "js/test.js" %}"></script>
+</html>
