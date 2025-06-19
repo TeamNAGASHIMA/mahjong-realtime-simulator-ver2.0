@@ -7,5 +7,4 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('mahjong_render/', mahjong_render, name='mahjong_render'),
     path('main/', main, name='main'),
-    path('admin/', admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
