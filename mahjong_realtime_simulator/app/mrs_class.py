@@ -68,10 +68,10 @@ class ExpOption:
 # メンツ種類定義
 class MeldType:
     Null = -1
-    Pon = 1
-    Ti = 2
-    Ankan = 3
-    Minkan = 4
-    Kakan = 5
+    Pon = 0
+    Ti = 1
+    Ankan = 2
+    Minkan = 3
+    Kakan = 4
 
     Name = ["ポン", "チー", "暗槓", "明槓", "加槓"]
