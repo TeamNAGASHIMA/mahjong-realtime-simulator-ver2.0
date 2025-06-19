@@ -13,6 +13,7 @@ const board_tiles_canvas = document.getElementById("board_tiles_canvas");
 
 // バックエンドから受け取るレスポンスを挿入するタグのエレメントを取得。本番で言う計算結果表に該当する
 const result = document.getElementById("result");
+const detection_result = document.getElementById("detection_result");
 
 // 送信するリストデータ（テストデータ）
 let syanten_Type = 1 // 「一般手：1」、「七対手：2」、「国士無双手：4」
@@ -126,6 +127,9 @@ calcButton.addEventListener('click', async () => {
             result.textContent = JSON.stringify(data.result_calc)
         }else{
             alert("Could not calculate")
+        }
+        if (Object.keys(data.detection_result).length !== 0){
+            detection_result.textContent = JSON.stringify(data.detection_result)
         }
     })
     .catch(err => {
