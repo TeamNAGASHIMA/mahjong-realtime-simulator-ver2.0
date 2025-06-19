@@ -43,9 +43,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'webpack_loader',
     'app',
+    'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -53,6 +56,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Reactが動作するポート
 ]
 
 ROOT_URLCONF = 'mahjong_realtime_simulator.urls'
@@ -144,3 +151,9 @@ WEBPACK_LOADER = {
         'IGNORE': [r'.+\.hot-update.js', r'.+\.map'],
     }
 }
+
+# アップロードされたメディアファイルのURLパス
+MEDIA_URL = '/media/'
+
+# アップロードされたファイルを保存するサーバー上のディレクトリ
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

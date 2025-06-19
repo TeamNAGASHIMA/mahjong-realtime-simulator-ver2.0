@@ -7,6 +7,7 @@ set ELECTRON_APP_SUBDIR=electron-app
 set ELECTRON_APP_PATH=%BASE_PATH%%ELECTRON_APP_SUBDIR%
 set DJANGO_VENV_PATH=%BASE_PATH%..\env
 set DJANGO_VENV_ACTIVATE=%DJANGO_VENV_PATH%\Scripts\activate.bat
+set SERVER_EXE_PATH=%BASE_PATH%mahjong-cpp\server.exe
 REM --- 設定ここまで ---
 
 echo Current Directory: %CD%
@@ -15,6 +16,31 @@ echo Django Project Path: %DJANGO_PROJECT_PATH%
 echo Electron App Path: %ELECTRON_APP_PATH%
 echo Django Venv Path: %DJANGO_Venv_PATH%
 echo Django Venv Activate: %DJANGO_Venv_Activate%
+echo Server Executable Path: %SERVER_EXE_PATH%
+
+:START_SERVER
+echo.
+echo Starting server.exe...
+IF NOT EXIST "%SERVER_EXE_PATH%" (
+    echo ERROR: server.exe not found at %SERVER_EXE_PATH%.
+    echo Please ensure server.exe is in the script's directory or update SERVER_EXE_PATH.
+    pause
+    goto :END
+)
+REM server.exe をバックグラウンドで起動
+start "" /b "%SERVER_EXE_PATH%"
+
+echo.
+echo Waiting for server.exe to start...
+:WAIT_FOR_SERVER_EXE
+    tasklist /fi "imagename eq server.exe" | find /i "server.exe" > nul
+    IF %ERRORLEVEL% NEQ 0 (
+        echo server.exe not yet running...
+        timeout /t 2 /nobreak > nul
+        goto :WAIT_FOR_SERVER_EXE
+    )
+echo server.exe is now running.
+
 
 :START_DJANGO
 echo.
@@ -26,7 +52,7 @@ IF EXIST "%DJANGO_VENV_ACTIVATE%" (
     IF "%ERRORLEVEL%" NEQ "0" (
         echo Error activating virtual environment. Please check the path.
         pause
-        goto :END
+        goto :STOP_SERVER_AND_END
     )
 ) ELSE (
     echo Warning: Django venv activate script not found at %DJANGO_VENV_ACTIVATE%.
@@ -53,9 +79,9 @@ echo Starting Electron application...
 cd /d "%ELECTRON_APP_PATH%"
 IF NOT EXIST "%ELECTRON_APP_PATH%\package.json" (
     echo ERROR: package.json not found in %ELECTRON_APP_PATH%.
-    echo          Please check the ELECTRON_APP_SUBDIR setting or your project structure.
+    echo           Please check the ELECTRON_APP_SUBDIR setting or your project structure.
     pause
-    goto :END
+    goto :STOP_ALL_PROCESSES
 )
 echo Running command: npm start
 start "" /b npm start
@@ -76,18 +102,38 @@ echo Electron app did not start in the expected time. Proceeding to wait for clo
 
 echo.
 echo Both processes have been initiated in the background.
-echo Waiting for Electron app to close before stopping Django server...
+echo Waiting for Electron app to close before stopping Django server and server.exe...
 
 :WAIT_ELECTRON
 timeout /t 10 /nobreak > nul
 tasklist /fi "imagename eq electron.exe" | find /i "electron.exe" > nul
 IF ERRORLEVEL 1 (
-    echo Electron app has closed. Stopping Django server...
-    goto :STOP_DJANGO
+    echo Electron app has closed. Stopping Django server and server.exe...
+    goto :STOP_ALL_PROCESSES
 )
 timeout /t 1 /nobreak > nul
 netstat -ano | findstr "8010"
 goto :WAIT_ELECTRON
+
+:STOP_ALL_PROCESSES
+REM --- セクション追加: server.exe の終了 ---
+echo.
+echo Stopping server.exe...
+tasklist /fi "imagename eq server.exe" | find /i "server.exe" > nul
+IF %ERRORLEVEL% EQU 0 (
+    FOR /F "tokens=2" %%P IN ('tasklist /fi "imagename eq server.exe" /nh') DO (
+        ECHO Found server.exe with PID: %%P
+        taskkill /PID %%P /F
+        IF "%ERRORLEVEL%" NEQ "0" (
+            echo Failed to terminate server.exe with PID: %%P
+        ) ELSE (
+            echo Successfully terminated server.exe.
+        )
+    )
+) ELSE (
+    echo server.exe not found or already stopped.
+)
+REM --- セクション追加ここまで ---
 
 :STOP_DJANGO
 echo.
@@ -102,6 +148,10 @@ FOR /F "tokens=5" %%P IN ('netstat -ano ^| findstr ":8010" ^| findstr "LISTENING
     )
 )
 echo Django server on port 8010 not found.
+
+:STOP_SERVER_AND_END
+echo.
+echo All processes stopped.
 
 :END
 echo.
