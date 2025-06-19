@@ -18,8 +18,6 @@ def main(request):
         try:
             Img_FILES = request.FILES
             Req_BODY = request.POST
-            print(Img_FILES)
-            print(Req_BODY)
             # 手牌画像が取得できていなければエラーを返す
             if 'hand_tiles_image' not in Img_FILES:
                 message = "No images of the hand cards included."
@@ -67,25 +65,6 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
-                    hand_tiles.append(0)
-                    print("データ表示")
-                    print(doraList)
-                    print(hand_tiles)
-                    print(raw_melded_blocks)
-                    print(river_tiles)
-                    print(turn)
-                    print(syanten_Type)
-                    print(flag)
-
-                    print("データ型表示")
-                    print(type(doraList))
-                    print(type(hand_tiles))
-                    print(type(raw_melded_blocks))
-                    print(type(river_tiles))
-                    print(type(turn))
-                    print(type(syanten_Type))
-                    print(type(flag))
-
                     # 物体検知の結果から計算を実行する。
                     result_calc = main_score_calc(
                             doraList,
@@ -96,8 +75,6 @@ def main(request):
                             syanten_Type,
                             flag
                         )
-                    print("2")
-                    print(result_calc)
                 else:
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
                     fixes_data = fixes_list["fixes_pai_info"]
@@ -115,7 +92,6 @@ def main(request):
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
                 if result_calc["status"] == 200:
-                    print(result_calc)
                     # 処理結果をフロントエンドへレスポンスする
                     return JsonResponse({
                         'message': result_calc["message"],
