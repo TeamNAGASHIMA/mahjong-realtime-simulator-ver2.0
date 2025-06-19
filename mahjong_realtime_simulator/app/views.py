@@ -49,7 +49,11 @@ def main(request):
                         message = detectoin["message"]
                         status = detectoin["status"]
 
-                        return JsonResponse({'message': message}, status=status)
+                        return JsonResponse({
+                            'message': message,
+                            "detection_result": []
+                            }, status=status
+                        )
 
                     # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
                     # detection_result_simple => 計算プログラム用のデータ
@@ -63,6 +67,7 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
+                    hand_tiles.append(0)
                     print("データ表示")
                     print(doraList)
                     print(hand_tiles)
@@ -80,13 +85,14 @@ def main(request):
                     print(type(turn))
                     print(type(syanten_Type))
                     print(type(flag))
+
                     # 物体検知の結果から計算を実行する。
                     result_calc = main_score_calc(
                             doraList,
                             hand_tiles,
                             raw_melded_blocks,
-                            [],# river_tiles,
-                            0,# turn,
+                            river_tiles,
+                            turn,
                             syanten_Type,
                             flag
                         )
@@ -115,9 +121,14 @@ def main(request):
                         'message': result_calc["message"],
                         'result_calc': result_calc["result"],
                         'detection_result': detection_result
-                        }, status=result_calc["status"])
+                        }, status=result_calc["status"]
+                    )
                 else:
-                    return JsonResponse({'message': result_calc["message"]}, status=result_calc["status"])
+                    return JsonResponse({
+                        'message': result_calc["message"],
+                        "detection_result": detection_result
+                        }, status=result_calc["status"]
+                    )
 
         except Exception as e:
             message = "Exception error"
