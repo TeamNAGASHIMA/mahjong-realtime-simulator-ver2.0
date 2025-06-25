@@ -68,7 +68,7 @@ const GameStatusArea = ({
         ...boardState, // logPayload.boardState を直接参照してもOK
       };
 
-      const response = await fetch('https://your-server.com/api/mahjong-state', { //バックエンドがある位置を書く
+      const response = await fetch('/app/main/', { //バックエンドがある位置を書く
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
