@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 import Header from './Header';
 import GameStatusArea from './GameStatusArea'; 
@@ -36,7 +36,8 @@ function dataURLtoBlob(dataurl) {
 }
 
 const MainScreen = () => {
-  React.useEffect(() => {
+  // useEffectは画面初期化時のみ使用
+  useEffect(() => {
     document.body.style.margin = '0';
     document.body.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
     document.body.style.webkitFontSmoothing = 'antialiased';
@@ -60,9 +61,16 @@ const MainScreen = () => {
     };
   }, []);
 
+  // 牌変更時にGameStatusAreaから呼び出されるコールバック関数
+  const handleBoardChange = (newBoardState) => {
+    // 変更された盤面情報(newBoardState)を引数に、handleCalculateを直接呼び出す
+    handleCalculate(newBoardState);
+  };
+
   const sidePanelRef = useRef(null);
 
-  const handleCalculate = async () => {
+  // 計算ボタンクリック時と、牌変更時の両方から呼び出される統一された送信関数
+  const handleCalculate = async (boardState = null) => {
     if (!sidePanelRef.current) return;
 
     try {
@@ -72,30 +80,50 @@ const MainScreen = () => {
       const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
 
-      if (handImageBlob) formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
       if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       
-      const fixes_pai_info = {
-          "version": "0.9.0",
-          "zikaze": 27,
-          "bakaze": 27,
-          "turn": 3,
-          "syanten_type": settings.syanten_type,
-          "dora_indicators": [27],
-          "flag": settings.flag,
-          "hand_tiles": [],
-          "melded_blocks": [],
-          "counts": []
-      };
+      let fixes_board_info;
 
-      const fixes_board_info = {
-          "fixes_pai_info": fixes_pai_info,
+      // boardStateが引数として渡された場合（牌変更時）
+      if (boardState) {
+
+
+
+        fixes_board_info = {
+          "fixes_pai_info": {
+            "turn": boardState.turn,
+            "dora_indicators": boardState.dora_indicators,
+            "hand_tiles": boardState.hand_tiles,
+            "melded_blocks": boardState.melded_blocks || [],
+            "zikaze": boardState.player_winds ? boardState.player_winds.self : 27,
+            "bakaze": 27, // 仮
+          },
+          "fixes_river_tiles": Object.values(boardState.player_discards).flat(),  
+        };
+      }
+      // boardStateが渡されなかった場合（計算ボタンクリック時）
+      else {
+        fixes_board_info = {
+          "fixes_pai_info": {
+              "version": "0.9.0",
+              "zikaze": 27,
+              "bakaze": 27,
+              "turn": 3,
+              "syanten_type": settings.syanten_type,
+              "dora_indicators": [27],
+              "flag": settings.flag,
+              "hand_tiles": [],
+              "melded_blocks": [],
+              "counts": []
+          },
           "fixes_river_tiles": []
-      };
+        };
+      }
       
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
-      formData.append('syanten_Type', JSON.stringify(settings.syanten_type));
-      formData.append('flag', JSON.stringify(settings.flag));
+      formData.append('syanten_Type', JSON.stringify(settings.syanten_type || 1));
+      formData.append('flag', JSON.stringify(settings.flag || 0));
 
       const response = await fetch('/app/main/', {
           method: 'POST',
@@ -129,7 +157,8 @@ const MainScreen = () => {
       <Header />
       <div style={styles.mainContent}>
         <GameStatusArea
-          onStartCalculation={handleCalculate}
+          onStartCalculation={handleCalculate} // 計算ボタン用
+          onBoardChange={handleBoardChange}   // 牌変更用
           gameState={null}
           calculationResults={[]}
           isLoadingCalculation={false}

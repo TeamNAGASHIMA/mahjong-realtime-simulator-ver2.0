@@ -20,11 +20,12 @@ const GameStatusArea = ({
   onStartCalculation,
   isCalculationDisabled,
   isRecognizing,
+  onBoardChange, // 親から渡されるコールバック関数
 }) => {
 
   const handleTileChange = async (logPayload) => {
     // -----------------------------------------------------
-    // 既存のコンソール出力処理（修正箇所）
+    // 既存のコンソール出力処理
     // -----------------------------------------------------
     const { timestamp, changeInfo, boardState } = logPayload;
     const { from, to, location: changeLocation } = changeInfo;
@@ -60,31 +61,10 @@ const GameStatusArea = ({
     console.groupEnd();
 
     // -----------------------------------------------------
-    // サーバーへの送信処理（変更なし）
+    // 親コンポーネントに盤面データを渡す
     // -----------------------------------------------------
-    try {
-      const dataToSend = {
-        ...gameState,
-        ...boardState, // logPayload.boardState を直接参照してもOK
-      };
-
-      const response = await fetch('https://your-server.com/api/mahjong-state', { //バックエンドがある位置を書く
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (!response.ok) {
-        throw new Error(`サーバーへのデータ送信に失敗しました。 Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('サーバーへのデータ送信成功:', result);
-
-    } catch (error) {
-      console.error('サーバーへのデータ送信中にエラーが発生しました:', error);
+    if (onBoardChange) {
+      onBoardChange(boardState);
     }
   };
 
