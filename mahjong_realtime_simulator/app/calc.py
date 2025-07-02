@@ -65,7 +65,7 @@ def calc_remaining_tiles(hand_tiles, dora_indicators, melded_blocks, river_tiles
     visible_tiles = hand_tiles + dora_indicators + meld_tiles + river_tiles
 
     for tile in visible_tiles:
-        if tile < 0 or tile >= len(counts):
+        if tile < 0 or tile >= len(counts) or tile>36:
             print(f"Warning: Tile value {tile} is out of expected range for counts array. Skipping count reduction.")
             continue # 無効な牌はスキップ
 
