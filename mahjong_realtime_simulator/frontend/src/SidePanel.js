@@ -15,6 +15,8 @@ const styles = {
 
 const SidePanel = forwardRef((props, ref) => {
   const {
+    selectedBoardCamera,
+    selectedHandCamera,    
     onRecognize,
     isRecognizing,
     settings,
@@ -43,6 +45,8 @@ const SidePanel = forwardRef((props, ref) => {
     <div style={styles.sidePanelContainer}>
       <CameraPreview
         ref={cameraRef}
+        boardCameraId={selectedBoardCamera}
+        handCameraId={selectedHandCamera}        
         onRecognize={onRecognize}
         isRecognizing={isRecognizing}
       />
