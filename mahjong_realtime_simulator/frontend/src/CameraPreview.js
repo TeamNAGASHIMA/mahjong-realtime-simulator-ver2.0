@@ -61,51 +61,74 @@ const styles = {
   }
 };
 
-const CameraPreviewPanel = forwardRef(({ onRecognize, isRecognizing }, ref) => {
+const CameraPreviewPanel = forwardRef(({ 
+  onRecognize, 
+  isRecognizing,
+  boardCameraId,
+  handCameraId
+}, ref) => {
   const [isSupportMode, setIsSupportMode] = useState(false);
   
-  // video要素とカメラのストリームへの参照を作成
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
-  const streamRef = useRef(null); // カメラストリームを保持
 
-  // コンポーネントがマウントされた時にカメラを起動する
+  // 盤面カメラのストリームを管理するuseEffect
   useEffect(() => {
-    // カメラを起動する非同期関数
-    const startCamera = async () => {
-      try {
-        // ユーザーにカメラへのアクセス許可を求める
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        streamRef.current = stream; // 後で停止するためにストリームを保存
+    // 盤面カメラのIDが指定されていない場合は何もしない
+    if (!boardCameraId) return;
 
-        // 両方のvideo要素に同じストリームを設定
+    const constraints = { video: { deviceId: { exact: boardCameraId } } };
+    let stream;
+
+    // 指定されたIDでカメラを取得
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(s => {
+        stream = s;
         if (boardVideoRef.current) {
           boardVideoRef.current.srcObject = stream;
         }
+      })
+      .catch(err => console.error(`盤面カメラ(ID: ${boardCameraId})の起動に失敗 (CameraPreview):`, err));
+    
+    // クリーンアップ関数: このeffectが再実行されるか、コンポーネントがアンマウントされる時にストリームを停止
+    return () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    };
+  }, [boardCameraId]); // boardCameraId propが変更された時のみ、このeffectを再実行
+
+  // 手牌カメラのストリームを管理するuseEffect
+  useEffect(() => {
+    // 手牌カメラのIDが指定されていない場合は何もしない
+    if (!handCameraId) return;
+
+    const constraints = { video: { deviceId: { exact: handCameraId } } };
+    let stream;
+    
+    // 指定されたIDでカメラを取得
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(s => {
+        stream = s;
         if (handVideoRef.current) {
           handVideoRef.current.srcObject = stream;
         }
-      } catch (err) {
-        console.error("カメラへのアクセスに失敗しました:", err);
-        // ここでエラーメッセージを画面に表示するなどの処理も可能
-      }
-    };
-    
-    startCamera();
+      })
+      .catch(err => console.error(`手牌カメラ(ID: ${handCameraId})の起動に失敗 (CameraPreview):`, err));
 
-    // コンポーネントがアンマウントされる時にカメラを停止するクリーンアップ関数
+    // クリーンアップ関数
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
     };
-  }, []); // 空の依存配列なので、初回マウント時に一度だけ実行される
+  }, [handCameraId]); // handCameraId propが変更された時のみ、このeffectを再実行
 
-  // 親コンポーネントに公開するメソッドを定義
+  // 親コンポーネントに公開するメソッド（画像キャプチャ用）
   useImperativeHandle(ref, () => ({
     getPreviewImages: () => {
       const captureFrame = (videoElement) => {
-        if (!videoElement) return null;
+        if (!videoElement || !videoElement.srcObject) return null; // 映像がなければnullを返す
         const canvas = document.createElement('canvas');
         canvas.width = videoElement.videoWidth;
         canvas.height = videoElement.videoHeight;
@@ -114,7 +137,7 @@ const CameraPreviewPanel = forwardRef(({ onRecognize, isRecognizing }, ref) => {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/png');
+        return canvas.toDataURL('image/jpeg');
       };
       
       const boardImage = captureFrame(boardVideoRef.current);
