@@ -201,8 +201,8 @@ const MainScreen = () => {
       const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
       
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
-      formData.append('syanten_Type', JSON.stringify(finalSettings.syanten_type)); 
-      formData.append('flag', JSON.stringify(finalSettings.flag));
+      formData.append('syanten_Type', finalSettings.syanten_type); 
+      formData.append('flag', finalSettings.flag);
 
       const response = await fetch('/app/main/', {
           method: 'POST',
@@ -214,16 +214,28 @@ const MainScreen = () => {
 
       if (response.status === 200) {
         let resultsArray = null;
-        if (data && Array.isArray(data.result_calc)) resultsArray = data.result_calc;
-        else if (data?.response && Array.isArray(data.response.candidates)) resultsArray = data.response.candidates;
-        else if (Array.isArray(data)) resultsArray = data;
+      if (data.result_calc && Array.isArray(data.result_calc.candidates)) {
+          resultsArray = data.result_calc.candidates; 
+      } else if (data && Array.isArray(data.result_calc)) {
+          resultsArray = data.result_calc;
+      } else if (data?.response && Array.isArray(data.response.candidates)) {
+          resultsArray = data.response.candidates; 
+      } else if (Array.isArray(data)) {
+          resultsArray = data;
+      }
 
         if (resultsArray) {
+          if (resultsArray.length > 0) {
+              console.log("Inspecting first candidate from API:", resultsArray[0]);
+          }
           const turnIndex = (fixes_pai_info.turn ?? 1) - 1;
           const formattedResults = resultsArray.map(candidate => ({
-            tile: candidate.tile, required_tiles: candidate.required_tiles, syanten_down: candidate.syanten_down,
-            exp_value: candidate.exp_values[turnIndex], win_prob: candidate.win_probs[turnIndex],
-            tenpai_prob: candidate.tenpai_probs[turnIndex],
+            tile: candidate.tile, 
+            required_tiles: candidate.required_tiles, 
+            syanten_down: candidate.syanten_down,
+            exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
+            win_prob: candidate.win_probs?.[turnIndex] ?? 0,
+            tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
           }));
           setCalculationResults(formattedResults);
         } else {
