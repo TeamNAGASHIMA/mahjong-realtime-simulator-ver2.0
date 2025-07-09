@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 // --- 画像リソースのインポート ---
-import paiback from './img/b.png';
 import M1 from './img/M1.png';
 import M2 from './img/M2.png';
 import M3 from './img/M3.png';
@@ -42,7 +41,6 @@ import Z7 from './img/Z7.png';
 
 // --- データマッピング ---
 const TILE_IMAGES = {
-  b: paiback, 
   M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, 
   P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9,  
   S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9,  
@@ -54,7 +52,7 @@ const TILE_NUM_TO_NAME = {
   9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
   18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
   27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 37: 'b' 
+  34: 'RM5', 35: 'RP5', 36: 'RS5', 
 };
 
 // 新しい仕様に基づいた牌の数値と画像キーのマッピング
@@ -63,7 +61,7 @@ const TILE_NUM_TO_IMAGE_KEY = {
   9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
   18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
   27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 37: 'b' 
+  34: 'RM5', 35: 'RP5', 36: 'RS5', 
 };
 
 const WIND_NUM_TO_KANJI = { 
@@ -332,15 +330,17 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, selection, onTile
 
 // propsで onTileChange を受け取る
 const TileDisplayArea = ({ onTileChange }) => {
-  // 赤ドラ牌の数値IDを定数として定義 (RM5: 5, RP5: 15, RS5: 25)
-  const AKA_DORA_TILES = [5, 15, 25];
+  // 赤ドラ牌の数値IDと、通常の5の牌とのマッピング
+  const AKA_DORA_NUMS = [34, 35, 36]; // RM5, RP5, RS5
+  const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 }; // M5->RM5, P5->RP5, S5->RS5
 
   const [gameState, setGameState] = useState({
     turn: 1,
+    round_wind: 27, // ★変更点: 場風を追加 (27は東)
     hand_tiles: [0, 1, 2, 13, 14, 16, 18, 27, 28, 29, 31, 31, 32, 4],
     player_winds: { self: 27, shimocha: 28, toimen: 29, kamicha: 30 },
     player_discards: { self: [3, 4, 5, 6, 7, 8, 9, 10], shimocha: [10, 11, 12, 13, 14, 15, 16], toimen: [18, 19, 20, 21, 22, 23, 24], kamicha: [32, 33, 30, 29, 28, 34], },
-    dora_indicators: [37, 4, 37, 37, 37],
+    dora_indicators: [4],
   });
 
   const [selection, setSelection] = useState({ type: null, index: null, playerKey: null });
@@ -366,30 +366,53 @@ const TileDisplayArea = ({ onTileChange }) => {
     const originalTileNum = getSelectedTileNum();
     if (originalTileNum === null) return;
 
-    //赤ドラ牌の重複チェック
-    if (AKA_DORA_TILES.includes(newTileNum)) {
-      if (originalTileNum === newTileNum) {
+    // 同じ牌を置き換える操作は無意味なので、選択を解除して終了
+    if (originalTileNum === newTileNum) {
         setSelection({ type: null, index: null, playerKey: null });
         return;
-      }
-      
-      const allTilesOnBoard = [
+    }
+
+    // --- ここから枚数チェックロジック ---
+    const allTilesOnBoard = [
         ...gameState.hand_tiles,
         ...Object.values(gameState.player_discards).flat(),
         ...gameState.dora_indicators,
-      ];
+    ].filter(t => t !== null && t !== undefined);
 
-      if (allTilesOnBoard.includes(newTileNum)) {
-        return;
-      }
+    const tempBoard = [...allTilesOnBoard];
+    const indexToRemove = tempBoard.indexOf(originalTileNum);
+    if (indexToRemove > -1) {
+        tempBoard.splice(indexToRemove, 1);
     }
 
+    if (AKA_DORA_NUMS.includes(newTileNum)) {
+        if (tempBoard.includes(newTileNum)) {
+            return;
+        }
+    } 
+    else {
+        let tileFamily = [newTileNum];
+        const correspondingRed = NORMAL_TO_RED_MAP[newTileNum];
+        if (correspondingRed) {
+            tileFamily.push(correspondingRed);
+        }
+        
+        const countOnBoard = tempBoard.filter(tile => tileFamily.includes(tile)).length;
+
+        if (countOnBoard >= 4) {
+            return;
+        }
+    }
+
+    // --- 枚数チェックロジックここまで ---
     const newGameState = JSON.parse(JSON.stringify(gameState));
 
     if (selection.type === 'hand' || selection.type === 'tsumo') {
       newGameState.hand_tiles[selection.index] = newTileNum;
-      const hand = newGameState.hand_tiles.slice(0, 13).sort((a, b) => a - b);
-      newGameState.hand_tiles = [...hand, newGameState.hand_tiles[13]];
+      const tsumo = newGameState.hand_tiles.length > 13 ? newGameState.hand_tiles[13] : undefined;
+      let hand = newGameState.hand_tiles.slice(0, 13).sort((a, b) => a - b);
+      if (tsumo !== undefined) hand.push(tsumo);
+      newGameState.hand_tiles = hand;
     } else if (selection.type === 'discard') {
       newGameState.player_discards[selection.playerKey][selection.index] = newTileNum;
     } else if (selection.type === 'dora') {
@@ -405,7 +428,6 @@ const TileDisplayArea = ({ onTileChange }) => {
 
     const logPayload = {
       timestamp: new Date().toISOString(),
-      // 変更の差分情報
       changeInfo: {
         location: { ...selection },
         from: {
@@ -417,11 +439,9 @@ const TileDisplayArea = ({ onTileChange }) => {
           name: TILE_NUM_TO_NAME[newTileNum] || '不明'
         }
       },
-      // 変更後の盤面全体の情報
       boardState: newGameState
     };
 
-    // onTileChange プロップスが関数として渡されていれば実行する
     if (typeof onTileChange === 'function') {
       onTileChange(logPayload);
     }
@@ -441,6 +461,8 @@ const TileDisplayArea = ({ onTileChange }) => {
   const handTiles = tsumoTileNum !== undefined ? gameState.hand_tiles.slice(0, 13) : gameState.hand_tiles;
   const playerWindNames = { self: WIND_NUM_TO_KANJI[gameState.player_winds.self] || '東', shimocha: WIND_NUM_TO_KANJI[gameState.player_winds.shimocha] || '南', toimen: WIND_NUM_TO_KANJI[gameState.player_winds.toimen] || '西', kamicha: WIND_NUM_TO_KANJI[gameState.player_winds.kamicha] || '北', };
   
+  const roundWindKanji = WIND_NUM_TO_KANJI[gameState.round_wind] || '東';
+
   const getSelectedTileNum = () => {
     if (!selection || selection.type === null) return null;
     switch(selection.type) { 
@@ -462,7 +484,8 @@ const TileDisplayArea = ({ onTileChange }) => {
       <div className="tile-display-container">
         {isSelectionMode && <div className="tile-pool">{ALL_TILES_IN_POOL.map(tileNum => <Tile key={`pool-${tileNum}`} tileNum={tileNum} size="pool" onClick={() => handlePoolTileClick(tileNum)} />)}</div>}
         <div>
-          <StatusHeader title={`状況 (巡目: ${gameState?.turn || '未'})`} />
+           {/* ★変更点: title propを修正し、場風を正しく表示 */}
+          <StatusHeader title={`状況 (巡目: ${gameState?.turn || '未'} 場風: ${roundWindKanji})`} />
           <DoraIndicatorArea
             indicators={gameState.dora_indicators}
             onIndicatorClick={handleDoraClick}
