@@ -8,7 +8,7 @@ import SidePanel from './SidePanel';
 // 盤面の初期状態
 const INITIAL_GAME_STATE = {
   turn: 1,
-  hand_tiles: [0, 1, 2, 13, 14, 16, 18, 27, 28, 29, 31, 31, 32, ],
+  hand_tiles: [0, 1, 2, 13, 14, 16, 18, 27, 28, 29, 31, 31, 32, 4],
   player_winds: { self: 27, shimocha: 28, toimen: 29, kamicha: 30 },
   player_discards: { self: [3, 4, 5, 6, 7, 8, 9, 10], shimocha: [10, 11, 12, 13, 14, 15, 16], toimen: [18, 19, 20, 21, 22, 23, 24], kamicha: [32, 33, 30, 29, 28, 34] },
   dora_indicators: [4],
