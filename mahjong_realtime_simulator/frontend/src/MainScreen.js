@@ -267,6 +267,8 @@ const MainScreen = () => {
         }
       } else {
           alert("Calculation failed: " + (data.error || "Unknown error"));
+          console.log("message: " + data.message)
+          console.log("status: " + response.status)
       }
     } catch (err) {
       console.error('Sending failed:', err);
