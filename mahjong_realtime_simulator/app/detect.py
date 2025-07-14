@@ -479,7 +479,7 @@ def analyze_mahjong_board(
         model = _load_yolo_model()
     except (FileNotFoundError, RuntimeError) as e:
         # モデルロード失敗時にはエラーメッセージを返して終了
-        return {'message': f"Fatal: Model loading failed: {e}", 'status': 500}
+        return {'message': f"Fatal: Model loading failed: {e}", 'status': 501}
 
     try:
         is_board_image_empty = (board_image_np is None or board_image_np.size == 0)
@@ -487,7 +487,7 @@ def analyze_mahjong_board(
         # 手牌画像の有効性チェック
         if not isinstance(hand_image_np, np.ndarray) or hand_image_np.size == 0:
             # 無効な手牌画像の場合、エラーを返す
-            return {'message': "Error: Invalid hand image provided.", 'status': 400}
+            return {'message': "Error: Invalid hand image provided.", 'status': 401}
 
         # 1. 手牌の検出は常に行う
         hand_tiles = hand_detection(hand_image_np)
@@ -559,7 +559,7 @@ def analyze_mahjong_board(
     except Exception as e:
         # もし、このexceptブロックに来るのは、モデルロード失敗以外の予期せぬエラーの場合
         # モデルロード失敗は、上のtry-exceptで先に処理されるので、ここではそれ以外の例外を扱う
-        return {'message': f"An unexpected internal error occurred: {type(e).__name__}: {e}", 'status': 500}
+        return {'message': f"An unexpected internal error occurred: {type(e).__name__}: {e}", 'status': 502}
 
 
 # メイン関数（テスト用）
