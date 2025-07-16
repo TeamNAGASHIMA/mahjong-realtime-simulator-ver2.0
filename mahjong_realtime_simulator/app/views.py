@@ -65,6 +65,16 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
+                    if len(detection_result["hand_tiles"]) <= 12 or len(detection_result["hand_tiles"]) >= 15:
+                        message = "Calculation cannot be performed because the number of detected tiles in your hand is 12 or less."
+                        status =402
+
+                        return JsonResponse({
+                            'message': message,
+                            "detection_result": detection_result
+                            }, status=status
+                        )
+
                     # 物体検知の結果から計算を実行する。
                     result_calc = main_score_calc(
                             doraList,
@@ -87,6 +97,16 @@ def main(request):
                         "melded_blocks": fixes_data["melded_blocks"],
                         "discard_tiles": fixes_river_tiles
                     }
+
+                    if len(fixes_data["hand_tiles"]) <= 12 or len(fixes_data["hand_tiles"]) >= 15:
+                        message = "The calculation cannot be performed because the number of manually corrected tiles in your hand is 12 or less."
+                        status =402
+
+                        return JsonResponse({
+                            'message': message,
+                            "detection_result": detection_result
+                            }, status=status
+                        )
 
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
