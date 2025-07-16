@@ -66,7 +66,7 @@ def main(request):
                     turn = detection_result_simple["turn"]
 
                     if len(detection_result["hand_tiles"]) <= 12 or len(detection_result["hand_tiles"]) >= 15:
-                        message = "Calculation cannot be performed because the number of detected tiles in your hand is {} or less.".format(len(detection_result["hand_tiles"]))
+                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
                         status =420
 
                         return JsonResponse({
@@ -99,7 +99,7 @@ def main(request):
                     }
 
                     if len(fixes_data["hand_tiles"]) <= 12 or len(fixes_data["hand_tiles"]) >= 15:
-                        message = "Calculation cannot be performed because the number of detected tiles in your hand is {} or less.".format(len(fixes_data["hand_tiles"]))
+                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                         status =420
 
                         return JsonResponse({
