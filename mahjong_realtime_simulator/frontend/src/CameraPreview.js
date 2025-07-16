@@ -1,6 +1,6 @@
-import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react'; 
+import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 
-// スタイルオブジェクトを定義
+// スタイルオブジェクト
 const styles = {
   cameraPreviewScreen: {
     width: '100%',
@@ -21,7 +21,7 @@ const styles = {
     fontSize: '12px',
     color: '#333',
   },
-  toggleButton: { 
+  toggleButton: {
     fontFamily: "'Inter', sans-serif",
     fontSize: '12px',
     padding: '4px 12px',
@@ -61,20 +61,20 @@ const styles = {
   }
 };
 
-const CameraPreviewPanel = forwardRef(({ 
-  onRecognize, 
+const CameraPreviewPanel = forwardRef(({
+  onRecognize,
   isRecognizing,
   boardCameraId,
   handCameraId
 }, ref) => {
   const [isSupportMode, setIsSupportMode] = useState(false);
-  
+
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
 
   // 盤面カメラのストリームを管理するuseEffect
   useEffect(() => {
-    // 盤面カメラのIDが指定されていない場合は何もしない
+    // カメラIDが指定されていない場合は何もしない
     if (!boardCameraId) return;
 
     const constraints = { video: { deviceId: { exact: boardCameraId } } };
@@ -89,8 +89,8 @@ const CameraPreviewPanel = forwardRef(({
         }
       })
       .catch(err => console.error(`盤面カメラ(ID: ${boardCameraId})の起動に失敗 (CameraPreview):`, err));
-    
-    // クリーンアップ関数: このeffectが再実行されるか、コンポーネントがアンマウントされる時にストリームを停止
+
+    // クリーンアップ関数: コンポーネントがアンマウントされる時にストリームを停止
     return () => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
@@ -105,7 +105,7 @@ const CameraPreviewPanel = forwardRef(({
 
     const constraints = { video: { deviceId: { exact: handCameraId } } };
     let stream;
-    
+
     // 指定されたIDでカメラを取得
     navigator.mediaDevices.getUserMedia(constraints)
       .then(s => {
@@ -139,16 +139,17 @@ const CameraPreviewPanel = forwardRef(({
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         return canvas.toDataURL('image/jpeg');
       };
-      
+
       const boardImage = captureFrame(boardVideoRef.current);
       const handImage = captureFrame(handVideoRef.current);
-      
+
       return { boardImage, handImage };
     }
   }));
 
   const handleToggle = () => setIsSupportMode(prev => !prev);
 
+  // レンダリング部分
   return (
     <div style={styles.cameraPreviewScreen}>
       <div style={styles.header}>
@@ -157,32 +158,40 @@ const CameraPreviewPanel = forwardRef(({
           {isSupportMode ? 'カメラプレビュー' : 'サポート'}
         </button>
       </div>
-      {isSupportMode ? (
-        <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p>サポート情報はこちらに表示されます。</p>
+
+      {/* サポート画面エリア */}
+      {/* isSupportModeがtrueの時だけ表示 (display: 'flex') */}
+      <div style={{
+          display: isSupportMode ? 'flex' : 'none',
+          flexGrow: 1,
+          alignItems: 'center',
+          justifyContent: 'center'
+      }}>
+        <p>サポート情報はこちらに表示されます。</p>
+      </div>
+
+      {/* カメラプレビューエリア */}
+      {/* isSupportModeがfalseの時だけ表示 (display: 'block') */}
+      <div style={{ display: isSupportMode ? 'none' : 'block' }}>
+        <div style={styles.previewSection}>
+          <div style={styles.previewHeader}>盤面</div>
+          <video ref={boardVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
+          {onRecognize && (
+              <button onClick={() => onRecognize('board')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
+                  {isRecognizing ? '認識中...' : '盤面全体を認識'}
+              </button>
+          )}
         </div>
-      ) : (
-        <>
-          <div style={styles.previewSection}>
-            <div style={styles.previewHeader}>盤面</div>
-            <video ref={boardVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
-            {onRecognize && (
-                <button onClick={() => onRecognize('board')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
-                    {isRecognizing ? '認識中...' : '盤面全体を認識'}
-                </button>
-            )}
-          </div>
-          <div style={styles.previewSection}>
-            <div style={styles.previewHeader}>手配</div>
-            <video ref={handVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
-            {onRecognize && (
-                <button onClick={() => onRecognize('hand')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
-                    {isRecognizing ? '認識中...' : '自分の手牌を認識'}
-                </button>
-            )}
-          </div>
-        </>
-      )}
+        <div style={styles.previewSection}>
+          <div style={styles.previewHeader}>手牌</div>
+          <video ref={handVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
+          {onRecognize && (
+              <button onClick={() => onRecognize('hand')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
+                  {isRecognizing ? '認識中...' : '自分の手牌を認識'}
+              </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 });
