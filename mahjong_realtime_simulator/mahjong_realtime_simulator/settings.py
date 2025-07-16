@@ -157,3 +157,9 @@ MEDIA_URL = '/media/'
 
 # アップロードされたファイルを保存するサーバー上のディレクトリ
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# アップロードされたメディアファイルのURLパス
+PT_URL = '/pt/'
+
+# アップロードされたファイルを保存するサーバー上のディレクトリ
+PT_ROOT = os.path.join(BASE_DIR, 'pt')
