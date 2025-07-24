@@ -91,26 +91,64 @@ export const Camera = ({ onClose, isCameraActive, onConnectOrReconnect, devices,
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
 
+  // ▼▼▼ 盤面カメラ用のuseEffect (変更なし) ▼▼▼
   useEffect(() => {
-    if (!isCameraActive || !selectedBoardCamera) { if (boardVideoRef.current) boardVideoRef.current.srcObject = null; return; }
+    // アクティブでない、またはカメラが選択されていない場合はストリームをクリア
+    if (!isCameraActive || !selectedBoardCamera) {
+      if (boardVideoRef.current) boardVideoRef.current.srcObject = null;
+      return;
+    }
+    
     const constraints = { video: { deviceId: { exact: selectedBoardCamera } } };
     let stream;
+    
     navigator.mediaDevices.getUserMedia(constraints)
-      .then(s => { stream = s; if (boardVideoRef.current) boardVideoRef.current.srcObject = stream; })
+      .then(s => {
+        stream = s;
+        if (boardVideoRef.current) {
+          boardVideoRef.current.srcObject = stream;
+        }
+      })
       .catch(err => console.error('盤面カメラのプレビュー起動に失敗:', err));
-    return () => { if (stream) stream.getTracks().forEach(track => track.stop()); };
+      
+    // クリーンアップ関数
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [selectedBoardCamera, isCameraActive]);
 
+  // ▼▼▼ 手牌カメラ用のuseEffect (ここを修正) ▼▼▼
   useEffect(() => {
-    if (!isCameraActive || !selectedHandCamera) { if (handVideoRef.current) handVideoRef.current.srcObject = null; return; }
-    if (selectedBoardCamera === selectedHandCamera) { if (boardVideoRef.current && boardVideoRef.current.srcObject) handVideoRef.current.srcObject = boardVideoRef.current.srcObject; return; }
+    // アクティブでない、またはカメラが選択されていない場合はストリームをクリア
+    if (!isCameraActive || !selectedHandCamera) {
+      if (handVideoRef.current) handVideoRef.current.srcObject = null;
+      return;
+    }
+    
+    // 盤面カメラと同じかどうかをチェックするロジックを削除し、常に自身のIDでストリームを取得する
     const constraints = { video: { deviceId: { exact: selectedHandCamera } } };
     let stream;
+    
     navigator.mediaDevices.getUserMedia(constraints)
-      .then(s => { stream = s; if (handVideoRef.current) handVideoRef.current.srcObject = stream; })
+      .then(s => {
+        stream = s;
+        if (handVideoRef.current) {
+          handVideoRef.current.srcObject = stream;
+        }
+      })
       .catch(err => console.error('手牌カメラのプレビュー起動に失敗:', err));
-    return () => { if (stream) stream.getTracks().forEach(track => track.stop()); };
-  }, [selectedHandCamera, selectedBoardCamera, isCameraActive]);
+      
+    // 独立したクリーンアップ関数
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  // 依存配列から selectedBoardCamera を削除し、完全に独立させる
+  }, [selectedHandCamera, isCameraActive]);
+  // ▲▲▲ 修正ここまで ▲▲▲
 
   const localStyles = {
     connectButton: { ...styles.button, width: '100%', marginBottom: '15px', marginLeft: 0 },
