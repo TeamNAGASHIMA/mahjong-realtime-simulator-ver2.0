@@ -4,9 +4,9 @@ from django.http import JsonResponse
 import cv2
 import numpy as np
 import json
-from .calc import main_score_calc, score_calc
 from .real_time_simulator import rtsProcess
-from .history_tiles import fixesRtsProcess
+from .fixes_process import fixesProcess
+from .history_tiles import htProcess
 from .detect import analyze_mahjong_board
 from django.conf import settings
 import os
@@ -63,37 +63,37 @@ def main(request):
                         if msg == "success":
                             result_calc = res[0]
                             detection_result = res[1]
+                            if result_calc["status"] == 200:
+                                # 処理結果をフロントエンドへレスポンスする
+                                return JsonResponse({
+                                    'message': result_calc["message"],
+                                    'result_calc': result_calc["result"],
+                                    'detection_result': detection_result
+                                    }, status=result_calc["status"]
+                                )
+                            else:
+                                return JsonResponse({
+                                    'message': result_calc["message"],
+                                    "detection_result": detection_result
+                                    }, status=result_calc["status"]
+                                )
                         else:
                             return res
                     else:
-                        print("牌譜作成モードの処理")
+                        # メッセージ、計算結果、物体検知結果がディクショナリでまとめられ、ステータスコードは単体でリスト形式で返される
+                        result_list, message = htProcess(detections, syanten_Type, flag)
+                        return JsonResponse({
+                            'message': message,
+                            "result_list": result_list
+                            }, status=200
+                        )
                 else:
-                    # reqest_typeが0だった場合、リアルタイムシミュレーションモードとして処理
-                    # reqest_typeが1だった場合、牌譜作成モードとして処理
-                    if Req_BODY["reqest_type"] == 0:
-                        msg, res = fixesRtsProcess(fixes_list)
-                        if msg == "success":
-                            result_calc = res[0]
-                            detection_result = res[1]
-                        else:
-                            return res
+                    msg, res = fixesProcess(fixes_list)
+                    if msg == "success":
+                        result_calc = res[0]
+                        detection_result = res[1]
                     else:
-                        print("牌譜作成モードの処理")
-
-                if result_calc["status"] == 200:
-                    # 処理結果をフロントエンドへレスポンスする
-                    return JsonResponse({
-                        'message': result_calc["message"],
-                        'result_calc': result_calc["result"],
-                        'detection_result': detection_result
-                        }, status=result_calc["status"]
-                    )
-                else:
-                    return JsonResponse({
-                        'message': result_calc["message"],
-                        "detection_result": detection_result
-                        }, status=result_calc["status"]
-                    )
+                        return res
 
         except Exception as e:
             message = "Exception error"
