@@ -5,9 +5,12 @@ import cv2
 import numpy as np
 import json
 from .calc import main_score_calc, score_calc
+from .real_time_simulator import rtsProcess
+from .history_tiles import fixesRtsProcess
 from .detect import analyze_mahjong_board
 from django.conf import settings
 import os
+import concurrent.futures
 
 def mahjong_render(request):
     return render(request, 'app/main.html')
@@ -30,86 +33,52 @@ def main(request):
                 flag = int(Req_BODY["flag"])
 
                 # 手動修正内容がなければ物体検知を行う
-                if len(fixes_list) == 0:
-                    np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
+                if len(fixes_list["fixes_pai_info"]["hand_tiles"]) == 0:
+                    np_hand_tiles_image_list = imageChangeNp(Img_FILES['hand_tiles_image'])
                     # 盤面画像が取得できていればnp配列に挿入し、無ければ空のnp配列を作成する
                     if 'board_tiles_image' in Img_FILES:
-                        np_board_tiles_image = imageChangeNp(Img_FILES['board_tiles_image'])
+                        np_board_tiles_image_list = imageChangeNp(Img_FILES['board_tiles_image'])
                     else:
                         # 空のnp配列の作成
-                        np_board_tiles_image = np.array([])
+                        np_board_tiles_image_list = np.array([])
 
                     # 物体検知関数の呼び出し
-                    detectoin = analyze_mahjong_board(np_board_tiles_image, np_hand_tiles_image)
+                    tasks_args = []
+                    for i in range(len(np_hand_tiles_image_list)):
+                        # 実行したいタスクの引数をタプルのリストとして用意する
+                        tasks_args.append((np_board_tiles_image_list[i], np_hand_tiles_image_list[i]))
 
-                    # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
-                    if detectoin["status"] != 200:
-                        message = detectoin["message"]
-                        status = detectoin["status"]
+                    # スレッドプールを作成してタスクを実行
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+                        # mapの第1引数に関数、第2引数以降に関数に渡す引数のイテラブルを渡す
+                        np_board_tiles_image = [arg[0] for arg in tasks_args]
+                        np_hand_tiles_image = [arg[1] for arg in tasks_args]
 
-                        return JsonResponse({
-                            'message': message,
-                            "detection_result": []
-                            }, status=status
-                        )
+                        detections = executor.map(analyze_mahjong_board, np_board_tiles_image, np_hand_tiles_image)
 
-                    # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
-                    # detection_result_simple => 計算プログラム用のデータ
-                    detection_result = detectoin["result"]
-                    detection_result_simple = detectoin["result_simple"]
-
-                    # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-                    doraList = detection_result_simple["dora_indicators"]
-                    hand_tiles = detection_result_simple["hand_tiles"]
-                    raw_melded_blocks = detection_result_simple["melded_blocks"]
-                    river_tiles = detection_result_simple["discard_tiles"]
-                    turn = detection_result_simple["turn"]
-
-                    if len(detection_result["hand_tiles"]) <= 12 or len(detection_result["hand_tiles"]) >= 15:
-                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
-                        status =420
-
-                        return JsonResponse({
-                            'message': message,
-                            "detection_result": detection_result
-                            }, status=status
-                        )
-
-                    # 物体検知の結果から計算を実行する。
-                    result_calc = main_score_calc(
-                            doraList,
-                            hand_tiles,
-                            raw_melded_blocks,
-                            river_tiles,
-                            turn,
-                            syanten_Type,
-                            flag
-                        )
+                    # reqest_typeが0だった場合、リアルタイムシミュレーションモードとして処理
+                    # reqest_typeが1だった場合、牌譜作成モードとして処理
+                    if Req_BODY["reqest_type"] == 0:
+                        msg, res = rtsProcess(detections[0], syanten_Type, flag)
+                        if msg == "success":
+                            result_calc = res[0]
+                            detection_result = res[1]
+                        else:
+                            return res
+                    else:
+                        print("牌譜作成モードの処理")
                 else:
-                    # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-                    fixes_data = fixes_list["fixes_pai_info"]
-                    fixes_river_tiles = fixes_list["fixes_river_tiles"]
-
-                    detection_result = {
-                        "turn": fixes_data["turn"],
-                        "dora_indicators": fixes_data["dora_indicators"],
-                        "hand_tiles": fixes_data["hand_tiles"],
-                        "melded_blocks": fixes_data["melded_blocks"],
-                        "discard_tiles": fixes_river_tiles
-                    }
-
-                    if len(fixes_data["hand_tiles"]) <= 12 or len(fixes_data["hand_tiles"]) >= 15:
-                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
-                        status =420
-
-                        return JsonResponse({
-                            'message': message,
-                            "detection_result": detection_result
-                            }, status=status
-                        )
-
-                    # 物体検知は行わずに直接計算を行う
-                    result_calc = score_calc(fixes_data, fixes_river_tiles)
+                    # reqest_typeが0だった場合、リアルタイムシミュレーションモードとして処理
+                    # reqest_typeが1だった場合、牌譜作成モードとして処理
+                    if Req_BODY["reqest_type"] == 0:
+                        msg, res = fixesRtsProcess(fixes_list)
+                        if msg == "success":
+                            result_calc = res[0]
+                            detection_result = res[1]
+                        else:
+                            return res
+                    else:
+                        print("牌譜作成モードの処理")
 
                 if result_calc["status"] == 200:
                     # 処理結果をフロントエンドへレスポンスする
@@ -132,22 +101,25 @@ def main(request):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
-def imageChangeNp(request_image):
-    # 保存先のフルパスを作成（例: media/uploads/filename.png）
-    path = os.path.join(settings.MEDIA_ROOT, request_image.name)
+def imageChangeNp(request_image_list):
 
-    # ディレクトリがなければ作成
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    np_request_image_list = []
 
-    # ファイルを書き込み
-    with open(path, "wb+") as destination:
-        for chunk in request_image.chunks():
-            destination.write(chunk)
+    for request_image in request_image_list:
+        # 保存先のフルパスを作成（例: media/uploads/filename.png）
+        path = os.path.join(settings.MEDIA_ROOT, request_image.name)
 
-    # OpenCVで読み込み（BGR形式のnp.ndarray）
-    np_request_image = cv2.imread(path)
+        # ディレクトリがなければ作成
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
-    # request_image_bytes = np.frombuffer(request_image.read(), np.uint8)
-    # np_request_image_bgr = cv2.imdecode(request_image_bytes, cv2.IMREAD_COLOR)
+        # ファイルを書き込み
+        with open(path, "wb+") as destination:
+            for chunk in request_image.chunks():
+                destination.write(chunk)
 
-    return np_request_image
+        # OpenCVで読み込み（BGR形式のnp.ndarray）
+        np_request_image = cv2.imread(path)
+
+        np_request_image_list.append(np_request_image)
+
+    return np_request_image_list
