@@ -1,6 +1,7 @@
 from .calc import main_score_calc, score_calc
 from django.http import JsonResponse
 
+# 通常(修正データがない時)の関数
 def rtsProcess(
         detection, # 物体検知結果
         syanten_Type, # 向聴タイプ
@@ -51,6 +52,7 @@ def rtsProcess(
         )
     return "success", [result_calc, detection_result]
 
+#修正データがある時の関数
 def fixesRtsProcess(
         fixes_list # 手動修正データの取得
 ):
