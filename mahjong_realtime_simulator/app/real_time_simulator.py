@@ -1,4 +1,4 @@
-from .calc import main_score_calc
+from .calc import main_score_calc, score_calc
 from django.http import JsonResponse
 
 # 通常(修正データがない時)の関数
@@ -51,3 +51,47 @@ def rtsProcess(
             flag
         )
     return "success", [result_calc, detection_result]
+
+#修正データがある時の関数
+def rtsFixesProcess(
+        fixes_list # 手動修正データの取得
+):
+    try:
+        fixes_list = fixes_list[0]
+        # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
+        fixes_data = fixes_list["fixes_pai_info"]
+        fixes_river_tiles = fixes_list["fixes_river_tiles"]
+
+        detection_result = {
+            "turn": fixes_data["turn"],
+            "dora_indicators": fixes_data["dora_indicators"],
+            "hand_tiles": fixes_data["hand_tiles"],
+            "melded_blocks": fixes_data["melded_blocks"],
+            "discard_tiles": fixes_river_tiles
+        }
+
+        counts = len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"])
+        if counts <= 12 or counts >= 15:
+            message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(counts)
+            status =420
+
+            return "error", JsonResponse({
+                'message': message,
+                "detection_result": detection_result
+                }, status=status
+            )
+
+        # 物体検知は行わずに直接計算を行う
+        result_calc = score_calc(fixes_data, fixes_river_tiles)
+
+        return "success", [result_calc, detection_result]
+
+    except Exception as e:
+        except_message = "An unexpected error occurred during the calculation process."
+        rtn_message = "Exception error: {} {} {}".format(except_message, type(e), e)
+        
+        return "error", JsonResponse({
+                'message': rtn_message,
+                "detection_result": detection_result
+                }, status=status
+            )
