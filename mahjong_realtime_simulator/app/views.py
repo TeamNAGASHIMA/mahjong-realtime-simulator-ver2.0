@@ -4,9 +4,8 @@ from django.http import JsonResponse
 import cv2
 import numpy as np
 import json
-from .real_time_simulator import rtsProcess
-from .fixes_process import fixesProcess
-from .history_tiles import htProcess
+from .real_time_simulator import rtsProcess, rtsFixesProcess
+from .history_tiles import htProcess, htFixesProcess
 from .detect import analyze_mahjong_board
 from django.conf import settings
 import os
@@ -88,12 +87,34 @@ def main(request):
                             }, status=200
                         )
                 else:
-                    msg, res = fixesProcess(fixes_list)
-                    if msg == "success":
-                        result_calc = res[0]
-                        detection_result = res[1]
+                    if Req_BODY["reqest_type"] == 0:
+                        rtn_message, res_result = rtsFixesProcess(fixes_list)
+                        if rtn_message == "success":
+                            result_calc = res_result[0]
+                            detection_result = res_result[1]
+                            return JsonResponse({
+                                    'message': result_calc["message"],
+                                    'result_calc': result_calc["result"],
+                                    'detection_result': detection_result
+                                    }, status=result_calc["status"]
+                                )
+                        else:
+                            return res_result
                     else:
-                        return res
+                        res_results, rtn_message = htFixesProcess(fixes_list)
+
+                        if rtn_message == "success":
+                            return JsonResponse({
+                                'message': "Send the manual correction calculation results.",
+                                "result_list": res_results
+                                }, status=200
+                            )
+                        else:
+                            return JsonResponse({
+                                'message': rtn_message,
+                                "result_list": res_results
+                                }, status=200
+                            )
 
         except Exception as e:
             message = "Exception error"
