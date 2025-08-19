@@ -9,7 +9,7 @@ from ultralytics import YOLO    # YOLOv8のライブラリ
 from django.conf import settings
 
 # ローカルモデルのパスを指定
-LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "best.pt")
+LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "best.engine")
 
 # 検出閾値（YOLOv8の推論時に指定）
 DETECTION_CONFIDENCE_THRESHOLD = 0.6
@@ -98,7 +98,7 @@ def tile_detection(image_np: np.ndarray) -> list:
 
     # YOLOv8モデルで推論を実行する
     # verbose=Falseで推論時のコンソール出力を抑制
-    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False)
+    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False, device=0)
 
     detected_tiles = []
 
