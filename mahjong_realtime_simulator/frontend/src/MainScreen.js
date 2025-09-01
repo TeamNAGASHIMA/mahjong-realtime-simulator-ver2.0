@@ -213,39 +213,63 @@ const MainScreen = () => {
       const data = await response.json();
 
       if (response.status === 200) {
-        let resultsArray = null;
-      if (data.result_calc && Array.isArray(data.result_calc.candidates)) {
-          resultsArray = data.result_calc.candidates; 
-      } else if (data && Array.isArray(data.result_calc)) {
-          resultsArray = data.result_calc;
-      } else if (data?.response && Array.isArray(data.response.candidates)) {
-          resultsArray = data.response.candidates; 
-      } else if (Array.isArray(data)) {
-          resultsArray = data;
-      }
+        console.log("message: " + data.message)
+        console.log("status: " + response.status)
+        const resultData = data.result || data.result_calc;
 
-        if (resultsArray) {
-          if (resultsArray.length > 0) {
-              console.log("Inspecting first candidate from API:", resultsArray[0]);
-          }
+        // 最終的にstateにセットする整形済みデータの配列
+        let formattedResults = []; 
+
+        if (resultData) {
           const turnIndex = (fixes_pai_info.turn ?? 1) - 1;
-          const formattedResults = resultsArray.map(candidate => ({
-            tile: candidate.tile, 
-            required_tiles: candidate.required_tiles, 
-            syanten_down: candidate.syanten_down,
-            exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
-            win_prob: candidate.win_probs?.[turnIndex] ?? 0,
-            tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
-          }));
-          setCalculationResults(formattedResults);
+
+          // --- 14枚手牌の場合 (打牌候補のリスト) ---
+          // 'candidates' 配列が存在し、result_typeが1の場合
+          if (resultData.result_type === 1 && Array.isArray(resultData.candidates)) {
+            console.log("Processing 14-tile hand response (with candidates).");
+            formattedResults = resultData.candidates.map(candidate => ({
+              tile: candidate.tile, 
+              required_tiles: candidate.required_tiles, 
+              syanten_down: candidate.syanten_down,
+              exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
+              win_prob: candidate.win_probs?.[turnIndex] ?? 0,
+              tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
+            }));
+          } 
+          // --- 13枚手牌の場合 (手牌全体の評価) ---
+          // result_typeが0の場合
+          else if (resultData.result_type === 0) {
+            console.log("Processing 13-tile hand response (overall evaluation).");
+            // 13枚の場合は打牌候補がないため、手牌全体の評価を一つの要素として配列に入れる
+            const singleResult = {
+              tile: null, // 打牌候補ではないので null や -1 などを設定
+              required_tiles: resultData.required_tiles || [], // 有効牌のリスト
+              syanten_down: false, // 該当する概念がないためfalseに設定
+              exp_value: resultData.exp_values?.[turnIndex] ?? 0, 
+              win_prob: resultData.win_probs?.[turnIndex] ?? 0,
+              tenpai_prob: resultData.tenpai_probs?.[turnIndex] ?? 0,
+            };
+            formattedResults = [singleResult]; // 要素が1つの配列を作成
+          }
+
+          // formattedResultsにデータが正常に格納されたかチェック
+          if (formattedResults.length > 0) {
+            console.log("Inspecting first candidate from processed data:", formattedResults[0]);
+            setCalculationResults(formattedResults);
+          } else {
+            console.error("Could not parse API response or format is unknown.", data);
+            alert("計算結果の形式が正しくないか、不明な形式です。");
+          }
+
         } else {
-          console.error("Could not find a valid results array in the API response.", data);
+          console.error("Could not find 'result' object in the API response.", data);
           alert("計算結果の形式が正しくありません。");
         }
       } else {
           alert("Calculation failed: " + (data.error || "Unknown error"));
+          console.log("message: " + data.message)
+          console.log("status: " + response.status)
       }
-
     } catch (err) {
       console.error('Sending failed:', err);
       alert('通信に失敗しました。詳細はコンソールを確認してください。');
