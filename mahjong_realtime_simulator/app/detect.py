@@ -7,12 +7,16 @@ import math
 import os
 from ultralytics import YOLO    # YOLOv8のライブラリ
 from django.conf import settings
+import torch
 
 # ローカルモデルのパスを指定
-LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "best.pt")
+LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "best.pt") # onnxに変更
 
 # 検出閾値（YOLOv8の推論時に指定）
-DETECTION_CONFIDENCE_THRESHOLD = 0.6
+DETECTION_CONFIDENCE_THRESHOLD = 0.4
+
+global gpu_flg
+gpu_flg = 0
 
 # 牌種類変換表
 tile_convert = {
@@ -95,6 +99,17 @@ def tile_detection(image_np: np.ndarray) -> list:
     # NumPy配列の有効性チェック
     if not isinstance(image_np, np.ndarray) or image_np.size == 0:
         raise ValueError("Input image_np is not a valid NumPy array or is empty.")
+
+    # GPU使用設定
+    global gpu_flg
+
+    if gpu_flg == 0:
+        if torch.cuda.is_available():
+            device = "cuda"
+        else:
+            device = "cpu"
+
+        gpu_flg = 1
 
     # YOLOv8モデルで推論を実行する
     # verbose=Falseで推論時のコンソール出力を抑制
@@ -380,21 +395,23 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
         player_zone_actual_key = player_zone_key_map.get(crop_key)
 
         if player_zone_actual_key is None:
-            # 未知のキーが見つかった場合、何もせずスキップするのが最もクリーン
-            pass # 何もせずスキップ
-            # continue
-            # raise ValueError(f"Unknown discard detection key '{crop_key}' detected from crop_discard_detection.")
+            print(f"警告: 未知のキー '{crop_key}' をスキップしました。")
+            continue  # 次のループへ
 
-        # 切り出し画像が有効であることを確認
         if not isinstance(cropped_img_np, np.ndarray) or cropped_img_np.size == 0:
-            # 空の切り出し画像の場合、そのプレイヤーの捨て牌はないとみなし、スキップする
-            continue # スキップして次のゾーンへ
+            continue
 
         # 上家、下家の場合は画像を90度回転して検出
         current_img_for_detection = cropped_img_np
-        if player_zone_actual_key in ["discard_tiles_right", "discard_tiles_left"]:
+        if player_zone_actual_key in ["discard_tiles_left"]:
             current_img_for_detection = np.rot90(cropped_img_np)
+        
+        if player_zone_actual_key in ["discard_tiles_right"]:
+            current_img_for_detection = np.rot90(cropped_img_np, k=-1)
 
+        if player_zone_actual_key in ["discard_tiles_top"]:
+            current_img_for_detection = np.rot90(cropped_img_np, k=2)
+        
         # ローカルモデルで牌検出を実行
         detection_results = tile_detection(current_img_for_detection)
 
