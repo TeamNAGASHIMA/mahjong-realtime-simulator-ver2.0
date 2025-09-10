@@ -113,7 +113,7 @@ def tile_detection(image_np: np.ndarray) -> list:
 
     # YOLOv8モデルで推論を実行する
     # verbose=Falseで推論時のコンソール出力を抑制
-    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False)
+    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False, device=device)
 
     detected_tiles = []
 
@@ -269,7 +269,7 @@ def dora_detection(board_image_np: np.ndarray) -> list:
     return sorted(final_tiles)
 
 
-def open_detection(board_image_np: np.ndarray) -> list[list[int]]:
+def open_detection(board_image_np: np.ndarray) -> dict:
     """盤面画像から鳴き牌を検出し、その種類（ID）のリストのリストを返します。
 
     `crop_open_detection.py` を使用して鳴き牌領域を切り出し、
@@ -299,41 +299,56 @@ def open_detection(board_image_np: np.ndarray) -> list[list[int]]:
         except ImportError:
             raise ImportError("Could not import 'crop_open_detection'. Ensure it is in the same directory or accessible via PYTHONPATH.")
 
-    cropped_naki_image_list = crop_open_main(board_image_np)
+    cropped_melded_areas_by_player = crop_open_main(board_image_np)
 
-    all_melded_sets_structured = [] # 各鳴きセットごとの牌リストを格納する
+    melded_tiles_by_player_zone = {
+        "melded_tiles_bottom": [],  # 自分（画面下部）
+        "melded_tiles_right": [],   # 下家（画面右側）
+        "melded_tiles_top": [],     # 対面（画面上部）
+        "melded_tiles_left": []     # 上家（画面左側）
+    }
 
-    if not isinstance(cropped_naki_image_list, list):
-        # 鳴き牌が検出されなかった場合、空リストが返る
-        return []
+    # cropped_melded_areas_by_player は、{"bottom": [img1, img2], "right": [img3], ...} の形式
+    for player_key, list_of_melded_images_for_player in cropped_melded_areas_by_player.items():
+        
+        current_player_melded_sets = [] # このプレイヤーの検出された鳴きセットのリスト
+        for i, cropped_melded_single_np in enumerate(list_of_melded_images_for_player):
+            # 個々の切り出し画像が有効であることを確認
+            if not isinstance(cropped_melded_single_np, np.ndarray) or cropped_melded_single_np.size == 0:
+                # 無効な切り出し画像はスキップ
+                continue
 
-    # リストが空の場合は、鳴き牌がなかったということで正常終了
-    if not cropped_naki_image_list:
-        return []
+            # 共通ヘルパー関数を呼び出し、この「単一の鳴き牌の塊」から検出された牌を取得
+            # 鳴き牌の向きに合わせて画像を回転させて検出を試みる
+            current_img_for_detection = cropped_melded_single_np
+            # crop_open_detection.pyでは鳴き牌の向きを検出していなかったため、
+            # ここでは回転検出を_detect_tiles_with_rotationsに任せます。
+            # もし、crop_open_detection.pyで方向が判断できるようになれば、ここで回転処理を入れることができます。
 
-    # 各切り出し画像 (鳴き牌の塊ごと) に対して検出処理を実行
-    for i, cropped_naki_single_np in enumerate(cropped_naki_image_list):
-        # 個々の切り出し画像が有効であることを確認
-        if not isinstance(cropped_naki_single_np, np.ndarray) or cropped_naki_single_np.size == 0:
-            # 無効な切り出し画像があった場合、何もせずスキップするのが最もクリーン
-            pass # 何もせずスキップ
-            # continue
-            # raise ValueError(f"Cropped open detection image (index {i}) is not a valid NumPy array or is empty.")
+            results_for_single_melded = _detect_tiles_with_rotations(current_img_for_detection, confidence_threshold=0.6)
 
-        # 共通ヘルパー関数を呼び出し、この「単一の鳴き牌の塊」から検出された牌を取得
-        results_for_single_naki = _detect_tiles_with_rotations(cropped_naki_single_np, confidence_threshold=0.6)
+            # この鳴き塊から検出された牌のIDを変換して一時リストに格納
+            current_melded_tiles_ids = []
+            for rd in results_for_single_melded:
+                converted_tile = tile_convert[rd["class_id"]]
+                current_melded_tiles_ids.append(converted_tile)
 
-        # この鳴き塊から検出された牌のIDを変換して一時リストに格納
-        current_naki_tiles_ids = []
-        for rd in results_for_single_naki:
-            converted_tile = tile_convert[rd["class_id"]]
-            current_naki_tiles_ids.append(converted_tile)
-
-        # 検出された牌があれば、ソートして構造化リストに追加
-        if current_naki_tiles_ids:
-            all_melded_sets_structured.append(sorted(current_naki_tiles_ids))
-
-    return all_melded_sets_structured
+            # 検出された牌があれば、ソートしてリストに追加
+            if current_melded_tiles_ids:
+                current_player_melded_sets.append(sorted(current_melded_tiles_ids))
+        
+        # プレイヤーゾーンに対応するキーに格納
+        # resultの形式に合わせるため、キー名を変換
+        if player_key == 'bottom':
+            melded_tiles_by_player_zone["melded_tiles_bottom"] = current_player_melded_sets
+        elif player_key == 'right':
+            melded_tiles_by_player_zone["melded_tiles_right"] = current_player_melded_sets
+        elif player_key == 'top':
+            melded_tiles_by_player_zone["melded_tiles_top"] = current_player_melded_sets
+        elif player_key == 'left':
+            melded_tiles_by_player_zone["melded_tiles_left"] = current_player_melded_sets
+            
+    return melded_tiles_by_player_zone # 【修正点5】プレイヤーごとの辞書を返す
 
 
 def discard_detection(board_image_np: np.ndarray) -> dict:
@@ -478,7 +493,7 @@ def analyze_mahjong_board(
                 - "turn" (int): 現在の巡目数。
                 - "dora_indicators" (list[int]): ドラ表示牌のIDリスト。
                 - "hand_tiles" (list[int]): 手牌のIDリスト。
-                - "melded_blocks" (list[list[int]]): 鳴き牌のIDリストのリスト。
+                - "melded_tiles" (list[list[int]]): 鳴き牌のIDリストのリスト。
                 - "discard_tiles" (dict): 捨て牌の辞書。
                                         キー: 'discard_tiles_bottom', 'discard_tiles_right',
                                                 'discard_tiles_top', 'discard_tiles_left' (各プレイヤーの捨て牌リスト)
@@ -488,7 +503,7 @@ def analyze_mahjong_board(
                 - "turn" (int): 現在の巡目数。
                 - "dora_indicators" (list[int]): ドラ表示牌のIDリスト。
                 - "hand_tiles" (list[int]): 手牌のIDリスト。
-                - "melded_blocks" (list[list[int]]): 鳴き牌のIDリストのリスト。
+                - "melded_tiles" (list[list[int]]): 鳴き牌のIDリストのリスト。
                 - "discard_tiles" (list[int]): 全ての捨て牌IDをまとめたリスト (ソート済み)。
     """
     # YOLOモデルがロードできているか確認
@@ -510,20 +525,25 @@ def analyze_mahjong_board(
         hand_tiles = hand_detection(hand_image_np)
 
         # 盤面関連の変数を初期化
-        melded_blocks = []
+        melded_tiles_by_zone = {
+            "melded_tiles_bottom": [],  # 自分（画面下部）
+            "melded_tiles_right": [],   # 下家（画面右側）
+            "melded_tiles_top": [],     # 対面（画面上部）
+            "melded_tiles_left": []     # 上家（画面左側）
+        }
         dora_indicators = []
         discard_tiles_by_zone = {
-            "discard_tiles_bottom": [],
-            "discard_tiles_right": [],
-            "discard_tiles_top": [],
-            "discard_tiles_left": []
+            "discard_tiles_bottom": [],  # 自分（画面下部）
+            "discard_tiles_right": [],   # 下家（画面右側）
+            "discard_tiles_top": [],     # 対面（画面上部）
+            "discard_tiles_left": []     # 上家（画面左側）
         }
-        turn = 1 # 捨て牌がない（盤面検出しない）場合は1巡目とする
+        turn = 1  # 巡目数の初期値
 
         if not is_board_image_empty:
             # board_image_np が有効な場合のみ、盤面関連の検出を行う
             try:
-                melded_blocks = open_detection(board_image_np)
+                melded_tiles = open_detection(board_image_np)
             except (ValueError, ImportError) as e:
                 # クロップモジュール等でエラーがあった場合、警告を表示して続行 
                 pass # エラーを無視して続行
@@ -552,9 +572,15 @@ def analyze_mahjong_board(
             "turn": turn,
             "dora_indicators": dora_indicators,
             "hand_tiles": hand_tiles,
-            "melded_blocks": melded_blocks,
+            "melded_tiles": melded_tiles_by_zone,
             "discard_tiles": discard_tiles_by_zone,
         }
+
+        # result_simpleの構築
+        melded_tiles_mine = result["melded_tiles"].get("melded_tiles_bottom", [])
+        melded_tiles_other = []
+        for zone in ["melded_tiles_right", "melded_tiles_top", "melded_tiles_left"]:
+            melded_tiles_other.extend(result["melded_tiles"].get(zone, []))
 
         # 全ての捨て牌をまとめる
         discard_tiles = []
@@ -566,7 +592,10 @@ def analyze_mahjong_board(
             "turn": turn,
             "dora_indicators": dora_indicators,
             "hand_tiles": hand_tiles,
-            "melded_blocks": melded_blocks,
+            "melded_tiles": {
+                "melded_tiles_mine": melded_tiles_mine,
+                "melded_tiles_other": melded_tiles_other
+            },
             "discard_tiles": simple_discard_tiles,
         }
 
