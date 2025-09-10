@@ -1,3 +1,4 @@
+// SidePanel.js
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 
 import CameraPreview from './CameraPreview'; 
@@ -17,7 +18,8 @@ const SidePanel = forwardRef((props, ref) => {
   const {
     selectedBoardCamera,
     selectedHandCamera,    
-    onRecognize,
+    // onRecognize プロップは CalculationButton がトリガーになるため不要になる
+    // しかし、isRecognizing は CameraPreview のボタンを disabled にするために必要
     isRecognizing,
     settings,
     onSettingsChange,
@@ -31,7 +33,7 @@ const SidePanel = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     // このメソッド一つで、SidePanel配下の全てのデータを取得できるようにする
     getSidePanelData: () => {
-      const images = cameraRef.current?.getPreviewImages();
+      const images = cameraRef.current?.getPreviewImages(); // CameraPreviewから画像を取得
       const panelSettings = settingsRef.current?.getSettings();
       
       return {
@@ -47,8 +49,8 @@ const SidePanel = forwardRef((props, ref) => {
         ref={cameraRef}
         boardCameraId={selectedBoardCamera}
         handCameraId={selectedHandCamera}        
-        onRecognize={onRecognize}
-        isRecognizing={isRecognizing}
+        onRecognize={() => {}} // ★ダミー関数を渡すか、削除する（ボタンがトリガーではないため）
+        isRecognizing={isRecognizing} // CameraPreviewのボタンを無効にするために渡す
       />
       <SettingsPanel
         ref={settingsRef}
@@ -60,25 +62,3 @@ const SidePanel = forwardRef((props, ref) => {
 });
 
 export default SidePanel;
-
-// このファイルを直接実行してテストする場合の例
-// import ReactDOM from 'react-dom/client'; // ファイルの先頭に
-// const AppMock = () => {
-//     const [rec, setRec] = useState(false);
-//     const [appSettings, setAppSettings] = useState({
-//         shantenType: '一般手',
-//         koryoItems: { shantenOtoshi: false, tegawari: true, horaMax: true }
-//     });
-//     return (
-//         <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', backgroundColor: '#f0f0f0', height: 'calc(100vh - 40px)' }}>
-//             <SidePanel
-//                 onRecognize={(type) => { console.log('Recognize:', type); setRec(true); setTimeout(()=>setRec(false), 1000);}}
-//                 isRecognizing={rec}
-//                 settings={appSettings}
-//                 onSettingsChange={setAppSettings}
-//             />
-//         </div>
-//     );
-// }
-// const root = ReactDOM.createRoot(document.getElementById('root'));
-// root.render(<AppMock />);

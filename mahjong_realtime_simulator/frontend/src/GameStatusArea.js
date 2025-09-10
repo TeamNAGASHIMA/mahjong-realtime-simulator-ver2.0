@@ -1,3 +1,4 @@
+// GameStatusArea.js
 import React from 'react';
 import TileDisplayArea from './TileDisplayArea';
 import CalculationButton from './CalculationButton';
@@ -12,23 +13,16 @@ const GameStatusArea = ({
   onStartCalculation,
   isCalculationDisabled,
   isRecognizing,
-  onBoardStateChange,
+  onBoardStateChange, // 親から受け取るonBoardStateChange
 }) => {
-
-  const handleTileChange = async (logPayload) => {
-    // ... (コンソール出力処理は変更なし) ...
-    
-    if (onBoardStateChange) {
-      // ▼▼▼【変更点】logPayloadから更新後のboardStateを取得して親に渡す ▼▼▼
-      onBoardStateChange(logPayload.boardState);
-    }
-  };
+  // TileDisplayAreaが直接onBoardStateChangeを呼び出すため、
+  // GameStatusArea内でhandleTileChange関数を定義する必要はなくなりました。
 
   return (
     <div style={styles.gameStatusContainer}>
       <TileDisplayArea
         boardState={boardState}
-        onTileChange={handleTileChange} 
+        onBoardStateChange={onBoardStateChange} // TileDisplayAreaがboardStateを変更したときに親に通知するため、直接渡します
       />
 
       <CalculationButton
