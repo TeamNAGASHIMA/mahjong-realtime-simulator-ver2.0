@@ -28,11 +28,11 @@ import S2 from './img/S2.png';
 import S3 from './img/S3.png';
 import S4 from './img/S4.png';
 import S5 from './img/S5.png';
+import RS5 from './img/RS5.png';
 import S6 from './img/S6.png';
 import S7 from './img/S7.png';
 import S8 from './img/S8.png';
 import S9 from './img/S9.png';
-import RS5 from './img/RS5.png';
 import Z1 from './img/Z1.png';
 import Z2 from './img/Z2.png';
 import Z3 from './img/Z3.png';
@@ -583,7 +583,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
         // 加槓
         selfMelds.forEach((meld, meldIndex) => {
             if (meld.type === 'pon') {
-                const norm = normalize(meld.tiles[0]);
+                const norm = normalize(meld.tiles[0]); // meld.tiles[0] は面子を構成する牌
                 if (normalizedGroups[norm] && normalizedGroups[norm].length > 0) {
                     normalizedGroups[norm].forEach(tileInHand => {
                         candidates.push({ type: 'kakan', tiles: [tileInHand], from_meld_index: meldIndex });
@@ -617,6 +617,8 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
         let hand = newBoardState.hand_tiles;
         let tsumo = newBoardState.tsumo_tile;
 
+        console.log("Attempting to make meld:", meldToMake); // [修正1-1] 鳴き候補のログ出力
+
         const removeTilesFromHand = (tilesToRemove) => {
             for (const tile of tilesToRemove) {
                 const indexInHand = hand.findIndex(h => h === tile);
@@ -625,6 +627,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                 } else if (tsumo === tile) {
                     tsumo = null;
                 } else {
+                    console.warn(`[DEBUG] Tile to remove (${TILE_NUM_TO_NAME[tile] || 'Unknown'} / ${tile}) not found in hand or tsumo tile.`); // [修正1-2] 牌が見つからない場合の警告ログ
                     return false; // 牌が見つからない場合は失敗
                 }
             }
@@ -637,10 +640,16 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                 meldToUpdate.type = 'minkan'; // 加槓後は明槓扱い
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
                 meldToUpdate.tiles.sort((a, b) => a - b);
+                console.log("Kakan created. New meld tiles:", meldToUpdate.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-3] 加槓後の面子のログ
+            } else {
+                console.error("[ERROR] Failed to remove tiles for kakan.", meldToMake.tiles); // [修正1-4] エラーログ
             }
         } else if (meldToMake.type === 'ankan') {
             if(removeTilesFromHand(meldToMake.tiles)) {
                 newBoardState.melds.self.push({ type: 'ankan', tiles: meldToMake.tiles, from: 'self' });
+                console.log("Ankan created. New meld tiles:", meldToMake.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-5] 暗槓後の面子のログ
+            } else {
+                console.error("[ERROR] Failed to remove tiles for ankan.", meldToMake.tiles); // [修正1-6] エラーログ
             }
         } else if (meldToMake.from) { // 他家からの鳴き (ポン、チー、大明槓)
             const fromPlayer = meldToMake.from;
@@ -665,6 +674,9 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
                 newBoardState.melds.self.push({ type: meldType, tiles: meldTiles, from: fromPlayer, exposed_index });
+                console.log("Pon/Chi/Daiminkan created. New meld tiles:", meldTiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-7] ポン/チー/大明槓後の面子のログ
+            } else {
+                console.error("[ERROR] Failed to remove tiles from hand for pon/chi/daiminkan.", meldToMake.hand_tiles); // [修正1-8] エラーログ
             }
         }
         
@@ -797,23 +809,10 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
             newBoardState.dora_indicators[selection.index] = newTileNum;
             break;
         case 'meld': {
-            const meld = newBoardState.melds[selection.playerKey][selection.meldIndex];
-            const tempTiles = [...meld.tiles];
-            const oldTile = tempTiles[selection.tileIndex];
-            tempTiles[selection.tileIndex] = newTileNum;
-            
-            // 面子の有効性を確認（鳴き面子を構成する牌は変更できないようにするが、ここでは許可）
-            // ポン・チー・カンは特定の形の牌の組み合わせなので、安易な変更は面子を壊す可能性が高い。
-            // ユーザーの操作性を優先し、壊れても良いという前提で実装。
-            if (selection.playerKey === 'self') {
-                meld.tiles = tempTiles.sort((a, b) => a - b);
-                // 面子が有効でなくなった場合、壊す警告などは出さない。
-                // 厳密には面子の種類のバリデーションが必要だが、ここでは簡略化。
-            } else {
-                // 他家の面子は変更不可とするか、手牌に戻すか。今回は変更を許可。
-                meld.tiles = tempTiles.sort((a, b) => a - b);
-            }
-            break;
+            // ★★★ ここを修正しました（鳴き面子の個別の牌は変更できない） ★★★
+            alert("鳴いた面子の個別の牌は変更できません。面子全体を崩すには、面子の牌をクリックし直してください。");
+            setSelection({ type: null }); 
+            return; // これ以上処理せずに終了
         }
         default: break;
     }
@@ -832,8 +831,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                           selection.playerKey === newSelection.playerKey &&
                           selection.meldIndex === newSelection.meldIndex; // meldIndexは面子の牌にのみ適用
 
-      // 自分の鳴き面子の場合、牌が違っても同じ面子なら「同じ」とみなす
-      // (これは面子全体を再クリックで崩すロジックのための判定)
+      // 同じ自分の鳴き面子がクリックされた場合、面子全体を再クリックで崩すロジックのための判定
       const isSameMeld = selection.type === 'meld' && selection.playerKey === 'self' &&
                           newSelection.type === 'meld' && newSelection.playerKey === 'self' &&
                           selection.meldIndex === newSelection.meldIndex;
@@ -846,9 +844,13 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                   const newBoardState = JSON.parse(JSON.stringify(prevBoardState));
                   const meldToBreak = newBoardState.melds.self[selection.meldIndex];
                   if (meldToBreak) {
+                      console.log("[DEBUG] Breaking meld. Tiles to return to hand:", meldToBreak.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正2-1] 崩す面子の牌をログ出力
                       newBoardState.hand_tiles.push(...meldToBreak.tiles);
                       newBoardState.melds.self.splice(selection.meldIndex, 1);
                       newBoardState.hand_tiles.sort((a, b) => a - b);
+                      console.log("[DEBUG] Hand after breaking meld:", newBoardState.hand_tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正2-2] 面子解除後の手牌の状態をログ出力
+                  } else {
+                      console.error("[ERROR] Attempted to break non-existent meld at index:", selection.meldIndex); // [修正2-3] 存在しない面子を崩そうとした場合のエラーログ
                   }
                   return newBoardState;
               });

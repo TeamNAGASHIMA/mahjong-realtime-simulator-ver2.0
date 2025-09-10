@@ -19,7 +19,7 @@ const INITIAL_GAME_STATE = {
   last_discard: { tile: null, from: null, index: null }, // 最終捨て牌をnullに
   // APIレスポンスに必要ないかもしれないが、現在のboardStateオブジェクトの構造に合わせる
   bakaze: 27, // 場風の初期値 (東)
-  melded_blocks: [], // 鳴きブロック（既存のmeldsと重複する可能性あり。APIの出力に合わせる）
+  // melded_blocks: [], // 鳴きブロック（既存のmeldsと重複する可能性あり。APIの出力に合わせる） // <-- 削除
   counts: [] // 牌の数
 };
 
@@ -85,29 +85,73 @@ function dataURLtoBlob(dataurl) {
     return new Blob([u8arr], {type:mime});
 }
 
-const createPayloadFromBoardState = (boardState, settings) => {
-    const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
-    const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
-    const fixes_river_tiles = [
-        ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
-    ];
-    const fixes_pai_info = {
-        "version": "0.9.0",
-        "zikaze": boardState.player_winds?.self ?? 27, 
-        "bakaze": boardState.bakaze ?? 27,
-        "turn": boardState.turn ?? 1,
-        "syanten_type": settings.syanten_type,
-        "dora_indicators": dora_indicators,
-        "flag": settings.flag,
-        "hand_tiles": hand_tiles,
-        "melded_blocks": boardState.melded_blocks ?? [],
-        "counts": boardState.counts ?? []
+// const createPayloadFromBoardState = (boardState, settings) => { // この関数は現在使われていないので変更しない
+//     const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
+//     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
+//     const fixes_river_tiles = [
+//         ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
+//     ];
+//     const fixes_pai_info = {
+//         "version": "0.9.0",
+//         "zikaze": boardState.player_winds?.self ?? 27, 
+//         "bakaze": boardState.bakaze ?? 27,
+//         "turn": boardState.turn ?? 1,
+//         "syanten_type": settings.syanten_type,
+//         "dora_indicators": dora_indicators,
+//         "flag": settings.flag,
+//        "hand_tiles": hand_tiles,
+//         "melded_blocks": boardState.melded_blocks ?? [],
+//         "counts": boardState.counts ?? []
+//     };
+//     return { fixes_pai_info, fixes_river_tiles };
+// };
+
+// 面子配列から面子オブジェクトへの変換ヘルパー関数
+const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
+  if (!Array.isArray(meldArray)) return [];
+  return meldArray.map(tiles => {
+    // 牌をソートして処理しやすくする (赤ドラを考慮しない単純なソート)
+    tiles.sort((a,b) => a - b); 
+    let type = 'unknown'; // 推測できない場合はunknown
+    let exposed_index = null; // デフォルトは不明
+
+    if (tiles.length === 3) {
+      if (tiles[0] === tiles[1] && tiles[1] === tiles[2]) {
+        type = 'pon';
+        exposed_index = 1; // ポンの場合は中央の牌を横向きと仮定
+      } else if (tiles[0] + 1 === tiles[1] && tiles[1] + 1 === tiles[2] && 
+                 Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) && // 同じ数牌の種類
+                 Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
+        type = 'chi';
+        exposed_index = 1; // チーの場合は中央の牌を横向きと仮定
+      }
+    } else if (tiles.length === 4) {
+      if (tiles[0] === tiles[1] && tiles[1] === tiles[2] && tiles[2] === tiles[3]) {
+        // APIから暗槓か明槓かを直接区別できないため、ここでは一旦明槓と仮定
+        // 暗槓の場合は表示で裏返る牌があるため、`exposed_index` はnullか、特別な処理が必要
+        // UI側では`type: 'ankan'`であれば裏返して表示するロジックがあるため、
+        // ここでは便宜的に`minkan`として`exposed_index`を設定するか、`ankan`として`exposed_index`をnullにする
+        // 今回のUIは`ankan`では`exposed_index`を使わないため`ankan`として処理
+        type = 'ankan'; // 4枚同じ牌であれば暗槓と仮定 (表示ロジックはUI側で対応)
+        exposed_index = null; // 暗槓は明示的な晒し牌なし
+      }
+    }
+    
+    // fromフィールドは、自家の面子以外は不明とする
+    const from = playerKey === 'self' ? 'self' : null;
+
+    return {
+      type: type,
+      tiles: tiles,
+      from: from,
+      exposed_index: exposed_index,
     };
-    return { fixes_pai_info, fixes_river_tiles };
+  });
 };
+
 
 // メインコンポーネント
 const MainScreen = () => {
@@ -256,15 +300,19 @@ const MainScreen = () => {
         let recognizedHandTiles = detectedResult.hand_tiles ?? [];
         let recognizedTsumoTile = null;
 
+        // APIからのhand_tilesが14枚の場合は、最後の1枚をツモ牌とする (今回のJSONは13枚なので処理なし)
         if (recognizedHandTiles.length === 14) {
-            recognizedTsumoTile = recognizedHandTiles[recognizedHandTiles.length - 1];
-            recognizedHandTiles = recognizedHandTiles.slice(0, recognizedHandTiles.length - 1);
-        } else if (recognizedHandTiles.length > 14) {
-            console.warn(`検出された手牌が14枚を超えています (${recognizedHandTiles.length}枚)。最初の13枚を通常手牌、次の1枚をツモ牌として扱います。`);
-            recognizedTsumoTile = recognizedHandTiles[13];
-            recognizedHandTiles = recognizedHandTiles.slice(0, 13);
+          recognizedTsumoTile = recognizedHandTiles.pop(); // 最後の要素をツモ牌として取り出す
         }
-        
+
+
+        // ★★★ `detection_result.melded_tiles` を `boardState.melds` に変換 ★★★
+        const selfMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_bottom, 'self');
+        const shimochaMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_right, 'shimocha');
+        const toimenMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_top, 'toimen');
+        const kamichaMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_left, 'kamicha');
+
+
         updatedBoardState = {
             ...INITIAL_GAME_STATE, 
             turn: detectedResult.turn ?? 1,
@@ -279,19 +327,21 @@ const MainScreen = () => {
                 toimen: detectedResult.discard_tiles?.discard_tiles_top ?? [],
                 kamicha: detectedResult.discard_tiles?.discard_tiles_left ?? []
             },
-            melds: {
-                self: detectedResult.melded_blocks ?? [], 
-                shimocha: [], toimen: [], kamicha: [] 
+            melds: { // ★★★ 変換した面子をセット ★★★
+                self: selfMelds, 
+                shimocha: shimochaMelds, 
+                toimen: toimenMelds, 
+                kamicha: kamichaMelds 
             },
             player_winds: {
-                self: detectedResult.zikaze ?? 27,
+                self: detectedResult.zikaze ?? 27, // APIにzikazeがないためデフォルト値を保持
                 shimocha: (detectedResult.zikaze ?? 27) % 4 === 27 ? 28 : ((detectedResult.zikaze ?? 27) - 27 + 1) % 4 + 27,
                 toimen: (detectedResult.zikaze ?? 27) % 4 === 27 ? 29 : ((detectedResult.zikaze ?? 27) - 27 + 2) % 4 + 27,
                 kamicha: (detectedResult.zikaze ?? 27) % 4 === 27 ? 30 : ((detectedResult.zikaze ?? 27) - 27 + 3) % 4 + 27,
             },
             last_discard: { tile: null, from: null, index: null }, 
             bakaze: detectedResult.bakaze ?? 27,
-            melded_blocks: detectedResult.melded_blocks ?? [], 
+            // melded_blocks: detectedResult.melded_blocks ?? [], // <-- 削除
             counts: [] 
         };
         setBoardState(updatedBoardState); // まず認識結果で盤面を更新
