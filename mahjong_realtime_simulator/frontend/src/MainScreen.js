@@ -22,7 +22,7 @@ const styles = {
     width: '100%',
     height: '100%',
     margin: '0 auto',
-    border: '1px solid #ccc',
+    // border: '1px solid #ccc', // 開発中は境界線があるとレイアウトが分かりやすい
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -37,16 +37,18 @@ const styles = {
     overflow: 'hidden',
   },
   gameStatusWrapper: {
-    flex: 2,
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-  },
-  sidePanelWrapper: {
+    // 変更: 'flex: 2' から 'flex: 1' へ。これが残りのスペースを全て埋める役割を担う
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '350px',
+    minWidth: 0, // この設定はflexアイテムが縮小する際に重要なので残す
+  },
+  sidePanelWrapper: {
+    // 変更: flex と minWidth を削除し、中身のサイズに合わせる
+    // flex: 1, // 削除
+    display: 'flex',
+    flexDirection: 'column',
+    // minWidth: '350px', // 削除
   }
 };
 
