@@ -232,7 +232,32 @@ export const Help = ({ onClose }) => {
   );
 };
 
-export const Contact = ({ onClose }) => (<div style={styles.modalOverlay}><div style={{ ...styles.modalContent, backgroundImage: 'none', backgroundColor: 'transparent', width: '700px', boxShadow: 'none' }}><div style={{ ...styles.modalHeader, backgroundColor: '#2a2a2a' }}><h3 style={styles.modalHeaderTitle}>問い合わせ (Google Form)</h3><button onClick={onClose} style={styles.closeButton}>×</button></div><div style={{ ...styles.modalBody, padding: 0 }}><div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', backgroundColor: '#fff' }}><p style={{ fontSize: '48px', color: '#3c4043' }}>GoogleForm</p></div></div></div></div>);
+export const Contact = ({ onClose }) => {
+  // Google Formの埋め込み用URL
+  const formUrl = "https://forms.gle/o8KCFMgCu9Gd5VnFA";
+
+  return (
+    <div style={styles.modalOverlay}>
+      {/* フォームが見やすいようにモーダルのサイズを調整 */}
+      <div style={{ ...styles.modalContent, width: '700px', height: '80vh', maxHeight: '600px' }}>
+        <div style={styles.modalHeader}>
+          <h3 style={styles.modalHeaderTitle}>お問い合わせ</h3>
+          <button onClick={onClose} style={styles.closeButton}>×</button>
+        </div>
+        {/* iframeがbodyの高さいっぱいに広がるようにスタイルを調整 */}
+        <div style={{ ...styles.modalBody, padding: 0, flex: 1 }}>
+          <iframe
+            src={formUrl}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title="お問い合わせフォーム"
+          >
+            読み込んでいます…
+          </iframe>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const VersionInfo = ({ onClose }) => {
   const localStyles = { infoRow: { display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: '14px', borderBottom: '1px solid #3a3a3a' } };
