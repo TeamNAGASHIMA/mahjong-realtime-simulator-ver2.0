@@ -1,4 +1,3 @@
-// MainScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 
 // コンポーネントのインポート
@@ -29,7 +28,7 @@ const styles = {
     width: '100%',
     height: '100%',
     margin: '0 auto',
-    border: '1px solid #ccc',
+    // border: '1px solid #ccc', // 開発中は境界線があるとレイアウトが分かりやすい
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -44,16 +43,18 @@ const styles = {
     overflow: 'hidden',
   },
   gameStatusWrapper: {
-    flex: 2,
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-  },
-  sidePanelWrapper: {
+    // 変更: 'flex: 2' から 'flex: 1' へ。これが残りのスペースを全て埋める役割を担う
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '350px',
+    minWidth: 0, // この設定はflexアイテムが縮小する際に重要なので残す
+  },
+  sidePanelWrapper: {
+    // 変更: flex と minWidth を削除し、中身のサイズに合わせる
+    // flex: 1, // 削除
+    display: 'flex',
+    flexDirection: 'column',
+    // minWidth: '350px', // 削除
   }
 };
 
@@ -85,29 +86,29 @@ function dataURLtoBlob(dataurl) {
     return new Blob([u8arr], {type:mime});
 }
 
-// const createPayloadFromBoardState = (boardState, settings) => { // この関数は現在使われていないので変更しない
-//     const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
-//     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
-//     const fixes_river_tiles = [
-//         ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
-//         ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
-//         ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
-//         ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
-//     ];
-//     const fixes_pai_info = {
-//         "version": "0.9.0",
-//         "zikaze": boardState.player_winds?.self ?? 27, 
-//         "bakaze": boardState.bakaze ?? 27,
-//         "turn": boardState.turn ?? 1,
-//         "syanten_type": settings.syanten_type,
-//         "dora_indicators": dora_indicators,
-//         "flag": settings.flag,
-//        "hand_tiles": hand_tiles,
-//         "melded_blocks": boardState.melded_blocks ?? [],
-//         "counts": boardState.counts ?? []
-//     };
-//     return { fixes_pai_info, fixes_river_tiles };
-// };
+const createPayloadFromBoardState = (boardState, settings) => {
+    const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
+    const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
+    const fixes_river_tiles = [
+        ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
+        ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
+        ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
+        ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
+    ];
+    const fixes_pai_info = {
+        "version": "0.9.0",
+        "zikaze": boardState.player_winds?.self ?? 27, 
+        "bakaze": boardState.bakaze ?? 27,
+        "turn": boardState.turn ?? 1,
+        "syanten_type": settings.syanten_type,
+        "dora_indicators": dora_indicators,
+        "flag": settings.flag,
+        "hand_tiles": hand_tiles,
+        "melded_blocks": boardState.melded_blocks ?? [],
+        "counts": boardState.counts ?? []
+    };
+    return { fixes_pai_info, fixes_river_tiles };
+};
 
 // 面子配列から面子オブジェクトへの変換ヘルパー関数
 const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
@@ -193,7 +194,7 @@ const MainScreen = () => {
   const [calculationResults, setCalculationResults] = useState([]);
   const [isLoadingCalculation, setIsLoadingCalculation] = useState(false);
   // isRecognizingは、カメラ認識中と計算中全体をカバーするように変更
-  const [isRecognizing, setIsRecognizing] = useState(false); 
+  const [isRecognizing, setIsRecognizing] = useState(false);
   const sidePanelRef = useRef(null);
 
   // --- 関数定義 ---
@@ -232,7 +233,7 @@ const MainScreen = () => {
     }
   };
 
-  /**
+    /**
    * カメラ認識と計算をまとめて実行する関数
    * CalculationButton の onClick ハンドラとして使用
    */
@@ -248,53 +249,34 @@ const MainScreen = () => {
       const finalSettings = {...settings, ...sidePanelSettings};
       const formData = new FormData();
 
-      const boardImageBlob = dataURLtoBlob(images.boardImage);
       const handImageBlob = dataURLtoBlob(images.handImage);
+      const boardImageBlob = dataURLtoBlob(images.boardImage);
 
-      // --- 1. カメラ画像の送信と認識処理 ---
-      // /app/main/ は hand_tiles_image が必須なので、どちらの認識ターゲットでも送信
-      if (!handImageBlob) {
-        formData.append('hand_tiles_image', new Blob(["dummy"]), 'dummy_hand.txt');
-        console.warn("手牌画像がないためダミーを送信しました。");
-      } else {
-        formData.append('hand_tiles_image', handImageBlob, 'hand_tiles_image.jpg');
-      }
-
-      if (boardImageBlob) {
-        formData.append('board_tiles_image', boardImageBlob, 'board_tiles_image.jpg');
-      } else {
-        // 盤面画像がなければ、views.pyのmain関数ではnp_board_tiles_image = np.array([])で処理されるため、送らなくてもよい
-      }
+      if (handImageBlob) formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+      if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       
-      // /app/main/ ビューは計算設定も要求するため、常に送信
+      const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
+      const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
+      
+      formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
 
-      // fixes_board_info が空の場合に物体検知が走るため、空のJSONオブジェクトを文字列化して送信
-      formData.append('fixes_board_info', JSON.stringify({}));
-
-      // ★★★ 既存の /app/main/ エンドポイントを利用して認識と計算を実行 ★★★
-      const recognitionResponse = await fetch('/app/main/', { 
+      const response = await fetch('/app/main/', {
           method: 'POST',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') }, 
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
           body: formData
       });
       
-      if (!recognitionResponse.ok) {
-        const errorText = await recognitionResponse.text(); 
-        console.error(`認識APIエラー (${recognitionResponse.status}):`, errorText);
-        alert(`牌の認識に失敗しました: サーバーエラー (ステータス: ${recognitionResponse.status})。詳細をコンソールで確認してください。`);
-        return; // エラーが発生した場合はここで処理を中断
-      }
+      const data = await response.json();
 
-      const recognitionData = await recognitionResponse.json(); 
-      console.log("Recognition via /app/main/ message: " + recognitionData.message);
-      console.log("Recognition via /app/main/ status: " + recognitionResponse.status);
+      if (response.status === 200) {
+        console.log("message: " + data.message)
+        console.log("status: " + response.status)
 
-      let updatedBoardState = { ...INITIAL_GAME_STATE }; // 更新される盤面状態
-      
-      if (recognitionData.detection_result) {
-        const detectedResult = recognitionData.detection_result;
+        let updatedBoardState = { ...INITIAL_GAME_STATE }; // 更新される盤面状態
+
+        const detectedResult = data.detection_result;
         console.log("Detected board state from /app/main/:", detectedResult);
 
         let recognizedHandTiles = detectedResult.hand_tiles ?? [];
@@ -346,60 +328,64 @@ const MainScreen = () => {
         };
         setBoardState(updatedBoardState); // まず認識結果で盤面を更新
 
-      } else {
-        console.warn("APIレスポンスに 'detection_result' が見つかりませんでした。", recognitionData);
-        alert("牌の認識は成功しましたが、盤面情報が返されませんでした。");
-        // 盤面情報がなければ、これ以降の計算はできないか、意味がないためここで中断
-        return; 
-      }
+        const resultData = data.result || data.result_calc;
 
-      // --- 2. 認識結果に基づいた計算処理 ---
-      // (この部分は /app/main/ から 'result_calc' が返されることを期待)
-      // views.pyのmain関数は、detection_resultと共にresult_calcも返すので、
-      // 認識APIのレスポンスから直接計算結果も取得できる
-      if (recognitionData.result_calc) {
-        const resultData = recognitionData.result_calc;
-        const turnIndex = (updatedBoardState.turn ?? 1) - 1;
-
+        // 最終的にstateにセットする整形済みデータの配列
         let formattedResults = []; 
 
-        if (resultData.result_type === 1 && Array.isArray(resultData.candidates)) {
-          console.log("Processing 14-tile hand response (with candidates).");
-          formattedResults = resultData.candidates.map(candidate => ({
-            tile: candidate.tile, 
-            required_tiles: candidate.required_tiles, 
-            syanten_down: candidate.syanten_down,
-            exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
-            win_prob: candidate.win_probs?.[turnIndex] ?? 0,
-            tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
-          }));
-        } else if (resultData.result_type === 0) {
-          console.log("Processing 13-tile hand response (overall evaluation).");
-          const singleResult = {
-            tile: null, 
-            required_tiles: resultData.required_tiles || [], 
-            syanten_down: false, 
-            exp_value: resultData.exp_values?.[turnIndex] ?? 0, 
-            win_prob: resultData.win_probs?.[turnIndex] ?? 0,
-            tenpai_prob: resultData.tenpai_probs?.[turnIndex] ?? 0,
-          };
-          formattedResults = [singleResult]; 
-        }
+        if (resultData) {
+          const turnIndex = (fixes_pai_info.turn ?? 1) - 1;
 
-        if (formattedResults.length > 0) {
-          setCalculationResults(formattedResults);
+          // --- 14枚手牌の場合 (打牌候補のリスト) ---
+          // 'candidates' 配列が存在し、result_typeが1の場合
+          if (resultData.result_type === 1 && Array.isArray(resultData.candidates)) {
+            console.log("Processing 14-tile hand response (with candidates).");
+            formattedResults = resultData.candidates.map(candidate => ({
+              tile: candidate.tile, 
+              required_tiles: candidate.required_tiles, 
+              syanten_down: candidate.syanten_down,
+              exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
+              win_prob: candidate.win_probs?.[turnIndex] ?? 0,
+              tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
+            }));
+          } 
+          // --- 13枚手牌の場合 (手牌全体の評価) ---
+          // result_typeが0の場合
+          else if (resultData.result_type === 0) {
+            console.log("Processing 13-tile hand response (overall evaluation).");
+            // 13枚の場合は打牌候補がないため、手牌全体の評価を一つの要素として配列に入れる
+            const singleResult = {
+              tile: null, // 打牌候補ではないので null や -1 などを設定
+              required_tiles: resultData.required_tiles || [], // 有効牌のリスト
+              syanten_down: false, // 該当する概念がないためfalseに設定
+              exp_value: resultData.exp_values?.[turnIndex] ?? 0, 
+              win_prob: resultData.win_probs?.[turnIndex] ?? 0,
+              tenpai_prob: resultData.tenpai_probs?.[turnIndex] ?? 0,
+            };
+            formattedResults = [singleResult]; // 要素が1つの配列を作成
+          }
+
+          // formattedResultsにデータが正常に格納されたかチェック
+          if (formattedResults.length > 0) {
+            console.log("Inspecting first candidate from processed data:", formattedResults[0]);
+            setCalculationResults(formattedResults);
+          } else {
+            console.error("Could not parse API response or format is unknown.", data);
+            alert("計算結果の形式が正しくないか、不明な形式です。");
+          }
+
         } else {
-          console.error("計算結果の形式が正しくないか、不明な形式です。", recognitionData);
-          alert("計算結果の形式が正しくないか、不明な形式です。");
+          console.error("Could not find 'result' object in the API response.", data);
+          alert("計算結果の形式が正しくありません。");
         }
       } else {
-        console.warn("APIレスポンスに 'result_calc' が見つかりませんでした。", recognitionData);
-        alert("牌の認識は成功しましたが、計算結果が返されませんでした。");
+          alert("Calculation failed: " + (data.error || "Unknown error"));
+          console.log("message: " + data.message)
+          console.log("status: " + response.status)
       }
-
     } catch (err) {
-      console.error('認識または計算の実行に失敗しました:', err);
-      alert('通信またはデータ処理に失敗しました。詳細はコンソールを確認してください。');
+      console.error('Sending failed:', err);
+      alert('通信に失敗しました。詳細はコンソールを確認してください。');
     } finally {
         setIsLoadingCalculation(false); // 計算ローディングを終了
         setIsRecognizing(false);       // 認識も終了
@@ -418,6 +404,7 @@ const MainScreen = () => {
 
   const renderModal = () => {
     switch (activeModal) {
+      // settingsは統合された新しいコンポーネントを、他は詳細な管理機能を持つ方のコンポーネントを使う
       case 'settings': return <Settings settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
       case 'camera':
         return (
