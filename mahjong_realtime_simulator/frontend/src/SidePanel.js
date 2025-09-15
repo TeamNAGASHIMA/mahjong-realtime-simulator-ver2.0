@@ -1,23 +1,23 @@
-// SidePanel.js
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
-
-import CameraPreview from './CameraPreview'; 
+import CameraPreview from './CameraPreview';
 import SettingsPanel from './SettingsPanel';
 
 const styles = {
   sidePanelContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
-    flex: 1,
-    minWidth: '280px',
+    gap: '10px',
+    flex: '0 1 360px',
+    minWidth: '240px',
+    maxWidth: '480px', 
   }
 };
 
+// 以下、コンポーネントのロジックは変更なし
 const SidePanel = forwardRef((props, ref) => {
   const {
     selectedBoardCamera,
-    selectedHandCamera,    
+    selectedHandCamera,
     // onRecognize プロップは CalculationButton がトリガーになるため不要になる
     // しかし、isRecognizing は CameraPreview のボタンを disabled にするために必要
     isRecognizing,
@@ -48,7 +48,7 @@ const SidePanel = forwardRef((props, ref) => {
       <CameraPreview
         ref={cameraRef}
         boardCameraId={selectedBoardCamera}
-        handCameraId={selectedHandCamera}        
+        handCameraId={selectedHandCamera}
         onRecognize={() => {}} // ★ダミー関数を渡すか、削除する（ボタンがトリガーではないため）
         isRecognizing={isRecognizing} // CameraPreviewのボタンを無効にするために渡す
       />
