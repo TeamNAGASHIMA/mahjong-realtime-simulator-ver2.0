@@ -1,3 +1,4 @@
+// MainScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 
 // コンポーネントのインポート
@@ -7,13 +8,19 @@ import SidePanel from './SidePanel';
 
 // 盤面の初期状態
 const INITIAL_GAME_STATE = {
-  turn: 1,
-  hand_tiles: [0, 1, 2, 13, 14, 16, 18, 27, 28, 29, 31, 31, 32, 4],
-  player_winds: { self: 27, shimocha: 28, toimen: 29, kamicha: 30 },
-  player_discards: { self: [3, 4, 5, 6, 7, 8, 9, 10], shimocha: [10, 11, 12, 13, 14, 15, 16], toimen: [18, 19, 20, 21, 22, 23, 24], kamicha: [32, 33, 30, 29, 28, 34] },
-  dora_indicators: [4],
-  melded_blocks: [],
-  counts: []
+  turn: 1, // 巡目は1から開始
+  round_wind: 27, // 場風は東 (Z1)
+  hand_tiles: [], // 手牌を空に
+  tsumo_tile: null, // ツモ牌をnullに
+  player_winds: { self: 27, shimocha: 28, toimen: 29, kamicha: 30 }, // 各プレイヤーの風
+  player_discards: { self: [], shimocha: [], toimen: [], kamicha: [] }, // 全員の捨て牌を空に
+  melds: { self: [], shimocha: [], toimen: [], kamicha: [] }, // 全員の面子を空に
+  dora_indicators: [], // ドラ表示牌を空に
+  last_discard: { tile: null, from: null, index: null }, // 最終捨て牌をnullに
+  // APIレスポンスに必要ないかもしれないが、現在のboardStateオブジェクトの構造に合わせる
+  bakaze: 27, // 場風の初期値 (東)
+  // melded_blocks: [], // 鳴きブロック（既存のmeldsと重複する可能性あり。APIの出力に合わせる） // <-- 削除
+  counts: [] // 牌の数
 };
 
 // スタイル定義
@@ -78,29 +85,73 @@ function dataURLtoBlob(dataurl) {
     return new Blob([u8arr], {type:mime});
 }
 
-const createPayloadFromBoardState = (boardState, settings) => {
-    const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
-    const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
-    const fixes_river_tiles = [
-        ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
-        ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
-    ];
-    const fixes_pai_info = {
-        "version": "0.9.0",
-        "zikaze": boardState.player_winds?.self ?? 27, 
-        "bakaze": boardState.bakaze ?? 27,
-        "turn": boardState.turn ?? 1,
-        "syanten_type": settings.syanten_type,
-        "dora_indicators": dora_indicators,
-        "flag": settings.flag,
-        "hand_tiles": hand_tiles,
-        "melded_blocks": boardState.melded_blocks ?? [],
-        "counts": boardState.counts ?? []
+// const createPayloadFromBoardState = (boardState, settings) => { // この関数は現在使われていないので変更しない
+//     const hand_tiles = boardState.hand_tiles?.map(tile => tile) ?? [];
+//     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
+//     const fixes_river_tiles = [
+//         ...(boardState.player_discards?.self?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.shimocha?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.toimen?.map(tile => tile) ?? []),
+//         ...(boardState.player_discards?.kamicha?.map(tile => tile) ?? []),
+//     ];
+//     const fixes_pai_info = {
+//         "version": "0.9.0",
+//         "zikaze": boardState.player_winds?.self ?? 27, 
+//         "bakaze": boardState.bakaze ?? 27,
+//         "turn": boardState.turn ?? 1,
+//         "syanten_type": settings.syanten_type,
+//         "dora_indicators": dora_indicators,
+//         "flag": settings.flag,
+//        "hand_tiles": hand_tiles,
+//         "melded_blocks": boardState.melded_blocks ?? [],
+//         "counts": boardState.counts ?? []
+//     };
+//     return { fixes_pai_info, fixes_river_tiles };
+// };
+
+// 面子配列から面子オブジェクトへの変換ヘルパー関数
+const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
+  if (!Array.isArray(meldArray)) return [];
+  return meldArray.map(tiles => {
+    // 牌をソートして処理しやすくする (赤ドラを考慮しない単純なソート)
+    tiles.sort((a,b) => a - b); 
+    let type = 'unknown'; // 推測できない場合はunknown
+    let exposed_index = null; // デフォルトは不明
+
+    if (tiles.length === 3) {
+      if (tiles[0] === tiles[1] && tiles[1] === tiles[2]) {
+        type = 'pon';
+        exposed_index = 1; // ポンの場合は中央の牌を横向きと仮定
+      } else if (tiles[0] + 1 === tiles[1] && tiles[1] + 1 === tiles[2] && 
+                 Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) && // 同じ数牌の種類
+                 Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
+        type = 'chi';
+        exposed_index = 1; // チーの場合は中央の牌を横向きと仮定
+      }
+    } else if (tiles.length === 4) {
+      if (tiles[0] === tiles[1] && tiles[1] === tiles[2] && tiles[2] === tiles[3]) {
+        // APIから暗槓か明槓かを直接区別できないため、ここでは一旦明槓と仮定
+        // 暗槓の場合は表示で裏返る牌があるため、`exposed_index` はnullか、特別な処理が必要
+        // UI側では`type: 'ankan'`であれば裏返して表示するロジックがあるため、
+        // ここでは便宜的に`minkan`として`exposed_index`を設定するか、`ankan`として`exposed_index`をnullにする
+        // 今回のUIは`ankan`では`exposed_index`を使わないため`ankan`として処理
+        type = 'ankan'; // 4枚同じ牌であれば暗槓と仮定 (表示ロジックはUI側で対応)
+        exposed_index = null; // 暗槓は明示的な晒し牌なし
+      }
+    }
+    
+    // fromフィールドは、自家の面子以外は不明とする
+    const from = playerKey === 'self' ? 'self' : null;
+
+    return {
+      type: type,
+      tiles: tiles,
+      from: from,
+      exposed_index: exposed_index,
     };
-    return { fixes_pai_info, fixes_river_tiles };
+  });
 };
+
 
 // メインコンポーネント
 const MainScreen = () => {
@@ -141,7 +192,8 @@ const MainScreen = () => {
   const [cameraError, setCameraError] = useState('');
   const [calculationResults, setCalculationResults] = useState([]);
   const [isLoadingCalculation, setIsLoadingCalculation] = useState(false);
-  const [isRecognizing, setIsRecognizing] = useState(false);
+  // isRecognizingは、カメラ認識中と計算中全体をカバーするように変更
+  const [isRecognizing, setIsRecognizing] = useState(false); 
   const sidePanelRef = useRef(null);
 
   // --- 関数定義 ---
@@ -180,101 +232,177 @@ const MainScreen = () => {
     }
   };
 
+  /**
+   * カメラ認識と計算をまとめて実行する関数
+   * CalculationButton の onClick ハンドラとして使用
+   */
   const handleCalculate = async () => {
     if (!sidePanelRef.current) return;
 
-    setIsLoadingCalculation(true);
-    setCalculationResults([]);
+    setIsLoadingCalculation(true); // 計算ローディングを開始
+    setIsRecognizing(true);       // 認識も開始 (両方が true になる)
+    setCalculationResults([]);    // 計算結果をクリア
 
     try {
       const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
       const finalSettings = {...settings, ...sidePanelSettings};
       const formData = new FormData();
 
-      const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
+      const handImageBlob = dataURLtoBlob(images.handImage);
 
-      if (handImageBlob) formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
-      if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+      // --- 1. カメラ画像の送信と認識処理 ---
+      // /app/main/ は hand_tiles_image が必須なので、どちらの認識ターゲットでも送信
+      if (!handImageBlob) {
+        formData.append('hand_tiles_image', new Blob(["dummy"]), 'dummy_hand.txt');
+        console.warn("手牌画像がないためダミーを送信しました。");
+      } else {
+        formData.append('hand_tiles_image', handImageBlob, 'hand_tiles_image.jpg');
+      }
+
+      if (boardImageBlob) {
+        formData.append('board_tiles_image', boardImageBlob, 'board_tiles_image.jpg');
+      } else {
+        // 盤面画像がなければ、views.pyのmain関数ではnp_board_tiles_image = np.array([])で処理されるため、送らなくてもよい
+      }
       
-      const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
-      const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
-      
-      formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
+      // /app/main/ ビューは計算設定も要求するため、常に送信
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
 
-      const response = await fetch('/app/main/', {
+      // fixes_board_info が空の場合に物体検知が走るため、空のJSONオブジェクトを文字列化して送信
+      formData.append('fixes_board_info', JSON.stringify({}));
+
+      // ★★★ 既存の /app/main/ エンドポイントを利用して認識と計算を実行 ★★★
+      const recognitionResponse = await fetch('/app/main/', { 
           method: 'POST',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          headers: { 'X-CSRFToken': getCookie('csrftoken') }, 
           body: formData
       });
       
-      const data = await response.json();
+      if (!recognitionResponse.ok) {
+        const errorText = await recognitionResponse.text(); 
+        console.error(`認識APIエラー (${recognitionResponse.status}):`, errorText);
+        alert(`牌の認識に失敗しました: サーバーエラー (ステータス: ${recognitionResponse.status})。詳細をコンソールで確認してください。`);
+        return; // エラーが発生した場合はここで処理を中断
+      }
 
-      if (response.status === 200) {
-        console.log("message: " + data.message)
-        console.log("status: " + response.status)
-        const resultData = data.result || data.result_calc;
+      const recognitionData = await recognitionResponse.json(); 
+      console.log("Recognition via /app/main/ message: " + recognitionData.message);
+      console.log("Recognition via /app/main/ status: " + recognitionResponse.status);
 
-        // 最終的にstateにセットする整形済みデータの配列
+      let updatedBoardState = { ...INITIAL_GAME_STATE }; // 更新される盤面状態
+      
+      if (recognitionData.detection_result) {
+        const detectedResult = recognitionData.detection_result;
+        console.log("Detected board state from /app/main/:", detectedResult);
+
+        let recognizedHandTiles = detectedResult.hand_tiles ?? [];
+        let recognizedTsumoTile = null;
+
+        // APIからのhand_tilesが14枚の場合は、最後の1枚をツモ牌とする (今回のJSONは13枚なので処理なし)
+        if (recognizedHandTiles.length === 14) {
+          recognizedTsumoTile = recognizedHandTiles.pop(); // 最後の要素をツモ牌として取り出す
+        }
+
+
+        // ★★★ `detection_result.melded_tiles` を `boardState.melds` に変換 ★★★
+        const selfMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_bottom, 'self');
+        const shimochaMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_right, 'shimocha');
+        const toimenMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_top, 'toimen');
+        const kamichaMelds = convertMeldsToBoardStateFormat(detectedResult.melded_tiles?.melded_tiles_left, 'kamicha');
+
+
+        updatedBoardState = {
+            ...INITIAL_GAME_STATE, 
+            turn: detectedResult.turn ?? 1,
+            round_wind: detectedResult.bakaze ?? detectedResult.round_wind ?? 27, 
+            hand_tiles: recognizedHandTiles, 
+            tsumo_tile: recognizedTsumoTile, 
+            dora_indicators: detectedResult.dora_indicators ?? [], 
+
+            player_discards: {
+                self: detectedResult.discard_tiles?.discard_tiles_bottom ?? [], 
+                shimocha: detectedResult.discard_tiles?.discard_tiles_right ?? [],
+                toimen: detectedResult.discard_tiles?.discard_tiles_top ?? [],
+                kamicha: detectedResult.discard_tiles?.discard_tiles_left ?? []
+            },
+            melds: { // ★★★ 変換した面子をセット ★★★
+                self: selfMelds, 
+                shimocha: shimochaMelds, 
+                toimen: toimenMelds, 
+                kamicha: kamichaMelds 
+            },
+            player_winds: {
+                self: detectedResult.zikaze ?? 27, // APIにzikazeがないためデフォルト値を保持
+                shimocha: (detectedResult.zikaze ?? 27) % 4 === 27 ? 28 : ((detectedResult.zikaze ?? 27) - 27 + 1) % 4 + 27,
+                toimen: (detectedResult.zikaze ?? 27) % 4 === 27 ? 29 : ((detectedResult.zikaze ?? 27) - 27 + 2) % 4 + 27,
+                kamicha: (detectedResult.zikaze ?? 27) % 4 === 27 ? 30 : ((detectedResult.zikaze ?? 27) - 27 + 3) % 4 + 27,
+            },
+            last_discard: { tile: null, from: null, index: null }, 
+            bakaze: detectedResult.bakaze ?? 27,
+            // melded_blocks: detectedResult.melded_blocks ?? [], // <-- 削除
+            counts: [] 
+        };
+        setBoardState(updatedBoardState); // まず認識結果で盤面を更新
+
+      } else {
+        console.warn("APIレスポンスに 'detection_result' が見つかりませんでした。", recognitionData);
+        alert("牌の認識は成功しましたが、盤面情報が返されませんでした。");
+        // 盤面情報がなければ、これ以降の計算はできないか、意味がないためここで中断
+        return; 
+      }
+
+      // --- 2. 認識結果に基づいた計算処理 ---
+      // (この部分は /app/main/ から 'result_calc' が返されることを期待)
+      // views.pyのmain関数は、detection_resultと共にresult_calcも返すので、
+      // 認識APIのレスポンスから直接計算結果も取得できる
+      if (recognitionData.result_calc) {
+        const resultData = recognitionData.result_calc;
+        const turnIndex = (updatedBoardState.turn ?? 1) - 1;
+
         let formattedResults = []; 
 
-        if (resultData) {
-          const turnIndex = (fixes_pai_info.turn ?? 1) - 1;
+        if (resultData.result_type === 1 && Array.isArray(resultData.candidates)) {
+          console.log("Processing 14-tile hand response (with candidates).");
+          formattedResults = resultData.candidates.map(candidate => ({
+            tile: candidate.tile, 
+            required_tiles: candidate.required_tiles, 
+            syanten_down: candidate.syanten_down,
+            exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
+            win_prob: candidate.win_probs?.[turnIndex] ?? 0,
+            tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
+          }));
+        } else if (resultData.result_type === 0) {
+          console.log("Processing 13-tile hand response (overall evaluation).");
+          const singleResult = {
+            tile: null, 
+            required_tiles: resultData.required_tiles || [], 
+            syanten_down: false, 
+            exp_value: resultData.exp_values?.[turnIndex] ?? 0, 
+            win_prob: resultData.win_probs?.[turnIndex] ?? 0,
+            tenpai_prob: resultData.tenpai_probs?.[turnIndex] ?? 0,
+          };
+          formattedResults = [singleResult]; 
+        }
 
-          // --- 14枚手牌の場合 (打牌候補のリスト) ---
-          // 'candidates' 配列が存在し、result_typeが1の場合
-          if (resultData.result_type === 1 && Array.isArray(resultData.candidates)) {
-            console.log("Processing 14-tile hand response (with candidates).");
-            formattedResults = resultData.candidates.map(candidate => ({
-              tile: candidate.tile, 
-              required_tiles: candidate.required_tiles, 
-              syanten_down: candidate.syanten_down,
-              exp_value: candidate.exp_values?.[turnIndex] ?? 0, 
-              win_prob: candidate.win_probs?.[turnIndex] ?? 0,
-              tenpai_prob: candidate.tenpai_probs?.[turnIndex] ?? 0,
-            }));
-          } 
-          // --- 13枚手牌の場合 (手牌全体の評価) ---
-          // result_typeが0の場合
-          else if (resultData.result_type === 0) {
-            console.log("Processing 13-tile hand response (overall evaluation).");
-            // 13枚の場合は打牌候補がないため、手牌全体の評価を一つの要素として配列に入れる
-            const singleResult = {
-              tile: null, // 打牌候補ではないので null や -1 などを設定
-              required_tiles: resultData.required_tiles || [], // 有効牌のリスト
-              syanten_down: false, // 該当する概念がないためfalseに設定
-              exp_value: resultData.exp_values?.[turnIndex] ?? 0, 
-              win_prob: resultData.win_probs?.[turnIndex] ?? 0,
-              tenpai_prob: resultData.tenpai_probs?.[turnIndex] ?? 0,
-            };
-            formattedResults = [singleResult]; // 要素が1つの配列を作成
-          }
-
-          // formattedResultsにデータが正常に格納されたかチェック
-          if (formattedResults.length > 0) {
-            console.log("Inspecting first candidate from processed data:", formattedResults[0]);
-            setCalculationResults(formattedResults);
-          } else {
-            console.error("Could not parse API response or format is unknown.", data);
-            alert("計算結果の形式が正しくないか、不明な形式です。");
-          }
-
+        if (formattedResults.length > 0) {
+          setCalculationResults(formattedResults);
         } else {
-          console.error("Could not find 'result' object in the API response.", data);
-          alert("計算結果の形式が正しくありません。");
+          console.error("計算結果の形式が正しくないか、不明な形式です。", recognitionData);
+          alert("計算結果の形式が正しくないか、不明な形式です。");
         }
       } else {
-          alert("Calculation failed: " + (data.error || "Unknown error"));
-          console.log("message: " + data.message)
-          console.log("status: " + response.status)
+        console.warn("APIレスポンスに 'result_calc' が見つかりませんでした。", recognitionData);
+        alert("牌の認識は成功しましたが、計算結果が返されませんでした。");
       }
+
     } catch (err) {
-      console.error('Sending failed:', err);
-      alert('通信に失敗しました。詳細はコンソールを確認してください。');
+      console.error('認識または計算の実行に失敗しました:', err);
+      alert('通信またはデータ処理に失敗しました。詳細はコンソールを確認してください。');
     } finally {
-        setIsLoadingCalculation(false);
+        setIsLoadingCalculation(false); // 計算ローディングを終了
+        setIsRecognizing(false);       // 認識も終了
     }
   };
 
@@ -290,7 +418,6 @@ const MainScreen = () => {
 
   const renderModal = () => {
     switch (activeModal) {
-      // settingsは統合された新しいコンポーネントを、他は詳細な管理機能を持つ方のコンポーネントを使う
       case 'settings': return <Settings settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
       case 'camera':
         return (
@@ -315,13 +442,13 @@ const MainScreen = () => {
       <div style={styles.mainContent}>
         <div style={styles.gameStatusWrapper}>
           <GameStatusArea
-            onStartCalculation={handleCalculate}
+            onStartCalculation={handleCalculate} // CalculationButtonのトリガーはこれ
             boardState={boardState}
             onBoardStateChange={setBoardState}
             calculationResults={calculationResults}
             isLoadingCalculation={isLoadingCalculation}
-            isCalculationDisabled={isLoadingCalculation || isRecognizing}
-            isRecognizing={isRecognizing}
+            isCalculationDisabled={isLoadingCalculation || isRecognizing} // 認識中もボタンを無効にする
+            isRecognizing={isRecognizing} // CameraPreviewのボタンを無効にするために渡す
           />
         </div>
         
@@ -331,8 +458,8 @@ const MainScreen = () => {
             isCameraActive={isCameraActive}
             selectedBoardCamera={selectedBoardCamera}
             selectedHandCamera={selectedHandCamera}
-            onRecognize={() => {}}
-            isRecognizing={isRecognizing}
+            onRecognize={() => { /* 何もしない、または認識開始を促すメッセージ */ }} // CameraPreviewのボタンはトリガーではないためダミー関数に
+            isRecognizing={isRecognizing} // CameraPreviewのボタンを無効にするために渡す
             settings={settings}
             onSettingsChange={handleSettingsChange}
           />
