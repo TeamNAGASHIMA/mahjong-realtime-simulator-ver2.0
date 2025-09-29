@@ -1,67 +1,117 @@
 # detect.py
 # 画像から手牌、盤面の情報を取得する
 
-import requests
 import cv2
 import numpy as np
 import math
 import os
-from dotenv import load_dotenv
-import re
+from ultralytics import YOLO    # YOLOv8のライブラリ
+from django.conf import settings
+import torch
 
-# .env ファイルの読み込み
-load_dotenv()
+# ローカルモデルのパスを指定
+LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
 
-from .crop_open_detection import *
-from .crop_dora_detection import *
-from .crop_discard_detection import *
+# 検出閾値（YOLOv8の推論時に指定）
+DETECTION_CONFIDENCE_THRESHOLD = 0.4
+
+global gpu_flg
+gpu_flg = 0
 
 # 牌種類変換表
 tile_convert = {
-    0: 18,  # 一索
-    1: 0,   # 一萬
-    2: 9,   # 一筒
-    5: 19,  # 二索
-    6: 1,   # 二萬
-    7: 10,  # 二筒
-    10: 20, # 三索
-    11: 2,  # 三萬
-    12: 11, # 三筒
-    15: 21, # 四索
-    16: 3,  # 四萬
-    17: 12, # 四筒
-    20: 22, # 五索
-    21: 4,  # 五萬
-    22: 13, # 五筒
-    23: 23, # 六索
-    24: 5,  # 六萬
-    25: 14, # 六筒
-    26: 24, # 七索
-    27: 6,  # 七萬
-    28: 15, # 七筒
-    29: 25, # 八索
-    30: 7,  # 八萬
-    31: 16, # 八筒
-    32: 26, # 九索
-    33: 8,  # 九萬
-    34: 17, # 九筒
-    35: 27, # 東
-    36: 32, # 發
-    37: 30, # 北
-    38: 33, # 中
-    39: 28, # 南
-    40: 31, # 白
-    41: 29, # 西
+    5: 18,  # 一索 (1s)
+    3: 0,   # 一萬 (1m)
+    4: 9,   # 一筒 (1p)
+    9: 19,  # 二索 (2s)
+    7: 1,   # 二萬 (2m)
+    8: 10,  # 二筒 (2p)
+    13: 20, # 三索 (3s)
+    11: 2,  # 三萬 (3m)
+    12: 11, # 三筒 (3p)
+    17: 21, # 四索 (4s)
+    15: 3,  # 四萬 (4m)
+    16: 12, # 四筒 (4p)
+    21: 22, # 五索 (5s)
+    19: 4,  # 五萬 (5m)
+    20: 13, # 五筒 (5p)
+    25: 23, # 六索 (6s)
+    23: 5,  # 六萬 (6m)
+    24: 14, # 六筒 (6p)
+    29: 24, # 七索 (7s)
+    27: 6,  # 七萬 (7m)
+    28: 15, # 七筒 (7p)
+    33: 25, # 八索 (8s)
+    31: 7,  # 八萬 (8m)
+    32: 16, # 八筒 (8p)
+    36: 26, # 九索 (9s)
+    34: 8,  # 九萬 (9m)
+    35: 17, # 九筒 (9p)
+    6: 27, # 東 (1z)
+    26: 32, # 發 (6z)
+    18: 30, # 北 (4z)
+    30: 33, # 中 (7z)
+    10: 28, # 南 (2z)
+    22: 31, # 白 (5z)
+    14: 29, # 西 (3z)
+}
+
+# 赤ドラ用の新しいIDマッピングを追加
+red_dora_id_map = {
+    # YOLOのclass_id: 新しい麻雀牌ID
+    19: 34, # 5萬 (赤) (YOLOの5萬のIDが19)
+    20: 35, # 5筒 (赤) (YOLOの5筒のIDが20)
+    21: 36, # 5索 (赤) (YOLOの5索のIDが21)
 }
 
 
-def tile_detection(image_np: np.ndarray) -> list:
-    """画像内の麻雀牌をRoboflow APIで検出し、その座標情報を含めて返します。
+# グローバル変数としてYOLOモデルをロードしておく
+_yolo_model = None
 
-    Roboflow APIに画像（NumPy配列）を送信し、検出された牌の種類、信頼度、
-    およびバウンディングボックスの座標（x, y, width, height）をリストで返します。
-    APIキー、エンドポイントURL、検出閾値、画像リサイズ設定は環境変数から取得されます。
-    API送信前に画像の最大辺が指定された寸法になるようにリサイズされます。
+def _load_yolo_model():
+    """指定されたパスからYOLOv8モデルをロードし、グローバル変数に格納する。"""
+    global _yolo_model
+    if _yolo_model is None:
+        if not os.path.exists(LOCAL_YOLO_MODEL_PATH):
+            raise FileNotFoundError(f"YOLO model not found at: {LOCAL_YOLO_MODEL_PATH}. Please ensure the path is correct.")
+        try:
+            _yolo_model = YOLO(LOCAL_YOLO_MODEL_PATH)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load YOLO model from {LOCAL_YOLO_MODEL_PATH}: {e}")
+    return _yolo_model
+
+def check_red_color_with_percentage(image_np: np.ndarray, red_pixel_threshold_percent=12) -> bool:
+    """NumPy配列画像内の赤色の割合を計算し、しきい値以上ならTrueを返す関数。"""
+    if image_np is None or image_np.size == 0:
+        return False
+
+    total_pixels = image_np.shape[0] * image_np.shape[1]
+    if total_pixels == 0:
+        return False
+
+    hsv = cv2.cvtColor(image_np, cv2.COLOR_BGR2HSV)
+
+    lower_red1 = np.array([0, 45, 45])
+    upper_red1 = np.array([22, 255, 255])
+    lower_red2 = np.array([155, 45, 45])
+    upper_red2 = np.array([179, 255, 255])
+
+    mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+    mask = mask1 + mask2
+
+    red_pixels = cv2.countNonZero(mask)
+    red_percentage = (red_pixels / total_pixels) * 100
+
+    return red_percentage >= red_pixel_threshold_percent
+
+
+# tile_detection関数をローカル推論用に置き換える
+def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
+    """画像内の麻雀牌をローカルのYOLOv8モデルで検出し、その座標情報を含めて返します。
+    ローカルにロードされたYOLOv8モデルを使用して
+    画像内の牌を検出し、検出された牌の種類、信頼度、およびバウンディングボックスの
+    座標（x, y, width, height）をリストで返します。
 
     Args:
         image_np (np.ndarray): 検出対象の画像データ (NumPy配列)。
@@ -72,115 +122,133 @@ def tile_detection(image_np: np.ndarray) -> list:
             の辞書です。
 
     Raises:
-        ValueError: Roboflow APIの設定エラー、画像エンコード失敗、
-                    またはRoboflow APIからのエラーレスポンス（ステータスコードと具体的なメッセージを含む）。
-        requests.exceptions.RequestException: ネットワークレベルのエラーが発生した場合。
+        ValueError: 入力画像が無効な場合、またはYOLOv8モデルの推論中にエラーが発生した場合。
     """
-    # Roboflow APIの設定
-    API_KEY = os.getenv("ROBOFLOW_API_KEY")
-    BASE_URL = os.getenv("ROBOFLOW_BASE_URL")
+    # モデルがロードされているか確認し、ロードされていなければロードする
+    try:
+        model = _load_yolo_model()
+    except (FileNotFoundError, RuntimeError) as e:
+        # モデルロードに失敗した場合、ValueErrorを発生させる
+        raise ValueError(f"Model loading failed: {e}") from e
 
-    # 検出閾値
-    CONFIDENCE_THRESHOLD = float(os.getenv("ROBOFLOW_CONFIDENCE", 0.6))
-    OVERLAP_THRESHOLD = float(os.getenv("ROBOFLOW_OVERLAP", 0.5))
-
-    # APIに送信する画像の最大辺の長さ（ピクセル）。0の場合、リサイズしない。
-    API_MAX_IMAGE_DIMENSION = int(os.getenv("ROBOFLOW_MAX_IMAGE_DIMENSION", 0))
-
-    # 環境変数が読み込めなかった場合
-    if not API_KEY or not BASE_URL:
-        raise ValueError("Roboflow API key or base URL is not set in environment variables.")
-
-    # NumPy配列の有効性チェック (手牌以外の検出でも利用されるため残す)
+    # NumPy配列の有効性チェック
     if not isinstance(image_np, np.ndarray) or image_np.size == 0:
         raise ValueError("Input image_np is not a valid NumPy array or is empty.")
 
-    # API送信前に画像をリサイズ
-    processed_image_np = image_np.copy()
-    if API_MAX_IMAGE_DIMENSION > 0:
-        h, w = processed_image_np.shape[:2]
-        if max(h, w) > API_MAX_IMAGE_DIMENSION:
-            scale = API_MAX_IMAGE_DIMENSION / max(h, w)
-            new_w, new_h = int(w * scale), int(h * scale)
-            processed_image_np = cv2.resize(processed_image_np, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    # GPU使用設定
+    global gpu_flg
+    global device
 
-    # エンドポイントURL
-    url = (
-        f"{BASE_URL}"
-        f"?api_key={API_KEY}"
-        f"&confidence={CONFIDENCE_THRESHOLD}"
-        f"&overlap={OVERLAP_THRESHOLD}"
-        "&format=json"
-        "&labels=true"
-    )
-
-    # NumPy配列をJPEGバイトデータにエンコード
-    is_success, encoded_image = cv2.imencode(".jpg", processed_image_np)
-    if not is_success:
-        raise ValueError("Failed to encode image to JPEG format for API submission.")
-
-    # APIへ画像を送信
-    files = {"file": ("image.jpg", encoded_image.tobytes(), "image/jpeg")}
-    response = requests.post(url, files=files)
-
-    # レスポンスの処理（検出処理）
-    if response.status_code == 200:
-        result = response.json()
-        result_array = []
-
-        # リサイズが行われた場合、APIから返される座標はリサイズ後の画像に対するものなので、
-        # 元の画像サイズに戻すためのスケールファクターを計算
-        original_h, original_w = image_np.shape[:2]
-        if API_MAX_IMAGE_DIMENSION > 0 and max(original_h, original_w) > API_MAX_IMAGE_DIMENSION:
-            scale_factor = max(original_h, original_w) / max(processed_image_np.shape[:2])
+    if gpu_flg == 0:
+        if torch.cuda.is_available():
+            device = "cuda"
         else:
-            scale_factor = 1.0
+            device = "cpu"
 
-        for pred in result["predictions"]:
-            confidence = float(pred["confidence"])
-            class_id = int(pred["class_id"])
+        gpu_flg = 1
 
-            # 変換表に存在しないclass_idは無視 (モデルの出力が想定外のclass_idを返す可能性を考慮)
+    # YOLOv8モデルで推論を実行する
+    # verbose=Falseで推論時のコンソール出力を抑制
+    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False, device=device)
+
+    detected_tiles = []
+
+    # デバッグモードが有効な場合、画像に描画するためにコピーを作成
+    if debug:
+        debug_image = image_np.copy()
+
+    # 推論結果の処理
+    if results and len(results) > 0:
+        result = results[0] # 各画像に対する検出結果
+        
+        # YOLOv8の検出結果から必要な情報を抽出する
+        boxes = result.boxes
+        
+        for box in boxes:
+            # バウンディングボックスの座標を Roboflow 形式 (center_x, center_y, width, height) に変換
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            center_x = (x1 + x2) / 2
+            center_y = (y1 + y2) / 2
+            width = x2 - x1
+            height = y2 - y1
+
+            confidence = float(box.conf[0]) # 信頼度
+            class_id = int(box.cls[0]) # モデルが出力するクラスID
+
+            # debug用に検出情報をコンソールに出力
+            if debug:
+                print(f"Detected tile - Class ID: {class_id}, Confidence: {confidence:.2f}, BBox: ({center_x:.1f}, {center_y:.1f}, {width:.1f}, {height:.1f})")
+
+            # 変換表に存在しないclass_idは無視
             if class_id in tile_convert:
-                # 座標を元の画像サイズにスケールバック
-                x_orig = float(pred["x"]) * scale_factor
-                y_orig = float(pred["y"]) * scale_factor
-                width_orig = float(pred["width"]) * scale_factor
-                height_orig = float(pred["height"]) * scale_factor
+                # 5萬、5筒、5索の場合、赤ドラ判定を行う
+                if class_id in [19, 20, 21]: # 5萬、5筒、5索のYOLO class_id
+                    # 牌のバウンディングボックスを切り出す
+                    x_min, y_min = int(x1), int(y1)
+                    x_max, y_max = int(x2), int(y2)
+                    cropped_tile_image = image_np[y_min:y_max, x_min:x_max]
 
-                result_array.append({
+                    if check_red_color_with_percentage(cropped_tile_image):
+                        # 赤ドラであれば、専用のclass_idに変換
+                        converted_tile = red_dora_id_map.get(class_id, tile_convert[class_id])
+                    else:
+                        converted_tile = tile_convert[class_id]
+                else:
+                    converted_tile = tile_convert[class_id]
+                
+                detected_tiles.append({
                     "confidence": confidence,
-                    "class_id": class_id,
-                    "x": x_orig,
-                    "y": y_orig,
-                    "width": width_orig,
-                    "height": height_orig
+                    "class_id": converted_tile, # 変換後のclass_idを格納
+                    "x": center_x, # center x
+                    "y": center_y, # center y
+                    "width": width, # width
+                    "height": height # height
                 })
-        return result_array
-    else:
-        # APIからの具体的なエラーメッセージを抽出
-        api_error_message = "Unknown API error"
-        try:
-            error_json = response.json()
-            if "message" in error_json:
-                api_error_message = error_json["message"]
-            elif "error" in error_json: # エラーレスポンスによっては "error" キーの場合もある
-                api_error_message = error_json["error"]
-        except requests.exceptions.JSONDecodeError:
-            # JSON形式でない場合はレスポンステキストをそのまま使用
-            api_error_message = response.text
 
-        # エラータイプ、ステータスコード、メッセージを簡潔に含むValueErrorを発生
-        raise ValueError(f"Roboflow API error (status {response.status_code}): {api_error_message}")
+                # デバッグモードで画像に描画
+                if debug: # 追加
+                    # バウンディングボックスを描画
+                    cv2.rectangle(debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2) # 追加
+                    
+                    # ラベルと信頼度を描画
+                    text = f"{class_id}: {confidence:.2f}" # 追加
+                    cv2.putText(debug_image, text, (int(x1), int(y1) - 10), # 追加
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0), 1) # 追加
+    
+    # デバッグモードがTrueの場合、検出後の画像を保存
+    if debug and len(detected_tiles) > 0: # 何か検出された場合のみ保存 # 追加
+        # 保存フォルダが存在しない場合は作成
+        save_dir = "detected_images" # 追加
+        os.makedirs(save_dir, exist_ok=True) # 追加
+
+        # ファイル名の生成
+        existing_files = [f for f in os.listdir(save_dir) if f.startswith("detected_image_") and f.endswith(".png")] # 追加
+        if not existing_files: # 追加
+            next_id = 1 # 追加
+        else: # 追加
+            max_id = 0 # 追加
+            for f in existing_files: # 追加
+                try: # 追加
+                    num_str = f.replace("detected_image_", "").replace(".png", "") # 追加
+                    max_id = max(max_id, int(num_str)) # 追加
+                except ValueError: # 追加
+                    continue # 数字でないファイル名は無視 # 追加
+            next_id = max_id + 1 # 追加
+        
+        file_path = os.path.join(save_dir, f"detected_image_{next_id}.png") # 追加
+        cv2.imwrite(file_path, debug_image) # 追加
+        print(f"Detected image saved to {file_path}") # 追加
+
+    return detected_tiles
 
 
-def _detect_tiles_with_rotations(image_np: np.ndarray, confidence_threshold: float = 0.6) -> list:
+def _detect_tiles_with_rotations(image_np: np.ndarray, confidence_threshold: float = DETECTION_CONFIDENCE_THRESHOLD) -> list:
     """画像を様々な角度に回転させて牌を検出し、信頼度でフィルタリングした結果を統合して返します。
 
     このヘルパー関数は、特定の画像を元の向き、90度回転、-90度回転の3つの向きで
-    `tile_detection` にかけ、検出された牌の中から指定された信頼度閾値以上のものを集めます。
+    `tile_detection` (ローカル推論版) にかけ、検出された牌の中から指定された信頼度閾値以上のものを集めます。
     これにより、牌の向きに依存しない検出精度向上を目指します。
-    なお、回転後の座標変換はここでは行わず、元の検出結果の座標をそのまま返します。
+    なお、回転後の座標変換はここでは行わず、検出結果の座標（回転後の画像基準）をそのまま返します。
 
     Args:
         image_np (np.ndarray): 検出対象の画像データ (NumPy配列)。
@@ -197,25 +265,39 @@ def _detect_tiles_with_rotations(image_np: np.ndarray, confidence_threshold: flo
     all_raw_results = []
 
     # 0度 (オリジナル) での検出
-    results_0_deg = tile_detection(image_np)
-    for r in results_0_deg:
-        if r["confidence"] >= confidence_threshold:
-            all_raw_results.append(r)
+    try:
+        results_0_deg = tile_detection(image_np)
+        for r in results_0_deg:
+            if r["confidence"] >= confidence_threshold:
+                all_raw_results.append(r)
+    except ValueError as e:
+        # モデルロード失敗などのエラーは、ここで警告を出す代わりに、
+        # エラーが発生したことを把握したい場合はログを使用するなどの方法を取るべきです。
+        # ここでは、エラーが発生しても処理を続行するため、何もせず次の処理に進みます。
+        pass # 何もせず続行
 
     # 90度回転して検出
     rotated_image_90 = np.rot90(image_np)
-    results_90_deg = tile_detection(rotated_image_90)
-    for r in results_90_deg:
-        if r["confidence"] >= confidence_threshold:
-            all_raw_results.append(r)
+    try:
+        results_90_deg = tile_detection(rotated_image_90)
+        for r in results_90_deg:
+            if r["confidence"] >= confidence_threshold:
+                all_raw_results.append(r)
+    except ValueError as e:
+        pass # 何もせず続行
 
     # -90度回転 (270度) して検出
     rotated_image_neg90 = np.rot90(image_np, k=-1)
-    results_neg90_deg = tile_detection(rotated_image_neg90)
-    for r in results_neg90_deg:
-        if r["confidence"] >= confidence_threshold:
-            all_raw_results.append(r)
+    try:
+        results_neg90_deg = tile_detection(rotated_image_neg90) 
+        for r in results_neg90_deg:
+            if r["confidence"] >= confidence_threshold:
+                all_raw_results.append(r)
+    except ValueError as e:
+        pass # 何もせず続行
 
+    # 検出された牌が重複する可能性があるため、必要に応じて後処理を追加する必要がある。
+    # 例: IoUベースでの重複排除など。
     return all_raw_results
 
 
@@ -252,13 +334,22 @@ def dora_detection(board_image_np: np.ndarray) -> list:
         ValueError: `crop_dora_main` から無効な画像が返された場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
-    # crop_dora_main(board_image_np) は、NumPy配列を受け取り、
-    # ドラ表示牌の領域をNumPy配列として返す
+    # クロップモジュールのインポート方法を調整（相対/絶対インポートの試行）
+    try:
+        from .crop_dora_detection import crop_dora_main
+    except ImportError:
+        try:
+            import crop_dora_detection
+            crop_dora_main = crop_dora_detection.crop_dora_main
+        except ImportError:
+            raise ImportError("Could not import 'crop_dora_detection'. Ensure it is in the same directory or accessible via PYTHONPATH.")
+
     cropped_dora_np = crop_dora_main(board_image_np)
 
     # 切り出し画像が有効であることを確認
     if not isinstance(cropped_dora_np, np.ndarray) or cropped_dora_np.size == 0:
-        raise ValueError("Cropped dora indicator image is not a valid NumPy array or is empty.")
+        # ドラ表示牌が見つからなかった場合は空リストを返す
+        return []
 
     # 共通ヘルパー関数を呼び出し、複数の検出結果（牌の種類と信頼度）を取得
     all_raw_results = _detect_tiles_with_rotations(cropped_dora_np, confidence_threshold=0.6)
@@ -266,13 +357,12 @@ def dora_detection(board_image_np: np.ndarray) -> list:
     # class_idのみ配列に格納
     final_tiles = []
     for rd in all_raw_results:
-        converted_tile = tile_convert[rd["class_id"]]
-        final_tiles.append(converted_tile)
+        final_tiles.append(rd["class_id"]) # class_idは既に変換済み
 
     return sorted(final_tiles)
 
 
-def open_detection(board_image_np: np.ndarray) -> list[list[int]]:
+def open_detection(board_image_np: np.ndarray) -> dict:
     """盤面画像から鳴き牌を検出し、その種類（ID）のリストのリストを返します。
 
     `crop_open_detection.py` を使用して鳴き牌領域を切り出し、
@@ -292,38 +382,65 @@ def open_detection(board_image_np: np.ndarray) -> list[list[int]]:
                     リスト内の個々の画像が無効な場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
-    # crop_open_main(board_image_np) は、NumPy配列のリストを返す
-    cropped_naki_image_list = crop_open_main(board_image_np)
+    # クロップモジュールのインポート方法を調整（相対/絶対インポートの試行）
+    try:
+        from .crop_open_detection import crop_open_main
+    except ImportError:
+        try:
+            import crop_open_detection
+            crop_open_main = crop_open_detection.crop_open_main
+        except ImportError:
+            raise ImportError("Could not import 'crop_open_detection'. Ensure it is in the same directory or accessible via PYTHONPATH.")
 
-    all_melded_sets_structured = [] # 各鳴きセットごとの牌リストを格納する
+    cropped_melded_areas_by_player = crop_open_main(board_image_np)
 
-    if not isinstance(cropped_naki_image_list, list):
-        raise ValueError("Cropped open detection result is not in list format.")
+    melded_tiles_by_player_zone = {
+        "melded_tiles_bottom": [],  # 自分（画面下部）
+        "melded_tiles_right": [],   # 下家（画面右側）
+        "melded_tiles_top": [],     # 対面（画面上部）
+        "melded_tiles_left": []     # 上家（画面左側）
+    }
 
-    # リストが空の場合は、鳴き牌がなかったということで正常終了
-    if not cropped_naki_image_list:
-        return []
+    # cropped_melded_areas_by_player は、{"bottom": [img1, img2], "right": [img3], ...} の形式
+    for player_key, list_of_melded_images_for_player in cropped_melded_areas_by_player.items():
+        
+        current_player_melded_sets = [] # このプレイヤーの検出された鳴きセットのリスト
+        for i, cropped_melded_single_np in enumerate(list_of_melded_images_for_player):
+            # 個々の切り出し画像が有効であることを確認
+            if not isinstance(cropped_melded_single_np, np.ndarray) or cropped_melded_single_np.size == 0:
+                # 無効な切り出し画像はスキップ
+                continue
 
-    # 各切り出し画像 (鳴き牌の塊ごと) に対して検出処理を実行
-    for i, cropped_naki_single_np in enumerate(cropped_naki_image_list):
-        # 個々の切り出し画像が有効であることを確認
-        if not isinstance(cropped_naki_single_np, np.ndarray) or cropped_naki_single_np.size == 0:
-            raise ValueError(f"Cropped open detection image (index {i}) is not a valid NumPy array or is empty.")
+            # 共通ヘルパー関数を呼び出し、この「単一の鳴き牌の塊」から検出された牌を取得
+            # 鳴き牌の向きに合わせて画像を回転させて検出を試みる
+            current_img_for_detection = cropped_melded_single_np
+            # crop_open_detection.pyでは鳴き牌の向きを検出していなかったため、
+            # ここでは回転検出を_detect_tiles_with_rotationsに任せます。
+            # もし、crop_open_detection.pyで方向が判断できるようになれば、ここで回転処理を入れることができます。
 
-        # 共通ヘルパー関数を呼び出し、この「単一の鳴き牌の塊」から検出された牌を取得
-        results_for_single_naki = _detect_tiles_with_rotations(cropped_naki_single_np, confidence_threshold=0.6)
+            results_for_single_melded = _detect_tiles_with_rotations(current_img_for_detection, confidence_threshold=0.6)
 
-        # この鳴き塊から検出された牌のIDを変換して一時リストに格納
-        current_naki_tiles_ids = []
-        for rd in results_for_single_naki:
-            converted_tile = tile_convert[rd["class_id"]]
-            current_naki_tiles_ids.append(converted_tile)
+            # この鳴き塊から検出された牌のIDを変換して一時リストに格納
+            current_melded_tiles_ids = []
+            for rd in results_for_single_melded:
+                current_melded_tiles_ids.append(rd["class_id"]) # class_idは既に変換済み
 
-        # 検出された牌があれば、ソートして構造化リストに追加
-        if current_naki_tiles_ids:
-            all_melded_sets_structured.append(sorted(current_naki_tiles_ids))
-
-    return all_melded_sets_structured
+            # 検出された牌があれば、ソートしてリストに追加
+            if current_melded_tiles_ids:
+                current_player_melded_sets.append(sorted(current_melded_tiles_ids))
+        
+        # プレイヤーゾーンに対応するキーに格納
+        # resultの形式に合わせるため、キー名を変換
+        if player_key == 'bottom':
+            melded_tiles_by_player_zone["melded_tiles_bottom"] = current_player_melded_sets
+        elif player_key == 'right':
+            melded_tiles_by_player_zone["melded_tiles_right"] = current_player_melded_sets
+        elif player_key == 'top':
+            melded_tiles_by_player_zone["melded_tiles_top"] = current_player_melded_sets
+        elif player_key == 'left':
+            melded_tiles_by_player_zone["melded_tiles_left"] = current_player_melded_sets
+            
+    return melded_tiles_by_player_zone # 【修正点5】プレイヤーごとの辞書を返す
 
 
 def discard_detection(board_image_np: np.ndarray) -> dict:
@@ -345,8 +462,17 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
                     辞書内の個々の画像が無効な場合、
                     またはその後の牌検出中にエラーが発生した場合。
     """
+    # クロップモジュールのインポート方法を調整（相対/絶対インポートの試行）
+    try:
+        from .crop_discard_detection import crop_discard_main
+    except ImportError:
+        try:
+            import crop_discard_detection
+            crop_discard_main = crop_discard_detection.crop_discard_main
+        except ImportError:
+            raise ImportError("Could not import 'crop_discard_detection'. Ensure it is in the same directory or accessible via PYTHONPATH.")
+
     # crop_discard_main から各プレイヤーの切り出し画像を取得
-    # これが {'bottom': img_np, 'right': img_np, 'top': img_np, 'left': img_np} の形式で返される
     cropped_discard_areas_dict = crop_discard_main(board_image_np)
 
     # プレイヤーゾーンごとの捨て牌リストを初期化
@@ -357,11 +483,8 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
         "discard_tiles_left": []     # 上家（画面左側）
     }
 
+    # クロップ処理からの返り値が辞書でない場合にエラーを発生させるのではなく、空の辞書を返すように変更
     if not isinstance(cropped_discard_areas_dict, dict):
-        raise ValueError("Cropped discard detection result is not in dictionary format.")
-
-    # 辞書が空の場合は、捨て牌がなかったということで正常終了
-    if not cropped_discard_areas_dict:
         return discard_by_player_zone
 
     # crop_discard_detection.py のキーとこの関数のキーのマッピング
@@ -378,25 +501,30 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
         player_zone_actual_key = player_zone_key_map.get(crop_key)
 
         if player_zone_actual_key is None:
-            # 想定外のキーがあればエラー
-            raise ValueError(f"Unknown discard detection key '{crop_key}' detected from crop_discard_detection.")
+            print(f"警告: 未知のキー '{crop_key}' をスキップしました。")
+            continue  # 次のループへ
 
-        # 切り出し画像が有効であることを確認
         if not isinstance(cropped_img_np, np.ndarray) or cropped_img_np.size == 0:
-            raise ValueError(f"Cropped discard image for '{crop_key}' is not a valid NumPy array or is empty.")
+            continue
 
-        # 上家, 下家の場合は画像を90度回転して検出 (tile_detection は既に内部で環境変数から読み込んだ信頼度閾値でフィルタリングを行う)
+        # 上家、下家の場合は画像を90度回転して検出
         current_img_for_detection = cropped_img_np
-        if player_zone_actual_key in ["discard_tiles_right", "discard_tiles_left"]:
+        if player_zone_actual_key in ["discard_tiles_left"]:
             current_img_for_detection = np.rot90(cropped_img_np)
+        
+        if player_zone_actual_key in ["discard_tiles_right"]:
+            current_img_for_detection = np.rot90(cropped_img_np, k=-1)
 
+        if player_zone_actual_key in ["discard_tiles_top"]:
+            current_img_for_detection = np.rot90(cropped_img_np, k=2)
+        
+        # ローカルモデルで牌検出を実行
         detection_results = tile_detection(current_img_for_detection)
 
         # 検出された牌のIDを抽出し、現在のプレイヤーゾーンのリストに追加
         current_zone_tiles = []
         for rd in detection_results:
-            converted_tile = tile_convert[rd["class_id"]]
-            current_zone_tiles.append(converted_tile)
+            current_zone_tiles.append(rd["class_id"]) # class_idは既に変換済み
 
         # 該当するプレイヤーゾーンのリストに牌を追加し、ソート
         discard_by_player_zone[player_zone_actual_key] = sorted(current_zone_tiles)
@@ -418,14 +546,13 @@ def hand_detection(hand_image_np: np.ndarray) -> list:
     Raises:
         ValueError: 牌検出中にエラーが発生した場合。
     """
-    result_array = []
-    # tile_detectionは内部で環境変数から読み込んだ信頼度閾値でフィルタリングを行います
-    detection_results = tile_detection(hand_image_np)
+    # tile_detection はローカル推論版になったため、そのまま呼び出す
+    detection_results = tile_detection(hand_image_np, debug=True)
 
     # class_idのみ配列に格納する
+    result_array = []
     for r in detection_results:
-        converted_tile = tile_convert[r["class_id"]]
-        result_array.append(converted_tile)
+        result_array.append(r["class_id"]) # class_idは既に変換済み
 
     return sorted(result_array)
 
@@ -433,7 +560,7 @@ def hand_detection(hand_image_np: np.ndarray) -> list:
 def analyze_mahjong_board(
     board_image_np: np.ndarray,
     hand_image_np: np.ndarray
-) -> tuple[dict, dict] | dict:
+) -> dict:
     """麻雀の盤面と手牌のNumPy配列を受け取り、現在の局面情報を辞書形式で返します。
 
     この関数は、与えられた画像（NumPy配列）から手牌、鳴き牌、ドラ表示牌、捨て牌を検出し、
@@ -447,15 +574,15 @@ def analyze_mahjong_board(
         hand_image_np (np.ndarray): 手牌の画像データ (NumPy配列)。有効なNumPy配列が保証される。
 
     Returns:
-        tuple[dict, dict]: 解析結果を格納した2つの辞書のタプル (成功時)。
-            最初の辞書 (`result`) は詳細な捨て牌情報を含みます。
-            二番目の辞書 (`result_simple`) は捨て牌情報が簡略化されています。
+        dict: 解析結果を格納した辞書。
+            成功時: {'message': str, 'status': int, 'result': dict, 'result_simple': dict}
+            失敗時: {'message': str, 'status': int}
 
             result (dict):
                 - "turn" (int): 現在の巡目数。
                 - "dora_indicators" (list[int]): ドラ表示牌のIDリスト。
                 - "hand_tiles" (list[int]): 手牌のIDリスト。
-                - "melded_blocks" (list[list[int]]): 鳴き牌のIDリストのリスト。
+                - "melded_tiles" (list[list[int]]): 鳴き牌のIDリストのリスト。
                 - "discard_tiles" (dict): 捨て牌の辞書。
                                         キー: 'discard_tiles_bottom', 'discard_tiles_right',
                                                 'discard_tiles_top', 'discard_tiles_left' (各プレイヤーの捨て牌リスト)
@@ -465,34 +592,60 @@ def analyze_mahjong_board(
                 - "turn" (int): 現在の巡目数。
                 - "dora_indicators" (list[int]): ドラ表示牌のIDリスト。
                 - "hand_tiles" (list[int]): 手牌のIDリスト。
-                - "melded_blocks" (list[list[int]]): 鳴き牌のIDリストのリスト。
+                - "melded_tiles" (list[list[int]]): 鳴き牌のIDリストのリスト。
                 - "discard_tiles" (list[int]): 全ての捨て牌IDをまとめたリスト (ソート済み)。
-
-        dict: エラーが発生した場合は、`{'message': str, 'status': int}` 形式の辞書を返します。
     """
+    # YOLOモデルがロードできているか確認
+    try:
+        model = _load_yolo_model()
+    except (FileNotFoundError, RuntimeError) as e:
+        # モデルロード失敗時にはエラーメッセージを返して終了
+        return {'message': f"Fatal: Model loading failed: {e}", 'status': 501}
+
     try:
         is_board_image_empty = (board_image_np is None or board_image_np.size == 0)
-        # is_hand_image_empty のチェックは前提条件により不要
+        
+        # 手牌画像の有効性チェック
+        if not isinstance(hand_image_np, np.ndarray) or hand_image_np.size == 0:
+            # 無効な手牌画像の場合、エラーを返す
+            return {'message': "Error: Invalid hand image provided.", 'status': 401}
 
-        # 1. 手牌の検出は常に行う (手牌画像は有効であることが保証されているため、直接処理)
+        # 1. 手牌の検出は常に行う
         hand_tiles = hand_detection(hand_image_np)
 
         # 盤面関連の変数を初期化
-        melded_blocks = []
+        melded_tiles_by_zone = {
+            "melded_tiles_bottom": [],  # 自分（画面下部）
+            "melded_tiles_right": [],   # 下家（画面右側）
+            "melded_tiles_top": [],     # 対面（画面上部）
+            "melded_tiles_left": []     # 上家（画面左側）
+        }
         dora_indicators = []
         discard_tiles_by_zone = {
-            "discard_tiles_bottom": [],
-            "discard_tiles_right": [],
-            "discard_tiles_top": [],
-            "discard_tiles_left": []
+            "discard_tiles_bottom": [],  # 自分（画面下部）
+            "discard_tiles_right": [],   # 下家（画面右側）
+            "discard_tiles_top": [],     # 対面（画面上部）
+            "discard_tiles_left": []     # 上家（画面左側）
         }
-        turn = 1 # 捨て牌がない（盤面検出しない）場合は1巡目とする
+        turn = 1  # 巡目数の初期値
 
         if not is_board_image_empty:
             # board_image_np が有効な場合のみ、盤面関連の検出を行う
-            melded_blocks = open_detection(board_image_np)
-            dora_indicators = dora_detection(board_image_np)
-            discard_tiles_by_zone = discard_detection(board_image_np)
+            try:
+                melded_tiles_by_zone = open_detection(board_image_np)
+            except (ValueError, ImportError) as e:
+                # クロップモジュール等でエラーがあった場合、警告を表示して続行 
+                pass # エラーを無視して続行
+            
+            try:
+                dora_indicators = dora_detection(board_image_np)
+            except (ValueError, ImportError) as e:
+                pass # エラーを無視して続行
+
+            try:
+                discard_tiles_by_zone = discard_detection(board_image_np)
+            except (ValueError, ImportError) as e:
+                pass # エラーを無視して続行
 
             # 巡目数の計算 (全てのプレイヤーの捨て牌の合計枚数)
             total_discards = 0
@@ -500,19 +653,21 @@ def analyze_mahjong_board(
                 total_discards += len(discard_tiles_by_zone[zone_key])
 
             turn = turn_calculation(total_discards)
-        else:
-            # 盤面画像が空で検出をスキップした場合
-            pass
-
 
         # 3. 結果の構築
         result = {
             "turn": turn,
             "dora_indicators": dora_indicators,
             "hand_tiles": hand_tiles,
-            "melded_blocks": melded_blocks,
+            "melded_tiles": melded_tiles_by_zone,
             "discard_tiles": discard_tiles_by_zone,
         }
+
+        # result_simpleの構築
+        melded_tiles_mine = result["melded_tiles"].get("melded_tiles_bottom", [])
+        melded_tiles_other = []
+        for zone in ["melded_tiles_right", "melded_tiles_top", "melded_tiles_left"]:
+            melded_tiles_other.extend(result["melded_tiles"].get(zone, []))
 
         # 全ての捨て牌をまとめる
         discard_tiles = []
@@ -524,59 +679,20 @@ def analyze_mahjong_board(
             "turn": turn,
             "dora_indicators": dora_indicators,
             "hand_tiles": hand_tiles,
-            "melded_blocks": melded_blocks,
+            "melded_tiles": {
+                "melded_tiles_mine": melded_tiles_mine,
+                "melded_tiles_other": melded_tiles_other
+            },
             "discard_tiles": simple_discard_tiles,
         }
 
         return {'message': 'Detection successful!', 'status': 200, 'result': result, 'result_simple': result_simple}
 
-    except ValueError as e:
-        # ValueError を捕捉し、メッセージ内容に基づいてステータスコードと簡潔なメッセージを決定
-        raw_message = str(e)
-        status_code = 500 # デフォルトはInternal Server Error
-        display_message = "An internal processing error occurred." # デフォルトの表示メッセージ
-
-        # Roboflow API関連のエラーメッセージを解析
-        if raw_message.startswith("Roboflow API error (status"):
-            match = re.search(r"status (\d{3})\): (.*)", raw_message)
-            if match:
-                api_status_code = int(match.group(1))
-                api_detail_message = match.group(2)
-                status_code = api_status_code # Roboflowからのステータスコードをそのまま利用
-                display_message = f"Roboflow API error: {api_detail_message}"
-            else:
-                # パースに失敗した場合もRoboflowエラーとしてマーク
-                status_code = 502 # Bad Gateway
-                display_message = f"Roboflow API error: Failed to parse API response. Raw: {raw_message}"
-
-        # その他の特定のValueErrorメッセージ
-        elif "Roboflow API key or base URL is not set" in raw_message:
-            status_code = 400
-            display_message = "Configuration error: Roboflow API key or base URL is not set."
-        elif "Failed to encode image" in raw_message:
-            status_code = 400
-            display_message = "Image processing error: Failed to encode image for API submission."
-        elif "not a valid NumPy array or is empty" in raw_message:
-            status_code = 400
-            # このエラーは主にcrop_xxx_detectionの結果が空だった場合に発生すると想定される
-            display_message = f"Input data error: One of the image inputs or cropped regions is invalid or empty. Detail: {raw_message}"
-        elif "detection result is not in list format" in raw_message or \
-            "detection result is not in dictionary format" in raw_message or \
-            "Unknown discard detection key" in raw_message:
-            status_code = 400
-            display_message = f"Internal data consistency error from cropping modules: {raw_message}"
-        else:
-            # その他の未分類のValueError
-            display_message = f"Processing error: {raw_message}"
-
-
-        return {'message': display_message, 'status': status_code}
-    except requests.exceptions.RequestException as e:
-        # ネットワーク関連のエラー
-        return {'message': f"Network Error: Failed to connect to Roboflow API. Detail: {e}", 'status': 503}
+    # 予期せぬエラーが発生した場合も、一貫した形式でエラーメッセージを返す
     except Exception as e:
-        # その他の予期せぬエラー
-        return {'message': f"An unexpected internal error occurred: {type(e).__name__}: {e}", 'status': 500}
+        # もし、このexceptブロックに来るのは、モデルロード失敗以外の予期せぬエラーの場合
+        # モデルロード失敗は、上のtry-exceptで先に処理されるので、ここではそれ以外の例外を扱う
+        return {'message': f"An unexpected internal error occurred: {type(e).__name__}: {e}", 'status': 502}
 
 
 # メイン関数（テスト用）
@@ -587,18 +703,16 @@ if __name__ == '__main__':
     HAND_IMAGE_PATH_TEST = "test_mahjong_tehai_1.jpg"
 
     # 画像を読み込む
-    # ファイルが存在しない、または読み込み失敗の場合、cv2.imreadはNoneを返す
-    # analyze_mahjong_boardはNumPy配列を期待するため、Noneの場合は空の配列を渡す
+    # cv2.imread が None を返した場合、警告を表示して空のNumPy配列にする
     board_image_np = cv2.imread(BOARD_IMAGE_PATH_TEST)
     if board_image_np is None:
         board_image_np = np.array([]) # 盤面画像がない場合は空のNumPy配列を使用
 
     hand_image_np = cv2.imread(HAND_IMAGE_PATH_TEST)
     if hand_image_np is None:
-        # 手牌画像がない場合は処理できないため、最低限でも終了させる
-        print(f"Error: Hand image '{HAND_IMAGE_PATH_TEST}' not found or could not be loaded. Exiting.")
         exit(1)
 
-    # 解析を実行し、結果を出力
+    # analyze_mahjong_board 関数を実行して結果を表示する
     analysis_result = analyze_mahjong_board(board_image_np, hand_image_np)
+    
     print(analysis_result)
