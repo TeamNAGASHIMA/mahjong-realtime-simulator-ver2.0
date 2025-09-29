@@ -167,10 +167,10 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
                     Tile.Pinzu6,
                     Tile.Haku
                 ], 
-                raw_melded_tiles:[
-                    [[Tile.Ton, Tile.Ton, Tile.Ton]], # melded_tiles_mine
-                    [[Tile.Sya, Tile.Sya, Tile.Sya]] # melded_tiles_others
-                ], 
+                raw_melded_tiles:{
+                    melded_tiles_mine:[Tile.Ton, Tile.Ton, Tile.Ton], 
+                    melded_tiles_others:[Tile.Sya, Tile.Sya, Tile.Sya] 
+                }, 
                 river_tiles:[
                     Tile.Pinzu1, 
                     Tile.Pinzu2, 
@@ -262,10 +262,13 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
                 ],
             }
     """
-    melded_blocks = [create_meld_block(block_tiles) for block_tiles in raw_melded_tiles[0]]
-
-    cnt_melded_blocks = [create_meld_block(block_tiles) for block_tiles in raw_melded_tiles[0] + raw_melded_tiles[1]]
-
+    
+    mine_melds_raw = raw_melded_tiles.get("melded_tiles_mine", [])
+    other_melds_raw = raw_melded_tiles.get("melded_tiles_others", [])
+    
+    melded_blocks = [create_meld_block(block_tiles) for block_tiles in mine_melds_raw]
+    all_melded_blocks_raw = mine_melds_raw + other_melds_raw
+    cnt_melded_blocks = [create_meld_block(block_tiles) for block_tiles in all_melded_blocks_raw]
     counts = calc_remaining_tiles(hand_tiles, doraList, cnt_melded_blocks, river_tiles)
 
     req_data = {
