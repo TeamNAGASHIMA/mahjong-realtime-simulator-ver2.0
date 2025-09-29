@@ -168,8 +168,8 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
                     Tile.Haku
                 ], 
                 raw_melded_tiles:{
-                    melded_tiles_mine:[Tile.Ton, Tile.Ton, Tile.Ton], 
-                    melded_tiles_others:[Tile.Sya, Tile.Sya, Tile.Sya] 
+                    melded_tiles_mine:[[Tile.Ton, Tile.Ton, Tile.Ton]], 
+                    melded_tiles_others:[[Tile.Sya, Tile.Sya, Tile.Sya]] 
                 }, 
                 river_tiles:[
                     Tile.Pinzu1, 
