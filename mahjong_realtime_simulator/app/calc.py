@@ -263,8 +263,9 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
             }
     """
     
-    mine_melds_raw = raw_melded_tiles.get("melded_tiles_mine", [])
-    other_melds_raw = raw_melded_tiles.get("melded_tiles_others", [])
+    mine_melds_raw = raw_melded_tiles["melded_tiles_mine"]
+    other_melds_raw = raw_melded_tiles["melded_tiles_others"]
+    
     
     melded_blocks = [create_meld_block(block_tiles) for block_tiles in mine_melds_raw]
     all_melded_blocks_raw = mine_melds_raw + other_melds_raw
