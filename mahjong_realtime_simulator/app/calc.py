@@ -303,7 +303,6 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
     if not res_data["success"]:
         result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
         result["status"] = 500
-        result["status"] = 500
         result["result"] = ""
         return result
     # success
@@ -453,7 +452,6 @@ def score_calc(data, river_tiles):
     # error
     if not res_data["success"]:
         result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = 500
         result["status"] = 500
         result["result"] = ""
         return result
