@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 
 // --- 画像リソースのインポート ---
-// (変更なし)
 import M1 from './img/M1.png';
 import M2 from './img/M2.png';
 import M3 from './img/M3.png';
@@ -42,7 +41,6 @@ import Z6 from './img/Z6.png';
 import Z7 from './img/Z7.png';
 
 // --- データマッピング ---
-// (変更なし)
 const TILE_IMAGES = {
   M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, 
   P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9,  
@@ -67,8 +65,7 @@ const TILE_NUM_TO_IMAGE_KEY = {
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
 const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
 
-// --- CSS定義 ---
-// (変更なし - 見やすくするため、変更なしの箇所も含まれます)
+// --- CSS定義 --- (既存のスタイルにボタン用スタイルを追加)
 const styles = `
   body { background-color: #222; margin: 0; font-family: sans-serif; }
   .tile-pool { 
@@ -238,10 +235,26 @@ const styles = `
     transition: background-color 0.2s;
   }
   .modal-cancel-button:hover { background-color: #c0392b; }
+  .reset-button { /* 追加ボタンのスタイル */
+    font-family: "'Inter', sans-serif";
+    font-size: 12px;
+    color: #ffffff;
+    background-color: #dc3545; /* 赤系の色 */
+    border: 1px solid #c82333;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    margin-left: 10px; /* 他のボタンとの間隔 */
+  }
+  .reset-button:hover {
+    background-color: #c82333;
+  }
 `;
 
 // --- 子コンポーネント定義 ---
-const StatusHeader = ({ title }) => {
+const StatusHeader = ({ title, onResetClick }) => {
   const [isSimulatorMode, setIsSimulatorMode] = useState(false);
   const handleToggleClick = () => setIsSimulatorMode(prevMode => !prevMode);
   const buttonText = isSimulatorMode ? 'リアルタイムシミュレーター' : '牌譜';
@@ -254,7 +267,10 @@ const StatusHeader = ({ title }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0 15px 0' }}>
       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#FFFFFF', fontWeight: 'bold' }}>{title}</span>
-      <button style={buttonStyle} onClick={handleToggleClick}>{buttonText}</button>
+      <div> {/* ボタンを並べるためのコンテナ */}
+        <button style={buttonStyle} onClick={handleToggleClick}>{buttonText}</button>
+        <button className="reset-button" onClick={onResetClick}>全クリア</button> {/* ★★★ 追加: 全クリアボタン ★★★ */}
+      </div>
     </div>
   );
 };
@@ -276,7 +292,6 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
   const src = TILE_IMAGES[imageKey];
   const alt = TILE_NUM_TO_NAME[tileNum] || '不明';
   
-  // ★★★ ここを修正しました (文字列からオブジェクトへ) ★★★
   const sizeStyles = {
     hand: { width: '45px', height: '65px' },
     tsumo: { width: '45px', height: '65px' },
@@ -296,7 +311,6 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
 
 const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
   const slots = Array(5).fill(null);
-  // indicatorsが配列であることを保証しているので、安全にforEachを呼び出せる
   indicators.forEach((tileNum, index) => { 
     if (index < 5) slots[index] = tileNum; 
   });
@@ -320,7 +334,6 @@ const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
 const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick }) => {
     const maxDiscards = 21; 
     const slots = Array(maxDiscards).fill(null);
-    // discardsが配列であることを保証しているので、安全にforEachを呼び出せる
     discards.forEach((tileNum, index) => {
         if (index < maxDiscards) slots[index] = tileNum;
     });
@@ -358,7 +371,6 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                             <div onClick={(e) => { e.stopPropagation(); onTileClick(playerKey, i); }}>
                                 <Tile
                                     tileNum={tileNum} size="discard"
-                                    // isSelectedの判定から'last_discard'を削除
                                     isSelected={selection.type === 'discard' && selection.playerKey === playerKey && selection.index === i}
                                 />
                             </div>
@@ -477,7 +489,7 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとしてboardStateとonBoardStateChangeを受け取る
+const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) => { 
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
   const RED_TO_NORMAL_MAP = { 34: 4, 35: 13, 36: 22 };
@@ -613,11 +625,11 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
   };
   
   const handleSelectMeld = (meldToMake) => {
-    const newBoardState = JSON.parse(JSON.stringify(boardState)); // boardState のディープコピー
+    const newBoardState = JSON.parse(JSON.stringify(boardState)); 
         let hand = newBoardState.hand_tiles;
         let tsumo = newBoardState.tsumo_tile;
 
-        console.log("Attempting to make meld:", meldToMake); // [修正1-1] 鳴き候補のログ出力
+        console.log("Attempting to make meld:", meldToMake); 
 
         const removeTilesFromHand = (tilesToRemove) => {
             for (const tile of tilesToRemove) {
@@ -627,8 +639,8 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                 } else if (tsumo === tile) {
                     tsumo = null;
                 } else {
-                    console.warn(`[DEBUG] Tile to remove (${TILE_NUM_TO_NAME[tile] || 'Unknown'} / ${tile}) not found in hand or tsumo tile.`); // [修正1-2] 牌が見つからない場合の警告ログ
-                    return false; // 牌が見つからない場合は失敗
+                    console.warn(`[DEBUG] Tile to remove (${TILE_NUM_TO_NAME[tile] || 'Unknown'} / ${tile}) not found in hand or tsumo tile.`); 
+                    return false; 
                 }
             }
             return true;
@@ -637,53 +649,52 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
         if (meldToMake.type === 'kakan') {
             const meldToUpdate = newBoardState.melds.self[meldToMake.from_meld_index];
             if(removeTilesFromHand(meldToMake.tiles)) {
-                meldToUpdate.type = 'minkan'; // 加槓後は明槓扱い
+                meldToUpdate.type = 'minkan'; 
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
                 meldToUpdate.tiles.sort((a, b) => a - b);
-                console.log("Kakan created. New meld tiles:", meldToUpdate.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-3] 加槓後の面子のログ
+                console.log("Kakan created. New meld tiles:", meldToUpdate.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
             } else {
-                console.error("[ERROR] Failed to remove tiles for kakan.", meldToMake.tiles); // [修正1-4] エラーログ
+                console.error("[ERROR] Failed to remove tiles for kakan.", meldToMake.tiles); 
             }
         } else if (meldToMake.type === 'ankan') {
             if(removeTilesFromHand(meldToMake.tiles)) {
                 newBoardState.melds.self.push({ type: 'ankan', tiles: meldToMake.tiles, from: 'self' });
-                console.log("Ankan created. New meld tiles:", meldToMake.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-5] 暗槓後の面子のログ
+                console.log("Ankan created. New meld tiles:", meldToMake.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
             } else {
-                console.error("[ERROR] Failed to remove tiles for ankan.", meldToMake.tiles); // [修正1-6] エラーログ
+                console.error("[ERROR] Failed to remove tiles for ankan.", meldToMake.tiles); 
             }
-        } else if (meldToMake.from) { // 他家からの鳴き (ポン、チー、大明槓)
+        } else if (meldToMake.from) { 
             const fromPlayer = meldToMake.from;
-            const calledTile = meldToMake.called_tile; // last_discard.tileから取得
+            const calledTile = meldToMake.called_tile; 
 
             if (removeTilesFromHand(meldToMake.hand_tiles)) {
                 const discardPile = newBoardState.player_discards[fromPlayer];
-                const discardIndex = discardPile.lastIndexOf(calledTile); // 最新の捨て牌を対象
+                const discardIndex = discardPile.lastIndexOf(calledTile); 
                 if(discardIndex > -1) discardPile.splice(discardIndex, 1);
 
                 const meldTiles = [...meldToMake.hand_tiles, calledTile].sort((a,b)=>a-b);
                 let exposed_index;
                 if (meldToMake.type === 'chi') {
                     exposed_index = meldTiles.findIndex(t => t === calledTile);
-                } else { // ポン, 大明槓
-                    // どの位置に捨て牌がくるかは、誰から鳴いたかによる
-                    if (fromPlayer === 'kamicha') exposed_index = 0; // 上家からなら左端
-                    else if (fromPlayer === 'toimen') exposed_index = 1; // 対面からなら真ん中
-                    else if (fromPlayer === 'shimocha') exposed_index = 2; // 下家からなら右端
-                    else exposed_index = 0; // デフォルト
+                } else { 
+                    if (fromPlayer === 'kamicha') exposed_index = 0; 
+                    else if (fromPlayer === 'toimen') exposed_index = 1; 
+                    else if (fromPlayer === 'shimocha') exposed_index = 2; 
+                    else exposed_index = 0; 
                 }
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
                 newBoardState.melds.self.push({ type: meldType, tiles: meldTiles, from: fromPlayer, exposed_index });
-                console.log("Pon/Chi/Daiminkan created. New meld tiles:", meldTiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正1-7] ポン/チー/大明槓後の面子のログ
+                console.log("Pon/Chi/Daiminkan created. New meld tiles:", meldTiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
             } else {
-                console.error("[ERROR] Failed to remove tiles from hand for pon/chi/daiminkan.", meldToMake.hand_tiles); // [修正1-8] エラーログ
+                console.error("[ERROR] Failed to remove tiles from hand for pon/chi/daiminkan.", meldToMake.hand_tiles); 
             }
         }
         
         newBoardState.hand_tiles = hand.sort((a, b) => a - b);
         newBoardState.tsumo_tile = tsumo;
         newBoardState.last_discard = { tile: null, from: null, index: null }; 
-    onBoardStateChange(newBoardState); // 親の状態更新関数を呼び出す
+    onBoardStateChange(newBoardState); 
     setSelection({type: null});
     setIsMeldModalOpen(false);
   };
@@ -704,7 +715,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
   const handlePoolTileClick = (newTileNum) => {
     if (!selection.type) return;
     
-    const newBoardState = JSON.parse(JSON.stringify(boardState)); // boardState のディープコピー
+    const newBoardState = JSON.parse(JSON.stringify(boardState)); 
     const sortedHand = [...newBoardState.hand_tiles].sort((a, b) => a - b);
     
     const getSelectedTileNum = () => {
@@ -809,17 +820,16 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
             newBoardState.dora_indicators[selection.index] = newTileNum;
             break;
         case 'meld': {
-            // ★★★ ここを修正しました（鳴き面子の個別の牌は変更できない） ★★★
             alert("鳴いた面子の個別の牌は変更できません。面子全体を崩すには、面子の牌をクリックし直してください。");
             setSelection({ type: null }); 
-            return; // これ以上処理せずに終了
+            return; 
         }
         default: break;
     }
     
     newBoardState.hand_tiles.sort((a,b) => a - b);
-    onBoardStateChange(newBoardState); // 親の状態更新関数を呼び出す
-    setSelection({ type: null }); // 牌プールから選択後は選択解除
+    onBoardStateChange(newBoardState); 
+    setSelection({ type: null }); 
   };
   
   const handleTileClick = (type, index, playerKey = 'self', options = {}) => {
@@ -829,7 +839,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
       const isSameTile = selection.type === newSelection.type &&
                           selection.index === newSelection.index &&
                           selection.playerKey === newSelection.playerKey &&
-                          selection.meldIndex === newSelection.meldIndex; // meldIndexは面子の牌にのみ適用
+                          selection.meldIndex === newSelection.meldIndex; 
 
       // 同じ自分の鳴き面子がクリックされた場合、面子全体を再クリックで崩すロジックのための判定
       const isSameMeld = selection.type === 'meld' && selection.playerKey === 'self' &&
@@ -840,29 +850,29 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
       if (isSameTile || isSameMeld) {
           if (isSameMeld) {
               // 自分の鳴き面子が再度クリックされた場合に、崩す処理を実行
-              onBoardStateChange(prevBoardState => { // 親の状態更新関数を呼び出す
+              onBoardStateChange(prevBoardState => { 
                   const newBoardState = JSON.parse(JSON.stringify(prevBoardState));
                   const meldToBreak = newBoardState.melds.self[selection.meldIndex];
                   if (meldToBreak) {
-                      console.log("[DEBUG] Breaking meld. Tiles to return to hand:", meldToBreak.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正2-1] 崩す面子の牌をログ出力
+                      console.log("[DEBUG] Breaking meld. Tiles to return to hand:", meldToBreak.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
                       newBoardState.hand_tiles.push(...meldToBreak.tiles);
                       newBoardState.melds.self.splice(selection.meldIndex, 1);
                       newBoardState.hand_tiles.sort((a, b) => a - b);
-                      console.log("[DEBUG] Hand after breaking meld:", newBoardState.hand_tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); // [修正2-2] 面子解除後の手牌の状態をログ出力
+                      console.log("[DEBUG] Hand after breaking meld:", newBoardState.hand_tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
                   } else {
-                      console.error("[ERROR] Attempted to break non-existent meld at index:", selection.meldIndex); // [修正2-3] 存在しない面子を崩そうとした場合のエラーログ
+                      console.error("[ERROR] Attempted to break non-existent meld at index:", selection.meldIndex); 
                   }
                   return newBoardState;
               });
           }
-          setSelection({ type: null }); // 選択解除
+          setSelection({ type: null }); 
 
       } else { // 異なる要素がクリックされた場合 -> 新しい要素を選択
           setSelection(newSelection);
 
           // もしクリックされたのが他家の捨て牌なら、last_discard も更新する
           if (newSelection.type === 'discard' && newSelection.playerKey !== 'self') {
-              onBoardStateChange(prevBoardState => ({ // 親の状態更新関数を呼び出す
+              onBoardStateChange(prevBoardState => ({ 
                   ...prevBoardState,
                   last_discard: {
                       tile: prevBoardState.player_discards[newSelection.playerKey][newSelection.index],
@@ -873,7 +883,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
           } else {
               // 他の要素が選択された場合 (手牌、自摸牌、自分の捨て牌、ドラなど) は last_discard をクリアする
               // これにより、鳴き候補は直近の他家捨て牌にのみ反応するようになる
-              onBoardStateChange(prevBoardState => ({ // 親の状態更新関数を呼び出す
+              onBoardStateChange(prevBoardState => ({ 
                   ...prevBoardState,
                   last_discard: { tile: null, from: null, index: null }
               }));
@@ -882,12 +892,24 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
   }
   
   const sortedHand = [...boardState.hand_tiles].sort((a,b) => a - b);
-  const meldCandidates = findMeldCandidates(boardState); // boardStateを直接渡す
+  const meldCandidates = findMeldCandidates(boardState); 
 
   const playerWindNames = { self: WIND_NUM_TO_KANJI[boardState.player_winds.self] || '東', shimocha: WIND_NUM_TO_KANJI[boardState.player_winds.shimocha] || '南', toimen: WIND_NUM_TO_KANJI[boardState.player_winds.toimen] || '西', kamicha: WIND_NUM_TO_KANJI[boardState.player_winds.kamicha] || '北' };
   const roundWindKanji = WIND_NUM_TO_KANJI[boardState.round_wind] || '東';
-  const headerTitle = <>状況 (巡目:<span className="clickable-text" onClick={handleTurnChange}>{boardState?.turn || '未'}</span> 場風:<span className="clickable-text" onClick={handleRoundWindChange}>{roundWindKanji}</span>)</>;
   
+  // ★★★ 修正3: StatusHeader に onResetClick プロップを渡す ★★★
+  const headerTitle = (
+    <>
+      状況 (巡目:<span className="clickable-text" onClick={handleTurnChange}>{boardState?.turn || '未'}</span> 場風:<span className="clickable-text" onClick={handleRoundWindChange}>{roundWindKanji}</span>)
+    </>
+  );
+
+  const handleClearAll = () => {
+    onResetBoardState(); // 親から受け取ったリセット関数を呼び出す
+    setSelection({ type: null }); // 現在の選択状態もクリア
+    setIsMeldModalOpen(false); // 鳴きモーダルも閉じる
+  };
+
   const MAX_HAND_SLOTS = 13;
   const numMelds = boardState.melds.self.length;
   
@@ -904,10 +926,9 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
         {selection.type && <div className="tile-pool">{ALL_TILES_IN_POOL.map(tileNum => <Tile key={`pool-${tileNum}`} tileNum={tileNum} size="pool" onClick={() => handlePoolTileClick(tileNum)} />)}</div>}
         <div onClick={(e) => { e.stopPropagation(); setSelection({type: null}); }}>
           <div onClick={e => e.stopPropagation()}>
-            <StatusHeader title={headerTitle} />
+            <StatusHeader title={headerTitle} onResetClick={handleClearAll} /> {/* ★★★ 修正3: onResetClickを渡す ★★★ */}
             <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} />
             <div className="upper-game-area">
-              {/* 各プレイヤーのonTileClickをhandleTileClickに統一 */}
               <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
               <PlayerDisplay playerKey="shimocha" label="下家" subLabel={playerWindNames.shimocha} discards={boardState.player_discards.shimocha} melds={boardState.melds.shimocha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'shimocha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
               <PlayerDisplay playerKey="toimen" label="対面" subLabel={playerWindNames.toimen} discards={boardState.player_discards.toimen} melds={boardState.melds.toimen} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'toimen'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
@@ -931,11 +952,11 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                 <div className="hand-tiles-container">
                   {[...Array(MAX_HAND_SLOTS - numMelds * 3)].map((_, i) => (
                     <div key={i} className="hand-tile" onClick={() => (sortedHand[i] === undefined) && setSelection({ type: 'add_hand' })}>
-                      {sortedHand[i] !== undefined ? ( // 存在する手牌
+                      {sortedHand[i] !== undefined ? ( 
                         <div onClick={() => handleTileClick('hand', i)}>
                           <Tile tileNum={sortedHand[i]} size="hand" isSelected={selection.type === 'hand' && selection.index === i} />
                         </div>
-                      ) : ( // 空のスロット
+                      ) : ( 
                         <div className="empty-slot">
                           {selection.type === 'add_hand' && <div className="selection-highlight"></div>}
                         </div>
@@ -948,7 +969,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange }) => { // propsとし
                         <Tile tileNum={boardState.tsumo_tile} size="tsumo" isSelected={selection.type === 'tsumo'} />
                       </div>
                     ) : (
-                      (sortedHand.length + numMelds * 3) < 14 && // 手牌と面子の合計が14枚未満の場合のみツモ牌スロットを表示
+                      (sortedHand.length + numMelds * 3) < 14 && 
                       <div className="empty-slot" onClick={() => setSelection({ type: 'add_tsumo' })}>
                         {selection.type === 'add_tsumo' && <div className="selection-highlight"></div>}
                       </div>
