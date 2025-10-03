@@ -168,8 +168,8 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
                     Tile.Haku
                 ], 
                 raw_melded_tiles:{
-                    melded_tiles_mine:[Tile.Ton, Tile.Ton, Tile.Ton], 
-                    melded_tiles_others:[Tile.Sya, Tile.Sya, Tile.Sya] 
+                    melded_tiles_mine:[[Tile.Ton, Tile.Ton, Tile.Ton]], 
+                    melded_tiles_other:[[Tile.Sya, Tile.Sya, Tile.Sya]] 
                 }, 
                 river_tiles:[
                     Tile.Pinzu1, 
@@ -263,8 +263,9 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
             }
     """
     
-    mine_melds_raw = raw_melded_tiles.get("melded_tiles_mine", [])
-    other_melds_raw = raw_melded_tiles.get("melded_tiles_others", [])
+    mine_melds_raw = raw_melded_tiles.get("melded_tiles_mine",[])
+    other_melds_raw = raw_melded_tiles.get("melded_tiles_other",[])
+
     
     melded_blocks = [create_meld_block(block_tiles) for block_tiles in mine_melds_raw]
     all_melded_blocks_raw = mine_melds_raw + other_melds_raw
