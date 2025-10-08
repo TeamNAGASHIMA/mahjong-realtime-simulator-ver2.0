@@ -18,7 +18,8 @@ const SidePanel = forwardRef((props, ref) => {
   const {
     selectedBoardCamera,
     selectedHandCamera,
-    onRecognize,
+    // onRecognize プロップは CalculationButton がトリガーになるため不要になる
+    // しかし、isRecognizing は CameraPreview のボタンを disabled にするために必要
     isRecognizing,
     settings,
     onSettingsChange,
@@ -29,7 +30,7 @@ const SidePanel = forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getSidePanelData: () => {
-      const images = cameraRef.current?.getPreviewImages();
+      const images = cameraRef.current?.getPreviewImages(); // CameraPreviewから画像を取得
       const panelSettings = settingsRef.current?.getSettings();
       
       return {
@@ -45,8 +46,8 @@ const SidePanel = forwardRef((props, ref) => {
         ref={cameraRef}
         boardCameraId={selectedBoardCamera}
         handCameraId={selectedHandCamera}
-        onRecognize={onRecognize}
-        isRecognizing={isRecognizing}
+        onRecognize={() => {}} // ★ダミー関数を渡すか、削除する（ボタンがトリガーではないため）
+        isRecognizing={isRecognizing} // CameraPreviewのボタンを無効にするために渡す
       />
       <SettingsPanel
         ref={settingsRef}

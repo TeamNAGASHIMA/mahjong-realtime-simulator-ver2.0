@@ -138,7 +138,7 @@ def print_result(result):
                 )
 
 # 期待値計算
-def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
+def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, syanten_Type, flag):
     """
     引数:
     - doraList: ドラ
@@ -149,32 +149,33 @@ def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, 
     - syanten_Type: 聴牌タイプ
     - flag: 設定フラグ
 
-    async_score_calc(
-        doraList:[Tile.Manzu5], 
-        hand_tiles:[
-            Tile.Manzu1, 
-            Tile.Manzu2, 
-            Tile.Manzu3,
-            Tile.Pinzu4, 
-            Tile.Pinzu5, 
-            Tile.Pinzu6,
-            Tile.Haku
-        ], 
-        raw_melded_blocks:[
-            [Tile.Ton, Tile.Ton, Tile.Ton],
-            [Tile.Sya, Tile.Sya, Tile.Sya]
-        ], 
-        river_tiles:[
-            Tile.Pinzu1, 
-            Tile.Pinzu2, 
-            Tile.Pinzu3, 
-            Tile.Pinzu4, 
-            Tile.Pinzu5
-        ], 
-        turn:1,
-        syanten_Type:SyantenType.Normal,
-        flag:ExpOption.CalcSyantenDown + ExpOption.CalcTegawari
-    )
+        例:
+            async_score_calc(
+                doraList:[Tile.Manzu5], 
+                hand_tiles:[
+                    Tile.Manzu1, 
+                    Tile.Manzu2, 
+                    Tile.Manzu3,
+                    Tile.Pinzu4, 
+                    Tile.Pinzu5, 
+                    Tile.Pinzu6,
+                    Tile.Haku
+                ], 
+                raw_melded_tiles:{
+                    melded_tiles_mine:[[Tile.Ton, Tile.Ton, Tile.Ton]], 
+                    melded_tiles_other:[[Tile.Sya, Tile.Sya, Tile.Sya]] 
+                }, 
+                river_tiles:[
+                    Tile.Pinzu1, 
+                    Tile.Pinzu2, 
+                    Tile.Pinzu3, 
+                    Tile.Pinzu4, 
+                    Tile.Pinzu5
+                ], 
+                turn:1,
+                syanten_Type:SyantenType.Normal,
+                flag:ExpOption.CalcSyantenDown + ExpOption.CalcTegawari
+            )
 
     戻り値:
     - tile: 打牌する牌
@@ -254,9 +255,15 @@ def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, 
         ],
     }
     """
-    melded_blocks = [create_meld_block(block_tiles) for block_tiles in raw_melded_blocks]
+    
+    mine_melds_raw = raw_melded_tiles.get("melded_tiles_mine",[])
+    other_melds_raw = raw_melded_tiles.get("melded_tiles_other",[])
 
-    counts = calc_remaining_tiles(hand_tiles, doraList, melded_blocks, river_tiles)
+    
+    melded_blocks = [create_meld_block(block_tiles) for block_tiles in mine_melds_raw]
+    all_melded_blocks_raw = mine_melds_raw + other_melds_raw
+    cnt_melded_blocks = [create_meld_block(block_tiles) for block_tiles in all_melded_blocks_raw]
+    counts = calc_remaining_tiles(hand_tiles, doraList, cnt_melded_blocks, river_tiles)
 
     req_data = {
         "version": "0.9.0",
@@ -284,7 +291,7 @@ def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, 
     # error
     if not res_data["success"]:
         result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = 400
+        result["status"] = 500
         result["result"] = ""
         return result
     # success
@@ -432,7 +439,7 @@ def score_calc(data, river_tiles):
     # error
     if not res_data["success"]:
         result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = "400"
+        result["status"] = 500
         result["result"] = ""
         return result
     # success

@@ -68,7 +68,7 @@ const styles = {
 };
 
 const CameraPreviewPanel = forwardRef(({
-  onRecognize,
+  onRecognize, // このプロップは使われなくなるが、互換性のために残す
   isRecognizing,
   boardCameraId,
   handCameraId
@@ -173,20 +173,18 @@ const CameraPreviewPanel = forwardRef(({
           <div style={styles.previewHeader}>盤面</div>
           {/* videoタグのstyleはstyles.previewBoxを直接参照するだけでOK */}
           <video ref={boardVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
-          {onRecognize && (
-              <button onClick={() => onRecognize('board')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
-                  {isRecognizing ? '認識中...' : '盤面全体を認識'}
-              </button>
-          )}
+          {/* onRecognize の呼び出しを削除。isRecognizing のみでボタン無効化 */}
+          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
+              {isRecognizing ? '認識中...' : '盤面全体を認識 (計算と同時実行)'}
+          </button>
         </div>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>手牌</div>
           <video ref={handVideoRef} style={styles.previewBox} autoPlay playsInline muted></video>
-          {onRecognize && (
-              <button onClick={() => onRecognize('hand')} disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
-                  {isRecognizing ? '認識中...' : '自分の手牌を認識'}
-              </button>
-          )}
+          {/* onRecognize の呼び出しを削除。isRecognizing のみでボタン無効化 */}
+          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}>
+              {isRecognizing ? '認識中...' : '自分の手牌を認識 (計算と同時実行)'}
+          </button>
         </div>
       </div>
     </div>
