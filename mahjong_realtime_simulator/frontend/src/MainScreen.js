@@ -27,7 +27,7 @@ const styles = {
     width: '100%',
     height: '100%',
     margin: '0 auto',
-    border: '1px solid #ccc',
+    // border: '1px solid #ccc', // 開発中は境界線があるとレイアウトが分かりやすい
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -45,7 +45,7 @@ const styles = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 0,
+    minWidth: 0, // この設定はflexアイテムが縮小する際に重要なので残す
   },
   sidePanelWrapper: {
     display: 'flex',
