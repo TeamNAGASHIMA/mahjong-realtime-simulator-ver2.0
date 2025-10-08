@@ -25,13 +25,10 @@ const SidePanel = forwardRef((props, ref) => {
     onSettingsChange,
   } = props;
 
-  // 子コンポーネントへの参照を内部で作成
   const cameraRef = useRef(null);
   const settingsRef = useRef(null);
 
-  // 親コンポーネント(MainScreen)に公開するメソッドを定義
   useImperativeHandle(ref, () => ({
-    // このメソッド一つで、SidePanel配下の全てのデータを取得できるようにする
     getSidePanelData: () => {
       const images = cameraRef.current?.getPreviewImages(); // CameraPreviewから画像を取得
       const panelSettings = settingsRef.current?.getSettings();
