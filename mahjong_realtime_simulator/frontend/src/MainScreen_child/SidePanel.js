@@ -1,6 +1,6 @@
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
-import CameraPreview from './CameraPreview';
-import SettingsPanel from './SettingsPanel';
+import CameraPreview from './SidePanel_child/CameraPreview';
+import SettingsPanel from './SidePanel_child/SettingsPanel';
 
 const styles = {
   sidePanelContainer: {
