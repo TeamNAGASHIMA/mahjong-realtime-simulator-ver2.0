@@ -437,7 +437,9 @@ def score_calc(data, river_tiles):
             }
     """
 
-    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], data["melded_blocks"], river_tiles)
+
+    melded_blocks = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
+    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], melded_blocks, river_tiles)
     # data["melded_blocks"] = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
     
     payload = json.dumps(data)
