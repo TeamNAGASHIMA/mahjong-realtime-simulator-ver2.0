@@ -76,7 +76,7 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
-                    if len(detection_result["hand_tiles"]) <= 12 or len(detection_result["hand_tiles"]) >= 15:
+                    if len(detection_result["hand_tiles"]) + (len(detection_result["melded_blocks"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_blocks"]) * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
                         status =420
 
@@ -108,7 +108,7 @@ def main(request):
                         "discard_tiles": fixes_river_tiles
                     }
 
-                    if len(fixes_data["hand_tiles"]) <= 12 or len(fixes_data["hand_tiles"]) >= 15:
+                    if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                         status =420
 
