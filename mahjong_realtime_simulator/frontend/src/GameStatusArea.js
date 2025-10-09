@@ -4,7 +4,14 @@ import TileDisplayArea from './TileDisplayArea';
 import CalculationButton from './CalculationButton';
 import CalculationResults from './CalculationResults';
 
-const styles = { /* ... (変更なし) ... */ };
+const styles = { 
+  gameStatusContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    flexGrow: 1,
+  }
+};
 
 const GameStatusArea = ({
   boardState,
@@ -13,16 +20,15 @@ const GameStatusArea = ({
   onStartCalculation,
   isCalculationDisabled,
   isRecognizing,
-  onBoardStateChange, // 親から受け取るonBoardStateChange
+  onBoardStateChange,
+  onResetBoardState, // ★★★ 追加: 新しいプロップを受け取る ★★★
 }) => {
-  // TileDisplayAreaが直接onBoardStateChangeを呼び出すため、
-  // GameStatusArea内でhandleTileChange関数を定義する必要はなくなりました。
-
   return (
     <div style={styles.gameStatusContainer}>
       <TileDisplayArea
         boardState={boardState}
-        onBoardStateChange={onBoardStateChange} // TileDisplayAreaがboardStateを変更したときに親に通知するため、直接渡します
+        onBoardStateChange={onBoardStateChange}
+        onResetBoardState={onResetBoardState} 
       />
 
       <CalculationButton

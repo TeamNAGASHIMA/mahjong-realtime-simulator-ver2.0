@@ -90,8 +90,6 @@ const CameraPreviewPanel = forwardRef(({
     }
     const constraints = { video: { deviceId: { exact: boardCameraId } } };
     let stream;
-
-    // 指定されたIDでカメラを取得
     navigator.mediaDevices.getUserMedia(constraints)
       .then(s => {
         stream = s;
@@ -100,14 +98,12 @@ const CameraPreviewPanel = forwardRef(({
         }
       })
       .catch(err => console.error(`盤面カメラ(ID: ${boardCameraId})の起動に失敗 (CameraPreview):`, err));
-
-    // クリーンアップ関数: コンポーネントがアンマウントされる時にストリームを停止
     return () => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
     };
-  }, [boardCameraId]); // boardCameraId propが変更された時のみ、このeffectを再実行
+  }, [boardCameraId]);
 
   // 手牌カメラのストリーム管理 (ロジックは元のままでOK)
   useEffect(() => {
@@ -120,8 +116,6 @@ const CameraPreviewPanel = forwardRef(({
     }
     const constraints = { video: { deviceId: { exact: handCameraId } } };
     let stream;
-
-    // 指定されたIDでカメラを取得
     navigator.mediaDevices.getUserMedia(constraints)
       .then(s => {
         stream = s;
@@ -130,25 +124,22 @@ const CameraPreviewPanel = forwardRef(({
         }
       })
       .catch(err => console.error(`手牌カメラ(ID: ${handCameraId})の起動に失敗 (CameraPreview):`, err));
-
-    // クリーンアップ関数
     return () => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
     };
-  }, [handCameraId]); // handCameraId propが変更された時のみ、このeffectを再実行
+  }, [handCameraId]);
 
-  // 親コンポーネントに公開するメソッド（画像キャプチャ用）
+  // useImperativeHandleは元のままでOK
   useImperativeHandle(ref, () => ({
     getPreviewImages: () => {
       const captureFrame = (videoElement) => {
-        if (!videoElement || !videoElement.srcObject) return null; // 映像がなければnullを返す
+        if (!videoElement || !videoElement.srcObject) return null;
         const canvas = document.createElement('canvas');
         canvas.width = videoElement.videoWidth;
         canvas.height = videoElement.videoHeight;
         const ctx = canvas.getContext('2d');
-        // 映像は左右反転して表示しているので、キャプチャ時も反転させる
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
@@ -164,7 +155,6 @@ const CameraPreviewPanel = forwardRef(({
 
   const handleToggle = () => setIsSupportMode(prev => !prev);
 
-  // レンダリング部分
   return (
     <div style={styles.cameraPreviewScreen}>
       <div style={styles.header}>
@@ -174,19 +164,10 @@ const CameraPreviewPanel = forwardRef(({
         </button>
       </div>
 
-      {/* サポート画面エリア */}
-      {/* isSupportModeがtrueの時だけ表示 (display: 'flex') */}
-      <div style={{
-          display: isSupportMode ? 'flex' : 'none',
-          flexGrow: 1,
-          alignItems: 'center',
-          justifyContent: 'center'
-      }}>
+      <div style={{ display: isSupportMode ? 'flex' : 'none', flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
         <p>サポート情報はこちらに表示されます。</p>
       </div>
 
-      {/* カメラプレビューエリア */}
-      {/* isSupportModeがfalseの時だけ表示 (display: 'block') */}
       <div style={{ display: isSupportMode ? 'none' : 'block' }}>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>盤面</div>

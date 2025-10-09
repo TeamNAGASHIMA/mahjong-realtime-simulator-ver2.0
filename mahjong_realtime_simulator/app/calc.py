@@ -138,7 +138,7 @@ def print_result(result):
                 )
 
 # 期待値計算
-def main_score_calc(doraList, hand_tiles, raw_melded_blocks, river_tiles, turn, syanten_Type, flag):
+def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, syanten_Type, flag):
     """
     引数:
     - doraList: ドラ
@@ -424,7 +424,9 @@ def score_calc(data, river_tiles):
     }
     """
 
-    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], data["melded_blocks"], river_tiles)
+
+    melded_blocks = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
+    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], melded_blocks, river_tiles)
     # data["melded_blocks"] = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
     
     payload = json.dumps(data)
