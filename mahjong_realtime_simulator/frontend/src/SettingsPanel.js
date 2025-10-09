@@ -1,26 +1,31 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 
+// ==============================================================================
+// ▼▼▼ スタイル定義 (変更箇所) ▼▼▼
+// ==============================================================================
 const styles = {
   settingsPanel: {
     width: '100%',
-    backgroundColor: '#D9D9D9',
-    padding: '10px',
+    backgroundColor: '#f4f7f6',
+    padding: '12px',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     borderRadius: '8px',
     fontFamily: "'Inter', sans-serif",
+    border: '1px solid #e9ecef',
   },
   sectionTitle: {
     fontSize: '14px',
     fontWeight: 'bold',
     marginBottom: '10px',
-    color: '#000000',
+    color: '#212529',
   },
   subHeader: {
     fontSize: '12px',
     marginBottom: '5px',
-    color: '#000000',
+    color: '#6c757d',
+    fontWeight: '600',
   },
   shantenTypeSection: {
     marginBottom: '15px',
@@ -29,11 +34,9 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
   },
-  shantenButton: {
-    fontSize: '10px',
-    color: '#000000',
-    width: '70px',
-    height: '30px',
+  // ボタンの基本スタイル
+  baseButton: {
+    color: '#333',
     backgroundColor: '#FFFFFF',
     border: '1px solid #AAAAAA',
     borderRadius: '4px',
@@ -41,9 +44,16 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    transition: 'background-color 0.15s ease, border-color 0.15s ease',
+    outline: 'none', // ★★★ この行を追加してフォーカス時の枠を非表示にします ★★★
+  },
+  shantenButton: {
+    fontSize: '11px',
+    width: '70px',
+    height: '30px',
   },
   considerationSection: {
-    // このセクションに特有のスタイルはなし
+    // スタイル変更なし
   },
   considerationButtons: {
     display: 'grid',
@@ -52,34 +62,40 @@ const styles = {
   },
   considerationButton: {
     fontSize: '14px',
-    color: '#000000',
-    padding: '8px 5px',
-    backgroundColor: '#FFFFFF',
-    border: '1px solid #AAAAAA',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    textAlign: 'center',
-    whiteSpace: 'normal',
-    lineHeight: '1.2',
+    padding: '5px',
     height: '30px',
     boxSizing: 'border-box',
+    textAlign: 'center',
   },
+  // 選択時のスタイル
   selected: {
-    backgroundColor: '#BEFB98',
+    backgroundColor: '#d1fecf',
+    borderColor: '#7CFC00',
+    fontWeight: 'bold',
+    color: '#00695C',
+  },
+  // ホバー時のスタイル
+  buttonHover: {
+    backgroundColor: '#e9ecef',
+    borderColor: '#adb5bd',
   }
 };
+// ==============================================================================
+// ▲▲▲ スタイル定義 (ここまで) ▲▲▲
+// ==============================================================================
 
+// データ定義 (変更なし)
 const ShantenType = {
-  IPPAN: '一般手(イッパンテ)',
-  CHITOI: '七対子(チートイツ)',
-  KOKUSHI: '国士無双(コクシムソウ)',
+  IPPAN: '一般手',
+  CHITOI: '七対子',
+  KOKUSHI: '国士無双',
 };
 
 const ConsiderationItemsList = [
-  '向聴(シャンテン)落とし考慮', '手変わり考慮',
+  '向聴落とし考慮', '手変わり考慮',
   'ダブル立直考慮', '一発考慮',
-  '海底撈月(ハイテイラオユエ)考慮', '裏ドラ考慮',
-  '和了(ホーラ)確率最大化'
+  '海底撈月考慮', '裏ドラ考慮',
+  '和了確率最大化'
 ];
 
 const ShantenTypeValues = {
@@ -98,11 +114,13 @@ const ConsiderationFlags = {
   '和了確率最大化': 64,
 };
 
+// コンポーネント本体 (ロジックの変更なし)
 const SettingsPanel = forwardRef((props, ref) => {
   const [selectedShanten, setSelectedShanten] = useState(ShantenType.IPPAN);
   const [toggledItems, setToggledItems] = useState(
     ConsiderationItemsList.reduce((acc, item) => ({ ...acc, [item]: false }), {})
   );
+  const [hoveredButton, setHoveredButton] = useState(null);
 
   useImperativeHandle(ref, () => ({
     getSettings: () => {
@@ -126,21 +144,52 @@ const SettingsPanel = forwardRef((props, ref) => {
       <div style={styles.shantenTypeSection}>
         <div style={styles.subHeader}>向聴タイプ</div>
         <div style={styles.shantenButtons}>
-          {Object.values(ShantenType).map(type => (
-            <button key={type} style={{ ...styles.shantenButton, ...(selectedShanten === type ? styles.selected : {}) }} onClick={() => handleShantenChange(type)}>
-              {type}
-            </button>
-          ))}
+          {Object.values(ShantenType).map(type => {
+            const isSelected = selectedShanten === type;
+            const isHovered = hoveredButton === type;
+            return (
+              <button
+                key={type}
+                style={{
+                  ...styles.baseButton,
+                  ...styles.shantenButton,
+                  ...(isSelected ? styles.selected : {}),
+                  ...(isHovered && !isSelected ? styles.buttonHover : {}),
+                }}
+                onClick={() => handleShantenChange(type)}
+                onMouseOver={() => setHoveredButton(type)}
+                onMouseOut={() => setHoveredButton(null)}
+              >
+                {type}
+              </button>
+            );
+          })}
         </div>
       </div>
       <div style={styles.considerationSection}>
         <div style={styles.subHeader}>考慮項目</div>
         <div style={styles.considerationButtons}>
-          {ConsiderationItemsList.map(item => (
-            <button key={item} style={{ ...styles.considerationButton, ...(item === '和了確率最大化' && { gridColumn: '1 / -1' }), ...(toggledItems[item] ? styles.selected : {}) }} onClick={() => handleToggleItem(item)}>
-              {item}
-            </button>
-          ))}
+          {ConsiderationItemsList.map(item => {
+            const isToggled = toggledItems[item];
+            const isHovered = hoveredButton === item;
+            return (
+              <button
+                key={item}
+                style={{
+                  ...styles.baseButton,
+                  ...styles.considerationButton,
+                  ...(item === '和了確率最大化' && { gridColumn: '1 / -1' }),
+                  ...(isToggled ? styles.selected : {}),
+                  ...(isHovered && !isToggled ? styles.buttonHover : {}),
+                }}
+                onClick={() => handleToggleItem(item)}
+                onMouseOver={() => setHoveredButton(item)}
+                onMouseOut={() => setHoveredButton(null)}
+              >
+                {item}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
