@@ -1,42 +1,84 @@
 import React, { useState } from 'react';
 
-// スタイルオブジェクトの定義
+// ==============================================================================
+// ▼▼▼ スタイル定義 (変更箇所) ▼▼▼
+// ==============================================================================
+
+// --- アニメーションのキーフレーム定義 ---
+// Reactコンポーネント内に<style>タグを埋め込むことで、このコンポーネント専用のCSSアニメーションを定義します。
+const keyframes = `
+  @keyframes dot-bounce {
+    0%, 80%, 100% {
+      transform: translateY(0);
+      opacity: 0.6;
+    }
+    40% {
+      transform: translateY(-5px);
+      opacity: 1;
+    }
+  }
+`;
+
+// --- ボタンの基本スタイル ---
 const baseButtonStyles = {
   fontFamily: "'Inter', sans-serif",
-  fontSize: '16px', // 元のUI画像に合わせて少し調整
-  color: '#333333', // 黒 (#000000) より少し柔らかく
-  width: '100%', // 親要素の幅いっぱいに広がるように変更 (DD-UI-021-MAの固定幅は削除)
+  fontSize: '16px',
+  color: '#333333',
+  width: '100%',
   height: '40px',
-  backgroundColor: '#90ee90', // BEFB98 より一般的なライトグリーン
-  border: '1px solid #7CFC00', // 少し濃い緑の枠線を追加
-  borderRadius: '25px', // 元のUI画像に合わせて調整
+  backgroundColor: '#90ee90',
+  border: '1px solid #7CFC00',
+  borderRadius: '25px',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  // margin: '10px auto', // 親コンポーネントでレイアウトするため、ここでは削除
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  fontWeight: 'bold', // 文字を太く
-  outline: 'none', // クリック時の青い枠線を消す
-  transition: 'background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out', // スムーズな変化
+  fontWeight: 'bold',
+  outline: 'none',
+  transition: 'background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
 };
 
 const hoverStyles = {
-  backgroundColor: '#acec88', // CSSの :hover に対応
+  backgroundColor: '#acec88',
 };
 
 const activeStyles = {
-  backgroundColor: '#98d973', // CSSの :active に対応
+  backgroundColor: '#98d973',
   boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)',
 };
 
 const disabledStyles = {
-    backgroundColor: '#cccccc',
-    color: '#666666',
-    cursor: 'not-allowed',
-    border: '1px solid #bbbbbb',
-    boxShadow: 'none',
+  backgroundColor: '#cccccc',
+  color: '#666666',
+  cursor: 'not-allowed',
+  border: '1px solid #bbbbbb',
+  boxShadow: 'none',
 };
+
+// --- ローディングアニメーションのスタイル ---
+const loadingContainerStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const loadingDotsContainerStyles = {
+  display: 'flex',
+  marginLeft: '8px', // "計算中..."との間隔
+};
+
+const loadingDotStyles = {
+  width: '6px',
+  height: '6px',
+  borderRadius: '50%',
+  backgroundColor: '#666666', // disabled時の文字色に合わせる
+  animation: 'dot-bounce 1.4s infinite ease-in-out both',
+  margin: '0 2px',
+};
+// ==============================================================================
+// ▲▲▲ スタイル定義 (ここまで) ▲▲▲
+// ==============================================================================
 
 
 const CalculationButton = ({ onClick, isLoading = false, isDisabled = false, text = "計算開始" }) => {
@@ -61,45 +103,38 @@ const CalculationButton = ({ onClick, isLoading = false, isDisabled = false, tex
     }
   }
 
-  const buttonText = isLoading ? "計算中..." : text;
-
   return (
-    <button
-      style={currentStyle}
-      onClick={handleClick}
-      onMouseOver={() => setIsHovered(true)}
-      onMouseOut={() => { setIsHovered(false); setIsActive(false); /* ホバーが外れたらactiveも解除 */}}
-      onMouseDown={() => setIsActive(true)}
-      onMouseUp={() => setIsActive(false)}
-      onFocus={() => setIsHovered(true)} // キーボード操作でのフォーカスもホバー扱い
-      onBlur={() => setIsHovered(false)}  // フォーカスが外れたらホバー解除
-      disabled={isDisabled || isLoading}
-    >
-      {buttonText}
-    </button>
+    <>
+      {/* keyframesをコンポーネント内に注入 */}
+      <style>{keyframes}</style>
+      <button
+        style={currentStyle}
+        onClick={handleClick}
+        onMouseOver={() => setIsHovered(true)}
+        onMouseOut={() => { setIsHovered(false); setIsActive(false); }}
+        onMouseDown={() => setIsActive(true)}
+        onMouseUp={() => setIsActive(false)}
+        onFocus={() => setIsHovered(true)}
+        onBlur={() => setIsHovered(false)}
+        disabled={isDisabled || isLoading}
+      >
+        {isLoading ? (
+          // 計算中の表示
+          <div style={loadingContainerStyles}>
+            <span>計算中</span>
+            <div style={loadingDotsContainerStyles}>
+              <span style={{ ...loadingDotStyles, animationDelay: '-0.32s' }}></span>
+              <span style={{ ...loadingDotStyles, animationDelay: '-0.16s' }}></span>
+              <span style={loadingDotStyles}></span>
+            </div>
+          </div>
+        ) : (
+          // 通常時の表示
+          text
+        )}
+      </button>
+    </>
   );
 };
 
-// このコンポーネントをエクスポートする場合
 export default CalculationButton;
-
-// このファイルを直接実行してテストする場合の例
-// import ReactDOM from 'react-dom/client'; // ファイルの先頭に
-// const AppMock = () => {
-//     const [loading, setLoading] = useState(false);
-//     const handleCalc = () => {
-//         console.log("計算開始 button clicked");
-//         setLoading(true);
-//         setTimeout(() => setLoading(false), 2000);
-//     };
-//     return (
-//         <div style={{padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', width: '300px', margin: '0 auto'}}>
-//             <CalculationButton onClick={handleCalc} />
-//             <CalculationButton onClick={handleCalc} isLoading={true} />
-//             <CalculationButton onClick={handleCalc} isDisabled={true} />
-//             <CalculationButton onClick={handleCalc} text="再計算する" />
-//         </div>
-//     );
-// }
-// const root = ReactDOM.createRoot(document.getElementById('root'));
-// root.render(<AppMock />);
