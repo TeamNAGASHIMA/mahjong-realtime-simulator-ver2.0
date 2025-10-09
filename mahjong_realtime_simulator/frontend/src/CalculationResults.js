@@ -1,12 +1,31 @@
 import React, { useState, useMemo, useRef, useLayoutEffect } from 'react';
 import MahjongTile from './MahjongTile';
 
-// スタイル定義 (変更なし)
+// ==============================================================================
+// ▼▼▼ スタイル定義 (変更箇所) ▼▼▼
+// ==============================================================================
+// 見やすいようにカラーパレットを定義
+const colors = {
+  background: '#f4f7f6', // 全体の背景色 (薄い緑がかったグレー)
+  surface: '#ffffff',     // テーブルの背景
+  primary: '#00695C',     // ヘッダーなど、アクセントとなる濃い緑
+  primaryText: '#ffffff', // ヘッダーの文字色
+  text: '#212529',        // 通常の文字色
+  textSecondary: '#6c757d', // 補助的な文字色
+  border: '#e9ecef',      // ボーダーの色
+  stripe: '#f8f9fa',      // ストライプ行の背景色
+  gold: '#fffbeb',        // 1位の背景色
+  silver: '#f7f8fc',      // 2位の背景色
+  bronze: '#fef8f3',      // 3位の背景色
+  goldText: '#b45309',    // 1位の期待値の色
+};
+
 const styles = {
+  // --- 全体コンテナ ---
   calculationScreen: {
     minHeight: '260px',
     maxHeight: '400px',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.background,
     padding: '10px',
     boxSizing: 'border-box',
     display: 'flex',
@@ -14,41 +33,61 @@ const styles = {
   },
   tableContainer: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
+    backgroundColor: colors.surface,
+    border: `1px solid ${colors.border}`,
+    borderRadius: '8px',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)', // 影を追加
   },
+  // --- テーブルヘッダー ---
   tableHeader: {
-    backgroundColor: '#f7f7f7',
+    backgroundColor: colors.primary,
     display: 'flex',
     fontSize: '13px',
-    fontWeight: '600',
-    color: '#333',
-    borderBottom: '1px solid #ddd',
+    fontWeight: 'bold',
+    color: colors.primaryText,
     flexShrink: 0,
     boxSizing: 'border-box',
   },
-  tableBody: {
-    overflowY: 'scroll',
-    flexGrow: 1,
-  },
   headerCell: {
-    padding: '8px 5px',
+    padding: '10px 5px',
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    borderRight: '1px solid #ddd',
+    borderRight: `1px solid rgba(255, 255, 255, 0.2)`,
     flexShrink: 0,
   },
   sortableHeader: {
     cursor: 'pointer',
     userSelect: 'none',
   },
+  // --- テーブルボディ ---
+  tableBody: {
+    overflowY: 'auto', // autoに変更してコンテンツが少ない場合はスクロールバーを非表示
+    flexGrow: 1,
+  },
+  tableRow: {
+    display: 'flex',
+    borderBottom: `1px solid ${colors.border}`,
+    fontSize: '14px',
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    minHeight: '42px',
+    transition: 'background-color 0.2s ease',
+  },
+  // --- 行のスタイル (ストライプと上位ランク) ---
+  stripedRow: {
+    backgroundColor: colors.stripe,
+  },
+  top1Row: { backgroundColor: colors.gold },
+  top2Row: { backgroundColor: colors.silver },
+  top3Row: { backgroundColor: colors.bronze },
+
+  // --- セルのスタイル ---
   dataCell: {
     padding: '5px',
     boxSizing: 'border-box',
@@ -56,8 +95,9 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    borderRight: '1px solid #ddd',
+    borderRight: `1px solid ${colors.border}`,
     flexShrink: 0,
+    color: colors.text,
   },
   dapaiColumn:   { flexBasis: '70px', flexGrow: 0 },
   yukoHaiColumn: { flexBasis: '0', flexGrow: 2.5 },
@@ -74,19 +114,22 @@ const styles = {
     paddingRight: '10px',
     fontVariantNumeric: 'tabular-nums',
   },
-  tableRow: {
-    display: 'flex',
-    borderBottom: '1px solid #eee',
-    fontSize: '14px',
-    backgroundColor: 'white',
-    alignItems: 'center',
-    minHeight: '42px',
-  },
   emptyCellSpan: {
     display: 'inline-block',
     width: '100%',
     color: '#a0a0a0',
   },
+  // --- 上位ランクのセルを強調するスタイル ---
+  topRankCell: {
+    fontWeight: 'bold',
+    fontSize: '15px',
+  },
+  top1ValueCell: {
+    color: colors.goldText,
+    fontSize: '16px',
+  },
+
+  // --- 手牌13枚表示のスタイル ---
   thirteenViewContainer: {
     padding: '20px',
     width: '100%',
@@ -100,16 +143,19 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
+    padding: '12px',
+    borderRadius: '6px',
+    backgroundColor: colors.background,
   },
   thirteenViewLabel: {
     fontSize: '14px',
     fontWeight: '600',
-    color: '#444',
+    color: colors.textSecondary,
   },
   thirteenViewValue: {
-    fontSize: '16px',
-    fontWeight: '500',
-    color: '#222',
+    fontSize: '20px', // 数値を大きく
+    fontWeight: 'bold',
+    color: colors.primary, // メインカラーで統一
   },
   thirteenViewTilesContainer: {
     display: 'flex',
@@ -117,9 +163,13 @@ const styles = {
     gap: '4px',
   },
 };
+// ==============================================================================
+// ▲▲▲ スタイル定義 (ここまで) ▲▲▲
+// ==============================================================================
+
 
 /**
- * 手牌13枚の場合の専用表示コンポーネント
+ * 手牌13枚の場合の専用表示コンポーネント (スタイル適用)
  */
 const ThirteenTileView = ({ data }) => {
   return (
@@ -134,7 +184,7 @@ const ThirteenTileView = ({ data }) => {
                   <MahjongTile key={`${tileInfo.tile}-${i}`} type="smallResult" tileNum={tileInfo.tile} />
                 ))
               ) : (
-                <span>なし</span>
+                <span style={{fontSize: '16px', color: colors.text}}>なし</span>
               )}
             </div>
           </div>
@@ -161,7 +211,6 @@ const ThirteenTileView = ({ data }) => {
  * メインの計算結果表示コンポーネント
  */
 const CalculationResults = ({ results, isLoading }) => {
-  // ▼▼▼ すべてのフックをここに集める ▼▼▼
   const [sortConfig, setSortConfig] = useState({ key: 'exp_value', direction: 'descending' });
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const tableBodyRef = useRef(null);
@@ -178,8 +227,6 @@ const CalculationResults = ({ results, isLoading }) => {
     [results, isLoading]
   );
   
-  // ★★★ 修正点 ★★★
-  // このuseMemoを条件分岐の前に移動
   const sortedResults = useMemo(() => {
     if (!results || results.length === 0) return [];
     let sortableItems = [...results];
@@ -194,16 +241,11 @@ const CalculationResults = ({ results, isLoading }) => {
     }
     return sortableItems;
   }, [results, sortConfig]);
-  // ▲▲▲ ここまでがフックの呼び出し ▲▲▲
 
-
-  // ▼▼▼ フック呼び出しの後で、条件分岐を行う ▼▼▼
   if (isThirteenTileView) {
     return <ThirteenTileView data={results[0]} />;
   }
 
-
-  // 以下は14枚手牌の場合（または初期表示・ローディング時）のロジック
   const requestSort = (key) => {
     let direction = 'descending';
     if (sortConfig.key === key && sortConfig.direction === 'descending') {
@@ -270,7 +312,7 @@ const CalculationResults = ({ results, isLoading }) => {
               >
                 {header.name}
                 {isSortable && (
-                  <span style={{ marginLeft: '4px', width: '1em' }}>
+                  <span style={{ marginLeft: '4px', width: '1em', display: 'inline-block' }}>
                     {sortConfig.key === header.key ? (sortConfig.direction === 'descending' ? '▼' : '▲') : ''}
                   </span>
                 )}
@@ -279,35 +321,58 @@ const CalculationResults = ({ results, isLoading }) => {
           })}
         </div>
         <div ref={tableBodyRef} style={styles.tableBody}>
-          {displayData.map((row, rowIndex) => (
-            <div key={row.key} style={{
-                ...styles.tableRow,
-                ...(rowIndex === displayData.length - 1 ? { borderBottom: 'none' } : {})
-            }}>
-              <div style={{...styles.dataCell, ...styles.dapaiColumn}}>
-                {row.dapai !== null ? 
-                  (row.isMessage ? <span style={styles.emptyCellSpan}>{row.dapai}</span> : <MahjongTile type="smallResult" tileNum={row.dapai} />)
-                  : <span style={styles.emptyCellSpan}> </span>
-                }
+          {displayData.map((row, rowIndex) => {
+            // ==================================================================
+            // ▼▼▼ ランクに応じてスタイルを動的に適用 (変更箇所) ▼▼▼
+            // ==================================================================
+            const isDataRow = !isLoading && !row.isMessage && row.dapai !== null && row.dapai !== '...';
+            const isTop1 = isDataRow && rowIndex === 0;
+            const isTop2 = isDataRow && rowIndex === 1;
+            const isTop3 = isDataRow && rowIndex === 2;
+
+            const rowStyle = {
+              ...styles.tableRow,
+              // 上位ランクでない奇数行にストライプを適用
+              ...(rowIndex % 2 === 1 && !isTop1 && !isTop2 && !isTop3 ? styles.stripedRow : {}),
+              ...(isTop1 ? styles.top1Row : {}),
+              ...(isTop2 ? styles.top2Row : {}),
+              ...(isTop3 ? styles.top3Row : {}),
+              ...(rowIndex === displayData.length - 1 ? { borderBottom: 'none' } : {})
+            };
+
+            const rankCellStyle = (isTop1 || isTop2 || isTop3) ? styles.topRankCell : {};
+            const top1ValueCellStyle = isTop1 ? styles.top1ValueCell : {};
+            // ==================================================================
+            // ▲▲▲ スタイル適用ロジック (ここまで) ▲▲▲
+            // ==================================================================
+            
+            return (
+              <div key={row.key} style={rowStyle}>
+                <div style={{...styles.dataCell, ...styles.dapaiColumn}}>
+                  {row.dapai !== null ? 
+                    (row.isMessage ? <span style={styles.emptyCellSpan}>{row.dapai}</span> : <MahjongTile type="smallResult" tileNum={row.dapai} />)
+                    : <span style={styles.emptyCellSpan}> </span>
+                  }
+                </div>
+                <div style={{ ...styles.dataCell, ...styles.yukoHaiColumn, ...styles.yukoHaiData }}>
+                  {row.yukoHai.length > 0 ? (
+                    row.yukoHai.map((tileInfo, i) => (
+                      <MahjongTile key={`${tileInfo.tile}-${i}`} type="smallResult" tileNum={tileInfo.tile} />
+                    ))
+                  ) : <span style={styles.emptyCellSpan}> </span>}
+                </div>
+                <div style={{ ...styles.dataCell, ...styles.valueColumn, ...styles.numericData, ...rankCellStyle, ...top1ValueCellStyle }}>
+                  {row.kitaiValue || <span style={styles.emptyCellSpan}> </span>}
+                </div>
+                <div style={{ ...styles.dataCell, ...styles.probColumn, ...styles.numericData, ...rankCellStyle }}>
+                  {row.horaRate || <span style={styles.emptyCellSpan}> </span>}
+                </div>
+                <div style={{ ...styles.dataCell, ...styles.probColumn, ...styles.numericData, borderRight: 'none', ...rankCellStyle }}>
+                  {row.tenpaiRate || <span style={styles.emptyCellSpan}> </span>}
+                </div>
               </div>
-              <div style={{ ...styles.dataCell, ...styles.yukoHaiColumn, ...styles.yukoHaiData }}>
-                {row.yukoHai.length > 0 ? (
-                  row.yukoHai.map((tileInfo, i) => (
-                    <MahjongTile key={`${tileInfo.tile}-${i}`} type="smallResult" tileNum={tileInfo.tile} />
-                  ))
-                ) : <span style={styles.emptyCellSpan}> </span>}
-              </div>
-              <div style={{ ...styles.dataCell, ...styles.valueColumn, ...styles.numericData }}>
-                {row.kitaiValue || <span style={styles.emptyCellSpan}> </span>}
-              </div>
-              <div style={{ ...styles.dataCell, ...styles.probColumn, ...styles.numericData }}>
-                {row.horaRate || <span style={styles.emptyCellSpan}> </span>}
-              </div>
-              <div style={{ ...styles.dataCell, ...styles.probColumn, ...styles.numericData, borderRight: 'none' }}>
-                {row.tenpaiRate || <span style={styles.emptyCellSpan}> </span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
