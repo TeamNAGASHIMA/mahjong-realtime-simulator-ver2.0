@@ -28,10 +28,8 @@ def main(request):
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
                 flag = int(Req_BODY["flag"])
-                print("1")
                 # 修正内容があるかどうかを確認
                 fixes_data = fixes_list["fixes_pai_info"]
-                print(fixes_data)
                 fixes_flag = any(
                         [
                             fixes_data["dora_indicators"], 
@@ -40,7 +38,6 @@ def main(request):
                             fixes_list["fixes_river_tiles"]
                         ]
                     )
-                print("2")
 
                 # 手動修正内容がなければ物体検知を行う
                 if not fixes_flag:
