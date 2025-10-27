@@ -30,7 +30,7 @@ const styles = {
     justifyContent: 'space-between',
   },
   shantenButton: {
-    fontSize: '14px',
+    fontSize: '10px',
     color: '#000000',
     width: '70px',
     height: '30px',
@@ -70,16 +70,16 @@ const styles = {
 };
 
 const ShantenType = {
-  IPPAN: '一般手',
-  CHITOI: '七対子',
-  KOKUSHI: '国士無双',
+  IPPAN: '一般手(イッパンテ)',
+  CHITOI: '七対子(チートイツ)',
+  KOKUSHI: '国士無双(コクシムソウ)',
 };
 
 const ConsiderationItemsList = [
-  '向聴落とし考慮', '手変わり考慮',
+  '向聴(シャンテン)落とし考慮', '手変わり考慮',
   'ダブル立直考慮', '一発考慮',
-  '海底撈月考慮', '裏ドラ考慮',
-  '和了確率最大化'
+  '海底撈月(ハイテイラオユエ)考慮', '裏ドラ考慮',
+  '和了(ホーラ)確率最大化'
 ];
 
 const ShantenTypeValues = {

@@ -28,9 +28,19 @@ def main(request):
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
                 flag = int(Req_BODY["flag"])
+                # 修正内容があるかどうかを確認
+                fixes_data = fixes_list["fixes_pai_info"]
+                fixes_flag = any(
+                        [
+                            fixes_data["dora_indicators"], 
+                            fixes_data["hand_tiles"], 
+                            fixes_data["melded_blocks"], 
+                            fixes_list["fixes_river_tiles"]
+                        ]
+                    )
 
                 # 手動修正内容がなければ物体検知を行う
-                if len(fixes_list) == 0:
+                if not fixes_flag:
                     np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
                     # 盤面画像が取得できていればnp配列に挿入し、無ければ空のnp配列を作成する
                     if 'board_tiles_image' in Img_FILES:
@@ -61,11 +71,11 @@ def main(request):
                     # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
                     doraList = detection_result_simple["dora_indicators"]
                     hand_tiles = detection_result_simple["hand_tiles"]
-                    raw_melded_blocks = detection_result_simple["melded_blocks"]
+                    raw_melded_blocks = detection_result_simple["melded_tiles"]
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
-                    if len(detection_result["hand_tiles"]) <= 12 or len(detection_result["hand_tiles"]) >= 15:
+                    if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
                         status =420
 
@@ -87,7 +97,6 @@ def main(request):
                         )
                 else:
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-                    fixes_data = fixes_list["fixes_pai_info"]
                     fixes_river_tiles = fixes_list["fixes_river_tiles"]
 
                     detection_result = {
@@ -98,7 +107,7 @@ def main(request):
                         "discard_tiles": fixes_river_tiles
                     }
 
-                    if len(fixes_data["hand_tiles"]) <= 12 or len(fixes_data["hand_tiles"]) >= 15:
+                    if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                         status =420
 
