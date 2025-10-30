@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // コンポーネントのインポート
-import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header';
+// Header コンポーネントが Display コンポーネントをレンダリングする構造を仮定
+import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header'; 
 import GameStatusArea from './GameStatusArea'; 
 import SidePanel from './SidePanel'; 
 
@@ -27,7 +28,7 @@ const styles = {
     width: '100%',
     height: '100%',
     margin: '0 auto',
-    // border: '1px solid #ccc', // 開発中は境界線があるとレイアウトが分かりやすい
+    border: '1px solid #ccc',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -45,7 +46,7 @@ const styles = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 0, // この設定はflexアイテムが縮小する際に重要なので残す
+    minWidth: 0,
   },
   sidePanelWrapper: {
     display: 'flex',
@@ -95,8 +96,8 @@ const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
         type = 'pon';
         exposed_index = 1; // ポンの場合は中央の牌を横向きと仮定
       } else if (tiles[0] + 1 === tiles[1] && tiles[1] + 1 === tiles[2] && 
-                 Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) && // 同じ数牌の種類
-                 Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
+                  Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) && // 同じ数牌の種類
+                  Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
         type = 'chi';
         exposed_index = 1; // チーの場合は中央の牌を横向きと仮定
       }
@@ -164,7 +165,7 @@ const MainScreen = () => {
     document.body.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
     document.body.style.webkitFontSmoothing = 'antialiased';
     document.body.style.mozOsxFontSmoothing = 'grayscale';
-    document.body.style.backgroundColor = '#282c34';
+    document.body.backgroundColor = '#282c34';
     const rootElement = document.getElementById('root');
     if (rootElement) {
       rootElement.style.height = '100vh';
@@ -189,6 +190,9 @@ const MainScreen = () => {
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
     appBgImage: null, syanten_type: 1, flag: 0 
   });
+  // ★追加: 3D表示を有効にするかどうかの状態
+  const [use3DDisplay, setUse3DDisplay] = useState(false); 
+
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [devices, setDevices] = useState([]);
   const [selectedBoardCamera, setSelectedBoardCamera] = useState('');
@@ -203,6 +207,15 @@ const MainScreen = () => {
   const handleMenuClick = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
   const handleSettingsChange = (newSettings) => setSettings(prev => ({...prev, ...newSettings}));
+
+  // ★追加: Display設定の変更を処理する関数
+  const handleDisplayChange = (newDisplaySettings) => {
+    if (newDisplaySettings.use3D !== undefined) {
+      setUse3DDisplay(newDisplaySettings.use3D);
+    }
+    // 他のDisplay設定もあればここで処理
+  };
+
 
   const handleConnectOrReconnect = async () => {
     try {
@@ -254,7 +267,14 @@ const MainScreen = () => {
       const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
 
-      if (handImageBlob) formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+      // ★★★ 修正: 手牌画像Blobの有効性チェックを強化 ★★★
+      if (!handImageBlob || handImageBlob.size === 0) {
+        alert("手牌カメラの映像が取得できませんでした。カメラが正しく接続・認識されているか確認してください。");
+        setIsLoadingCalculation(false); 
+        setIsRecognizing(false); 
+        return; 
+      }
+      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
 
       if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       
@@ -308,19 +328,24 @@ const MainScreen = () => {
         let recognizedHandTiles = detectedResult.hand_tiles ?? [];
         let recognizedTsumoTile = null;
 
-        // APIからのhand_tilesが14枚の場合は、最後の1枚をツモ牌とする
+        // ★★★ 修正: APIが手牌を認識できなかった場合 (hand_tiles: []) のハンドリング ★★★
         if (recognizedHandTiles.length === 14) {
           recognizedTsumoTile = recognizedHandTiles.pop(); 
-        } else if (recognizedHandTiles.length === 0) { // APIが手牌を認識できなかった場合
-            // ここでUIに表示されている手動入力された牌を優先するか、API認識を優先するかポリシーが必要
-            // 現在のフローではAPI認識結果がUIに反映されるため、手牌が0枚で返されたらUIも0枚になる
-            // しかし、今回の問題は「画像あるのに認識されない」ため、APIが空を返すと次のチェックで弾かれる
-            // そのため、手牌枚数の事前チェックがUIの boardState を見ている現在のロジックと衝突する。
-            // API認識結果で手牌が0枚の場合は、手動入力された `boardState.hand_tiles` の値を保持する、というロジックに変更する
-            console.warn("API returned 0 hand tiles. Retaining manually entered hand tiles if any.");
-            recognizedHandTiles = boardState.hand_tiles;
-            recognizedTsumoTile = boardState.tsumo_tile;
+        } else if (recognizedHandTiles.length === 0) {
+            // APIが手牌を0枚と認識した場合、ユーザーが手動で牌を入力していたらそれを優先する
+            if (boardState.hand_tiles.length > 0 || boardState.tsumo_tile !== null) {
+                console.warn("API returned 0 hand tiles. Retaining manually entered hand tiles for display.");
+                recognizedHandTiles = boardState.hand_tiles;
+                recognizedTsumoTile = boardState.tsumo_tile;
+            } else {
+                // 手動入力もAPI認識も空だった場合のみ、アラートを出して計算を停止
+                alert("APIが手牌を認識できませんでした。(0枚検出) 手牌の画像が鮮明か、角度が適切か確認してください。");
+                setIsLoadingCalculation(false); 
+                setIsRecognizing(false); 
+                return;
+            }
         }
+        // ★★★ 修正ここまで ★★★
 
 
         // ★★★ getMeldsForPlayer, getDiscardsForPlayer ヘルパー関数を定義し直す ★★★
@@ -328,6 +353,7 @@ const MainScreen = () => {
           let meldData = [];
           if (Array.isArray(playerData)) { meldData = playerData; }
           else if (typeof playerData === 'object' && playerData !== null) {
+            // 各プレイヤーごとのキーがある場合
             if (playerKey === 'self') meldData = playerData.melded_tiles_bottom || [];
             else if (playerKey === 'shimocha') meldData = playerData.melded_tiles_right || [];
             else if (playerKey === 'toimen') meldData = playerData.melded_tiles_top || [];
@@ -345,19 +371,34 @@ const MainScreen = () => {
             return [];
         };
 
-
         const apiMeldsSource = detectedResult.melded_blocks || detectedResult.melded_tiles;
-        const selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
-        const shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
-        const toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
-        const kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+        // ★★★ 修正: 鳴き牌の複製問題に対応 ★★★
+        // APIから melded_tiles が単一リストで返ってきた場合、それは自家の鳴き牌のみと解釈
+        let selfMelds = [];
+        let shimochaMelds = [];
+        let toimenMelds = [];
+        let kamichaMelds = [];
+
+        if (Array.isArray(apiMeldsSource)) {
+            // APIが単一リストとして返した場合、それは自家の鳴き牌のみと仮定
+            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+            console.warn("API returned melded_tiles as a single array. Assuming they are all 'self' melds.");
+        } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
+            // APIがオブジェクト形式で返した場合
+            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
+            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
+            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
+            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+        }
+        // ★★★ 修正ここまで ★★★
+
 
         updatedBoardState = {
             ...INITIAL_GAME_STATE, 
             turn: detectedResult.turn ?? 1,
             round_wind: boardState.round_wind, 
-            hand_tiles: recognizedHandTiles, // APIの認識結果
-            tsumo_tile: recognizedTsumoTile, // APIの認識結果
+            hand_tiles: recognizedHandTiles, // APIの認識結果 (または手動入力された牌)
+            tsumo_tile: recognizedTsumoTile, // APIの認識結果 (または手動入力されたツモ牌)
             dora_indicators: detectedResult.dora_indicators ?? [], 
 
             player_discards: {
@@ -379,15 +420,6 @@ const MainScreen = () => {
             counts: [] 
         };
         setBoardState(updatedBoardState); 
-
-        // ★★★ 修正: `handTileCount` のチェックを `setBoardState` の後にも行うか、ロジックを変更する ★★★
-        // ここに到達した時点で `updatedBoardState` にAPI認識結果が反映されているため、
-        // もしAPIが手牌を認識できなかった場合 (hand_tiles: [])、ここで再度手牌枚数チェックを行うと「0枚」で弾かれる
-        // ユーザーが手動で牌を入力していない限り、APIが手牌を認識できないと、このアラートが再度出てしまう。
-        // このアラートは、初期の「手牌がありません」を指しているため、API認識の結果が空だった場合は別のメッセージを出すべき。
-        // 一旦、この後の `handTileCount` チェックは削除し、APIレスポンスの `hand_tiles` が空だった場合の扱いは別の機会に検討。
-        // 現在の問題は「画像あるのに認識されない」という入り口の段階なので、APIからの手牌認識が空だった場合のハンドリングは後回しにする。
-
 
         const resultData = data.result || data.result_calc;
 
@@ -471,7 +503,7 @@ const MainScreen = () => {
               recognizedTsumoTile = recognizedHandTiles.pop();
             } else if (recognizedHandTiles.length === 0) { // APIが手牌を認識できなかった場合
                 console.warn("API returned 0 hand tiles on error. Retaining manually entered hand tiles if any.");
-                recognizedHandTiles = boardState.hand_tiles;
+                recognizedHandTiles = boardState.hand_tiles; // 手動入力された牌を保持
                 recognizedTsumoTile = boardState.tsumo_tile;
             }
 
@@ -496,10 +528,23 @@ const MainScreen = () => {
             };
 
             const apiMeldsSource = detectedResultError.melded_blocks || detectedResultError.melded_tiles;
-            const selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
-            const shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
-            const toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
-            const kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+            // ★★★ 修正: 鳴き牌の複製問題に対応 (エラー時) ★★★
+            let selfMelds = [];
+            let shimochaMelds = [];
+            let toimenMelds = [];
+            let kamichaMelds = [];
+
+            if (Array.isArray(apiMeldsSource)) {
+                selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+                console.warn("API returned melded_tiles as a single array during error. Assuming they are all 'self' melds.");
+            } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
+                selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
+                shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
+                toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
+                kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+            }
+            // ★★★ 修正ここまで ★★★
+
 
             setBoardState({
                 ...INITIAL_GAME_STATE,
@@ -543,7 +588,7 @@ const MainScreen = () => {
     filter: `brightness(${settings.brightness / 100})`,
   };
 
-  // モーダルのレンダリング (変更なし)
+  // モーダルのレンダリング
   const renderModal = () => {
     switch (activeModal) {
       case 'settings': return <Settings settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
@@ -555,7 +600,8 @@ const MainScreen = () => {
             selectedHandCamera={selectedHandCamera} setSelectedHandCamera={setSelectedHandCamera} errorMessage={cameraError}
           />
         );
-      case 'display': return <Display onClose={closeModal} />;
+      // ★修正: Displayモーダルに use3DDisplay と onDisplayChange を渡す
+      case 'display': return <Display onClose={closeModal} use3D={use3DDisplay} onDisplayChange={handleDisplayChange} />;
       case 'help': return <Help onClose={closeModal} />;
       case 'contact': return <Contact onClose={closeModal} />;
       case 'version': return <VersionInfo onClose={closeModal} />;
@@ -574,7 +620,6 @@ const MainScreen = () => {
   return (
     <div style={appContainerStyle}>
       <Header onMenuClick={handleMenuClick} />
-      
       <div style={styles.mainContent}>
         <div style={styles.gameStatusWrapper}>
           <GameStatusArea
@@ -586,6 +631,7 @@ const MainScreen = () => {
             isCalculationDisabled={isLoadingCalculation || isRecognizing}
             isRecognizing={isRecognizing}
             onResetBoardState={handleResetBoardState} 
+            use3D={use3DDisplay}
           />
         </div>
         
