@@ -3,9 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // コンポーネントのインポート
 // Header コンポーネントが Display コンポーネントをレンダリングする構造を仮定
-import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header'; 
-import GameStatusArea from './GameStatusArea'; 
-import SidePanel from './SidePanel'; 
+=======
+import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header';
+import GameStatusArea from './MainScreen_child/GameStatusArea'; 
+import SidePanel from './MainScreen_child/SidePanel'; 
 
 // 盤面の初期状態 (このオブジェクトを再利用)
 const INITIAL_GAME_STATE = {
