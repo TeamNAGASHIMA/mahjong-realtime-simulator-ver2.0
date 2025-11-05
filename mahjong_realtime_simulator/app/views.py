@@ -28,7 +28,6 @@ def main(request):
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
                 flag = int(Req_BODY["flag"])
-
                 # 修正内容があるかどうかを確認
                 fixes_data = fixes_list["fixes_pai_info"]
                 fixes_flag = any(
@@ -76,7 +75,7 @@ def main(request):
                     river_tiles = detection_result_simple["discard_tiles"]
                     turn = detection_result_simple["turn"]
 
-                    if len(detection_result["hand_tiles"]) + (len(detection_result["melded_blocks"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_blocks"]) * 3) >= 15:
+                    if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
                         status =420
 
