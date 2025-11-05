@@ -2,10 +2,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // コンポーネントのインポート
-// Header コンポーネントが Display コンポーネントをレンダリングする構造を仮定
-import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header'; 
-import GameStatusArea from './GameStatusArea'; 
-import SidePanel from './SidePanel'; 
+//import { Header, Settings, Camera, Display, Help, Contact, VersionInfo } from './Header';
+
+import { 
+  Header, 
+  SettingsModal, 
+  CameraModal, 
+  DisplayModal, 
+  HelpModal, 
+  ContactModal, 
+  VersionInfoModal 
+} from './Header';
+
+import GameStatusArea from './MainScreen_child/GameStatusArea'; 
+import SidePanel from './MainScreen_child/SidePanel'; 
 
 // 盤面の初期状態 (このオブジェクトを再利用)
 const INITIAL_GAME_STATE = {
@@ -185,6 +195,7 @@ const MainScreen = () => {
   // --- 状態管理 ---
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
+
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
@@ -202,6 +213,8 @@ const MainScreen = () => {
   const [isLoadingCalculation, setIsLoadingCalculation] = useState(false);
   const [isRecognizing, setIsRecognizing] = useState(false); 
   const sidePanelRef = useRef(null);
+  const [boardFlip, setBoardFlip] = useState({ horizontal: true, vertical: false });
+  const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
   // --- 関数定義 ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
@@ -219,23 +232,33 @@ const MainScreen = () => {
 
   const handleConnectOrReconnect = async () => {
     try {
+      // ユーザーにカメラへのアクセス許可を要求
       await navigator.mediaDevices.getUserMedia({ video: true });
+      
+      // デバイスリストを取得
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
+      
+      // カメラが見つからない場合のエラー処理
       if (videoDevices.length === 0) {
         setCameraError('利用可能なカメラが見つかりません。');
         setDevices([]);
         setIsCameraActive(false);
         return;
       }
+      
+      // 取得したデバイスリストをstateに保存
       setDevices(videoDevices);
       setCameraError('');
       setIsCameraActive(true); 
+      
+      // 以前選択したカメラがリストにない場合、デフォルトのカメラを再設定
       const deviceIds = videoDevices.map(d => d.deviceId);
       if (!deviceIds.includes(selectedBoardCamera) && videoDevices[0]) {
         setSelectedBoardCamera(videoDevices[0].deviceId);
       }
       if (!deviceIds.includes(selectedHandCamera)) {
+        // 手牌カメラは2台目があればそれを、なければ1台目と同じものをデフォルトに
         const defaultHandDevice = videoDevices[1] || videoDevices[0];
         if (defaultHandDevice) {
             setSelectedHandCamera(defaultHandDevice.deviceId);
@@ -247,7 +270,6 @@ const MainScreen = () => {
       setIsCameraActive(false);
     }
   };
-
     /**
    * カメラ認識と計算をまとめて実行する関数
    * CalculationButton の onClick ハンドラとして使用
@@ -588,26 +610,75 @@ const MainScreen = () => {
     filter: `brightness(${settings.brightness / 100})`,
   };
 
-  // モーダルのレンダリング
+  // const renderModal = () => {
+  //   switch (activeModal) {
+  //     case 'settings': return <Settings settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
+      
+  //     // 「カメラ」モーダルが選択された場合の描画
+  //     case 'camera':
+  //       return (
+  //         <Camera
+  //           // モーダルを閉じるための関数
+  //           onClose={closeModal}
+  //           // カメラ接続状態と、再接続を行うための関数
+  //           isCameraActive={isCameraActive}
+  //           onConnectOrReconnect={handleConnectOrReconnect}
+  //           // デバイスリストと、選択中のカメラID、それを更新するための関数
+  //           devices={devices}
+  //           selectedBoardCamera={selectedBoardCamera}
+  //           setSelectedBoardCamera={setSelectedBoardCamera}
+  //           selectedHandCamera={selectedHandCamera}
+  //           setSelectedHandCamera={setSelectedHandCamera}
+  //           // エラーメッセージ
+  //           errorMessage={cameraError}
+  //           // ▼▼▼ カメラモーダルに反転状態と更新関数を渡します ▼▼▼
+  //           // これにより、モーダル内のボタンがMainScreenのstateを直接変更できます
+  //           boardFlip={boardFlip}
+  //           setBoardFlip={setBoardFlip}
+  //           handFlip={handFlip}
+  //           setHandFlip={setHandFlip}
+  //         />
+  //       );
+        
+  //     case 'display': return <Display onClose={closeModal} />;
+  //     case 'help': return <Help onClose={closeModal} />;
+  //     case 'contact': return <Contact onClose={closeModal} />;
+  //     case 'version': return <VersionInfo onClose={closeModal} />;
+  //     default: return null;
+  //   }
+  // };
+
+
   const renderModal = () => {
-    switch (activeModal) {
-      case 'settings': return <Settings settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
-      case 'camera':
-        return (
-          <Camera
-            onClose={closeModal} isCameraActive={isCameraActive} onConnectOrReconnect={handleConnectOrReconnect}
-            devices={devices} selectedBoardCamera={selectedBoardCamera} setSelectedBoardCamera={setSelectedBoardCamera}
-            selectedHandCamera={selectedHandCamera} setSelectedHandCamera={setSelectedHandCamera} errorMessage={cameraError}
-          />
-        );
-      // ★修正: Displayモーダルに use3DDisplay と onDisplayChange を渡す
-      case 'display': return <Display onClose={closeModal} use3D={use3DDisplay} onDisplayChange={handleDisplayChange} />;
-      case 'help': return <Help onClose={closeModal} />;
-      case 'contact': return <Contact onClose={closeModal} />;
-      case 'version': return <VersionInfo onClose={closeModal} />;
-      default: return null;
-    }
-  };
+  switch (activeModal) {
+    case 'settings': return <SettingsModal settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
+    
+    case 'camera':
+      return (
+        <CameraModal
+          onClose={closeModal}
+          isCameraActive={isCameraActive}
+          onConnectOrReconnect={handleConnectOrReconnect}
+          devices={devices}
+          selectedBoardCamera={selectedBoardCamera}
+          setSelectedBoardCamera={setSelectedBoardCamera}
+          selectedHandCamera={selectedHandCamera}
+          setSelectedHandCamera={setSelectedHandCamera}
+          errorMessage={cameraError}
+          boardFlip={boardFlip}
+          setBoardFlip={setBoardFlip}
+          handFlip={handFlip}
+          setHandFlip={setHandFlip}
+        />
+      );
+      
+    case 'display': return <DisplayModal onClose={closeModal} />;
+    case 'help': return <HelpModal onClose={closeModal} />;
+    case 'contact': return <ContactModal onClose={closeModal} />;
+    case 'version': return <VersionInfoModal onClose={closeModal} />;
+    default: return null;
+  }
+};
 
   // ★★★ 追加: リセット関数 ★★★
   const handleResetBoardState = () => {
@@ -619,36 +690,41 @@ const MainScreen = () => {
 
   return (
     <div style={appContainerStyle}>
+      {/* ヘッダーコンポーネントにモーダルを開くための関数を渡す */}
       <Header onMenuClick={handleMenuClick} />
       <div style={styles.mainContent}>
+        {/* ... (GameStatusAreaコンポーネントの描画は省略) ... */}
         <div style={styles.gameStatusWrapper}>
           <GameStatusArea
-            onStartCalculation={handleCalculate}
-            boardState={boardState}
-            onBoardStateChange={setBoardState}
-            calculationResults={calculationResults}
-            isLoadingCalculation={isLoadingCalculation}
-            isCalculationDisabled={isLoadingCalculation || isRecognizing}
-            isRecognizing={isRecognizing}
+            onStartCalculation={handleCalculate} boardState={boardState} onBoardStateChange={setBoardState}
+            calculationResults={calculationResults} isLoadingCalculation={isLoadingCalculation}
+            isCalculationDisabled={isLoadingCalculation || isRecognizing} isRecognizing={isRecognizing}
             onResetBoardState={handleResetBoardState} 
             use3D={use3DDisplay}
           />
         </div>
         
         <div style={styles.sidePanelWrapper}>
+          {/* SidePanelコンポーネントに、カメラ関連の状態をすべてpropsとして渡す */}
           <SidePanel
             ref={sidePanelRef}
             isCameraActive={isCameraActive}
             selectedBoardCamera={selectedBoardCamera}
             selectedHandCamera={selectedHandCamera}
-            onRecognize={() => { /* 何もしない、または認識開始を促すメッセージ */ }}
             isRecognizing={isRecognizing}
             settings={settings}
             onSettingsChange={handleSettingsChange}
+            // ▼▼▼ SidePanelに反転状態と更新関数を渡します ▼▼▼
+            // これにより、SidePanel内のCameraPreviewがMainScreenのstateを共有・変更できます
+            boardFlip={boardFlip}
+            setBoardFlip={setBoardFlip}
+            handFlip={handFlip}
+            setHandFlip={setHandFlip}
           />
         </div>
       </div>
 
+      {/* renderModal関数を呼び出して、アクティブなモーダルを描画 */}
       {renderModal()}
     </div>
   );
