@@ -6,6 +6,7 @@ import numpy as np
 import json
 from .calc import main_score_calc, score_calc
 from .detect import analyze_mahjong_board
+from .create_json import difference_check
 from django.conf import settings
 import os
 
@@ -31,13 +32,13 @@ def main(request):
                 # 修正内容があるかどうかを確認
                 fixes_data = fixes_list["fixes_pai_info"]
                 fixes_flag = any(
-                        [
-                            fixes_data["dora_indicators"], 
-                            fixes_data["hand_tiles"], 
-                            fixes_data["melded_blocks"], 
-                            fixes_list["fixes_river_tiles"]
-                        ]
-                    )
+                    [
+                        fixes_data["dora_indicators"], 
+                        fixes_data["hand_tiles"], 
+                        fixes_data["melded_blocks"], 
+                        fixes_list["fixes_river_tiles"]
+                    ]
+                )
 
                 # 手動修正内容がなければ物体検知を行う
                 if not fixes_flag:
@@ -140,6 +141,169 @@ def main(request):
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def tiles_save(request):
+    if request.method == 'POST':
+        try:
+            Img_FILES = request.FILES
+            Req_BODY = request.POST
+            if 'record_flag' not in Req_BODY:
+                return JsonResponse(
+                    {
+                        'message': "No record flag provided.",
+                    }, status=400
+                )
+            else:
+                record_flag = int(Req_BODY["record_flag"])
+                if record_flag == 0:
+                    return JsonResponse({'message': 'No saving requested.'}, status=200)
+                elif record_flag == 1:
+                    # 手牌画像が取得できていなければエラーを返す
+                    if 'hand_tiles_image' not in Img_FILES:
+                        message = "No images of the hand cards included."
+                        return JsonResponse({'message': message}, status=400)
+                    else:
+                        # 手牌画像があれば正常処理を行う
+                        fixes_list = json.loads(Req_BODY["fixes_board_info"])
+                        # 修正内容があるかどうかを確認
+                        fixes_data = fixes_list["fixes_pai_info"]
+                        fixes_flag = any(
+                            [
+                                fixes_data["dora_indicators"], 
+                                fixes_data["hand_tiles"], 
+                                fixes_data["melded_blocks"], 
+                                fixes_list["fixes_river_tiles"]
+                            ]
+                        )
+
+                        # 手動修正内容がなければ物体検知を行う
+                        if not fixes_flag:
+                            np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
+                            # 盤面画像が取得できていればnp配列に挿入し、無ければ空のnp配列を作成する
+                            if 'board_tiles_image' in Img_FILES:
+                                np_board_tiles_image = imageChangeNp(Img_FILES['board_tiles_image'])
+                            else:
+                                # 空のnp配列の作成
+                                np_board_tiles_image = np.array([])
+
+                            # 物体検知関数の呼び出し
+                            detectoin = analyze_mahjong_board(np_board_tiles_image, np_hand_tiles_image)
+
+                            # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+                            if detectoin["status"] != 200:
+                                message = detectoin["message"]
+                                status = detectoin["status"]
+
+                                return JsonResponse({
+                                    'message': message,
+                                    "detection_result": []
+                                    }, status=status
+                                )
+
+                            # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
+                            # detection_result_simple => 記録用データ
+                            detection_result = detectoin["result"]
+                            detection_result_simple = detectoin["result_simple"]
+
+                            # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
+                            doraList = detection_result_simple["dora_indicators"]
+                            hand_tiles = detection_result_simple["hand_tiles"]
+                            raw_melded_blocks = detection_result_simple["melded_tiles"]
+                            river_tiles = detection_result_simple["discard_tiles"]
+                            turn = detection_result_simple["turn"]
+
+                            if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]) * 3) >= 15:
+                                message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
+                                status =420
+
+                                return JsonResponse({
+                                    'message': message,
+                                    "detection_result": detection_result
+                                    }, status=status
+                                )
+
+                            # 保存するデータをまとめる。
+                            save_data = (
+                                    doraList,
+                                    hand_tiles,
+                                    raw_melded_blocks,
+                                    river_tiles,
+                                    turn
+                                )
+                        else:
+                            # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
+                            fixes_river_tiles = fixes_list["fixes_river_tiles"]
+
+                            detection_result = {
+                                "turn": fixes_data["turn"],
+                                "dora_indicators": fixes_data["dora_indicators"],
+                                "hand_tiles": fixes_data["hand_tiles"],
+                                "melded_blocks": fixes_data["melded_blocks"],
+                                "discard_tiles": fixes_river_tiles
+                            }
+
+                            if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) >= 15:
+                                message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
+                                status =420
+
+                                return JsonResponse({
+                                    'message': message,
+                                    "detection_result": detection_result
+                                    }, status=status
+                                )
+
+                            # 物体検知は行わずに直接計算を行う
+                            save_data = (
+                                    fixes_data["dora_indicators"],
+                                    fixes_data["hand_tiles"],
+                                    fixes_data["melded_blocks"],
+                                    fixes_river_tiles,
+                                    fixes_data["turn"]
+                                )
+
+                        if save_data is not None:
+                            # 牌譜保存処理の関数を呼び出す
+                            difference_check(save_data,record_flag,"")
+                        else:
+                            return JsonResponse(
+                                {
+                                    'message': "No data to save.",
+                                }, status=400
+                            )
+
+                        return JsonResponse(
+                            {
+                                'message': "successful",
+                                'detection_result': detection_result
+                            }, status="200"
+                        )
+                elif record_flag == 2:
+                    if 'save_name' not in Req_BODY:
+                        return JsonResponse(
+                            {
+                                'message': "No save name provided.",
+                            }, status=400
+                        )
+                    else:
+                        save_name = Req_BODY["save_name"]
+                        # 牌譜保存処理の関数を呼び出す
+                        save_result = difference_check("",record_flag,save_name)
+                        if save_result["status"] != "200":
+                            return JsonResponse(
+                                {
+                                    'message': save_result["message"],
+                                }, status=save_result["status"]
+                            )
+                        else:
+                            return JsonResponse(
+                                {
+                                    'message': "save successful",
+                                }, status="200"
+                            )
+        except Exception as e:
+            message = "Exception error"
+            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
 
 def imageChangeNp(request_image):
     # 保存先のフルパスを作成（例: media/uploads/filename.png）
