@@ -144,6 +144,11 @@ def main(request):
 
 @csrf_exempt
 def tiles_save(request):
+    '''
+    引数:
+        record_flag: 0、1=記録中、2=記録保存
+        save_name: 牌譜保存時のファイル名（record_flagが2のときのみ必要）
+    '''
     if request.method == 'POST':
         try:
             Img_FILES = request.FILES
@@ -195,10 +200,12 @@ def tiles_save(request):
                                 message = detectoin["message"]
                                 status = detectoin["status"]
 
-                                return JsonResponse({
+                                return JsonResponse(
+                                    {
                                     'message': message,
                                     "detection_result": []
-                                    }, status=status
+                                    }, 
+                                    status=status
                                 )
 
                             # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
@@ -217,10 +224,12 @@ def tiles_save(request):
                                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
                                 status =420
 
-                                return JsonResponse({
+                                return JsonResponse(
+                                    {
                                     'message': message,
                                     "detection_result": detection_result
-                                    }, status=status
+                                    },
+                                    status=status
                                 )
 
                             # 保存するデータをまとめる。
@@ -247,10 +256,12 @@ def tiles_save(request):
                                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                                 status =420
 
-                                return JsonResponse({
+                                return JsonResponse(
+                                    {
                                     'message': message,
                                     "detection_result": detection_result
-                                    }, status=status
+                                    },
+                                    status=status
                                 )
 
                             # 物体検知は行わずに直接計算を行う
@@ -269,21 +280,24 @@ def tiles_save(request):
                             return JsonResponse(
                                 {
                                     'message': "No data to save.",
-                                }, status=400
+                                },
+                                status=400
                             )
 
                         return JsonResponse(
                             {
                                 'message': "successful",
                                 'detection_result': detection_result
-                            }, status="200"
+                            }, 
+                            status="200"
                         )
                 elif record_flag == 2:
                     if 'save_name' not in Req_BODY:
                         return JsonResponse(
                             {
                                 'message': "No save name provided.",
-                            }, status=400
+                            }, 
+                            status=400
                         )
                     else:
                         save_name = Req_BODY["save_name"]
@@ -293,13 +307,15 @@ def tiles_save(request):
                             return JsonResponse(
                                 {
                                     'message': save_result["message"],
-                                }, status=save_result["status"]
+                                }, 
+                                status=save_result["status"]
                             )
                         else:
                             return JsonResponse(
                                 {
-                                    'message': "save successful",
-                                }, status="200"
+                                    'message': save_result["message"],
+                                }, 
+                                status=save_result["status"]
                             )
         except Exception as e:
             message = "Exception error"
