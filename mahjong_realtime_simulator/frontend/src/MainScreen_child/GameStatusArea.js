@@ -1,7 +1,7 @@
 // GameStatusArea.js
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
-import CalculationButton from './GameStatusArea_child/CalculationButton';
+import ButtonContainer from './GameStatusArea_child/ButtonContainer';
 import CalculationResults from './GameStatusArea_child/CalculationResults';
 
 const styles = { 
@@ -31,7 +31,7 @@ const GameStatusArea = ({
         onResetBoardState={onResetBoardState} 
       />
 
-      <CalculationButton
+      <ButtonContainer
         onClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
