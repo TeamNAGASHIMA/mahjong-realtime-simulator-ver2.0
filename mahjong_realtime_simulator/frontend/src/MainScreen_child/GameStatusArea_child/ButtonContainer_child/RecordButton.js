@@ -1,7 +1,7 @@
 // RecordButton.js (修正版)
 
 import React, { useState } from 'react';
-import ConfirmModal from './ButtonContainer_child/ConfirmModal'; // 作成したモーダルをインポート
+import ConfirmModal from './ConfirmModal'; // 作成したモーダルをインポート
 
 // スタイル定義は変更ありません
 const baseButtonStyles = { fontFamily: "'Inter', sans-serif", fontSize: '16px', color: '#ffffff', width: '100%', height: '40px', border: 'none', borderRadius: '25px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontWeight: 'bold', outline: 'none', transition: 'background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out' };

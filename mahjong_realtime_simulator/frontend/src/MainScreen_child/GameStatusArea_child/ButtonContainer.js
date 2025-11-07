@@ -1,8 +1,8 @@
 // ButtonContainer.js
 
 import React from 'react';
-import CalculationButton from './CalculationButton'; // 元の計算開始ボタン
-import RecordButton from './RecordButton';           // 新しく作成した記録ボタン
+import CalculationButton from './ButtonContainer_child/CalculationButton'; // 元の計算開始ボタン
+import RecordButton from './ButtonContainer_child/RecordButton';           // 新しく作成した記録ボタン
 
 const containerStyles = {
   display: 'flex',
