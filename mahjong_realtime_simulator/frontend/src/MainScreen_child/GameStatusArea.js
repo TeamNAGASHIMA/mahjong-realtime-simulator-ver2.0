@@ -1,7 +1,7 @@
 // GameStatusArea.js
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
-import CalculationButton from './GameStatusArea_child/CalculationButton';
+import CalculationButton from './GameStatusArea_child/ButtonContainer';
 import CalculationResults from './GameStatusArea_child/CalculationResults';
 
 const styles = { 
