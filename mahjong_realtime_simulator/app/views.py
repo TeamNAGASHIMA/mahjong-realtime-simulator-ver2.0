@@ -298,16 +298,14 @@ def savedata(Req_BODY, Img_FILES):
                 )
 
             # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
-            # detection_result_simple => 記録用データ
             detection_result = detectoin["result"]
-            detection_result_simple = detectoin["result_simple"]
 
             # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-            doraList = detection_result_simple["dora_indicators"]
-            hand_tiles = detection_result_simple["hand_tiles"]
-            raw_melded_blocks = detection_result_simple["melded_tiles"]
-            river_tiles = detection_result_simple["discard_tiles"]
-            turn = detection_result_simple["turn"]
+            doraList = detection_result["dora_indicators"]
+            hand_tiles = detection_result["hand_tiles"]
+            raw_melded_blocks = detection_result["melded_tiles"]
+            river_tiles = detection_result["discard_tiles"]
+            turn = detection_result["turn"]
 
             if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) >= 15:
                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
