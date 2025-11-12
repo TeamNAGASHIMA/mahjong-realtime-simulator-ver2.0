@@ -11,7 +11,9 @@ from django.conf import settings
 import os
 
 def mahjong_render(request):
-    return render(request, 'app/test.html')
+    return render(request, 'app/mahjong_render.html')
+    # test
+    # return render(request, 'app/test.html')
 
 @csrf_exempt
 def main(request):
