@@ -11,9 +11,9 @@ from django.conf import settings
 import os
 
 def mahjong_render(request):
-    return render(request, 'app/mahjong_render.html')
+    # return render(request, 'app/mahjong_render.html')
     # test
-    # return render(request, 'app/test.html')
+    return render(request, 'app/test.html')
 
 @csrf_exempt
 def main(request):
@@ -159,12 +159,12 @@ def tiles_save(request):
                 return JsonResponse(
                     {
                         'message': "No record flag provided.",
-                    }, status=400
+                    }, status=420
                 )
             else:
                 record_flag = int(Req_BODY["record_flag"])
                 if record_flag == 0:
-                    return JsonResponse({'message': 'No saving requested.'}, status=200)
+                    return JsonResponse({'message': 'No saving requested.'}, status=420)
                 elif record_flag == 1:
                         
                         save_data_return = savedata(Req_BODY, Img_FILES)
@@ -181,7 +181,7 @@ def tiles_save(request):
                                 {
                                     'message': "No data to save.",
                                 },
-                                status=400
+                                status=420
                             )
 
                         return JsonResponse(
@@ -204,7 +204,7 @@ def tiles_save(request):
                             {
                                 'message': "No save name provided.",
                             }, 
-                            status=400
+                            status=420
                         )
                     else:
                         save_name = Req_BODY["save_name"]
