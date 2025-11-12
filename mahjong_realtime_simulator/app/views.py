@@ -222,7 +222,6 @@ def tiles_save(request):
                                 {
                                     'message': save_result["message"],
                                     'file_name': save_result["file_name"],
-                                    'detection_result': detection_result
                                 }, 
                                 status=save_result["status"]
                             )

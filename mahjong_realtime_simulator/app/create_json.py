@@ -54,7 +54,7 @@ def save_temp_result(data={}):
                     current_steps.append(previous_content)
                 
         except json.JSONDecodeError:
-            return {"message": "Failed to read existing temp_result.json.", "status": 503}
+            return {"message": "Failed to read existing temp_result.json.", "status": "503"}
 
     
     # 2. リストの末尾に新しいステップデータを追加 (追記)
@@ -122,7 +122,7 @@ def create_game_data_json(folder_path="game_data_json_files", base_filename="", 
             print(f"フォルダーは既に存在します: {folder_path}")
             
     except Exception as e:
-        return {"message": f"Create folder error occurred: {e}", "status": 503}
+        return {"message": f"Create folder error occurred: {e}", "status": "503"}
 
     # ファイルのフルパスを作成
     file_path = os.path.join(folder_path, file_name)
@@ -172,7 +172,7 @@ def difference_check(save_data, record_flg, file_name="game_data"):
     if record_flg == 2:
         # ファイルの名前が重複している場合、エラーを返す
         if not file_name_check(file_name):
-            return {'message': "File name is invalid.", 'status': 412}
+            return {'message': "File name is invalid.", 'status': "412"}
 
         # すべてのデータをまとめてJSONファイルを作成
         final_data = load_temp_result()
@@ -181,12 +181,12 @@ def difference_check(save_data, record_flg, file_name="game_data"):
         delete_prev_hand()
         delete_temp_result()
 
-        return {'message': "Data saved successfully.", 'status': 200, 'file_name': f"{file_name}.json"}
+        return {'message': "Data saved successfully.", 'status': "200", 'file_name': f"{file_name}.json"}
     
     if not change_flg:
-        return {'message': "No changes in hand tiles.", 'status': 200}
+        return {'message': "No changes in hand tiles.", 'status': "200"}
     else:
-        return {'message': "Hand tiles changed and data saved temporarily.", 'status': 200}
+        return {'message': "Hand tiles changed and data saved temporarily.", 'status': "200"}
 
 
 if __name__ == "__main__":
