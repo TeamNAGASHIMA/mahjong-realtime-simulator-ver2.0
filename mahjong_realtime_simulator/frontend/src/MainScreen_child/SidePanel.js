@@ -27,6 +27,7 @@ const SidePanel = forwardRef((props, ref) => {
     setBoardFlip,
     handFlip,
     setHandFlip,
+    guideFrameColor,
   } = props;
 
   const cameraRef = useRef(null);
@@ -57,6 +58,7 @@ const SidePanel = forwardRef((props, ref) => {
         setBoardFlip={setBoardFlip}
         handFlip={handFlip}
         setHandFlip={setHandFlip}
+        guideFrameColor={guideFrameColor}
       />
       <SettingsPanel
         ref={settingsRef}

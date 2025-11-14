@@ -216,6 +216,8 @@ const MainScreen = () => {
   const [boardFlip, setBoardFlip] = useState({ horizontal: true, vertical: false });
   const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
+  const [guideFrameColor, setGuideFrameColor] = useState('black');
+
   // --- 関数定義 ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
@@ -669,6 +671,8 @@ const MainScreen = () => {
           setBoardFlip={setBoardFlip}
           handFlip={handFlip}
           setHandFlip={setHandFlip}
+            guideFrameColor={guideFrameColor}
+            setGuideFrameColor={setGuideFrameColor}          
         />
       );
       
@@ -720,6 +724,7 @@ const MainScreen = () => {
             setBoardFlip={setBoardFlip}
             handFlip={handFlip}
             setHandFlip={setHandFlip}
+            guideFrameColor={guideFrameColor}
           />
         </div>
       </div>
