@@ -15,6 +15,7 @@ def mahjong_render(request):
     # test
     return render(request, 'app/test.html')
 
+
 @csrf_exempt
 def main(request):
     if request.method == 'POST':
@@ -144,6 +145,7 @@ def main(request):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+
 @csrf_exempt
 def tiles_save(request):
     '''
@@ -230,6 +232,22 @@ def tiles_save(request):
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
 
 
+@csrf_exempt
+def tiles_req(request):
+    if request.method == 'POST':
+        try:
+            Req_BODY = request.POST
+            if 'file_name' not in Req_BODY:
+                pass
+                # 保存したjson名を返す
+            else:
+                req_file_neme = Req_BODY["file_name"]
+                # 参照ファイル名と一致する牌譜データを返す
+                if req_file_neme == "":
+                    pass
+        except Exception as e:
+            message = "Exception error"
+            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
 
 
 def imageChangeNp(request_image):
@@ -251,6 +269,7 @@ def imageChangeNp(request_image):
     # np_request_image_bgr = cv2.imdecode(request_image_bytes, cv2.IMREAD_COLOR)
 
     return np_request_image
+
 
 def savedata(Req_BODY, Img_FILES):
     # 手牌画像が取得できていなければエラーを返す
