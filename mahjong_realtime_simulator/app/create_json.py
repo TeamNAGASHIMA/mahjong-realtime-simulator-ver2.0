@@ -26,39 +26,30 @@ def delete_prev_hand():
 
 
 # 一時的にresultを保存・追記する関数
-def save_temp_result(data={}):
-
+def save_temp_result(step_data={}):
     """
     一時的なresultファイルに新しいゲームステップ（辞書）を追記する関数。
     temp_resultの中身をリストとして扱い、時系列で追加する。
     """
     FILE_NAME = 'temp_result.json'
     
-    # 1. 既存のデータを読み込む（リストを取得する）
     current_steps = []
-    
     if os.path.exists(FILE_NAME) and os.path.getsize(FILE_NAME) > 0:
         try:
             with open(FILE_NAME, 'r', encoding='utf-8') as f:
                 temp_data = json.load(f)
-                
-                # 既存のデータ構造からリストを取得
-                # もし前回の構造が辞書型（最初の状態）だった場合、それをリスト化する処理が必要
-                previous_content = temp_data.get("temp_result")
-                
-                if isinstance(previous_content, list):
-                    # 前回の構造がリスト型の場合、そのまま使用
-                    current_steps = previous_content
-                elif isinstance(previous_content, dict):
-                    # 前回の構造が辞書型の場合、それをリストに変換して追加
-                    current_steps.append(previous_content)
+                # 既存のデータがリスト形式であることを期待
+                current_steps = temp_data.get("temp_result", [])
+                if not isinstance(current_steps, list):
+                    # 予期せぬ形式の場合は空のリストから始める
+                    current_steps = []
                 
         except json.JSONDecodeError:
             return {"message": "Failed to read existing temp_result.json.", "status": "503"}
 
     
     # 2. リストの末尾に新しいステップデータを追加 (追記)
-    current_steps.append(data)
+    current_steps.append(step_data)
     print(f"一時結果に新しいステップを追加しました (合計ステップ数: {len(current_steps)})")
     
     # 3. 変更後のリスト全体を新しい構造で上書き保存
@@ -74,7 +65,7 @@ def load_temp_result():
     with open('temp_result.json', 'r', encoding='utf-8') as f:
         temp_data = json.load(f)
     
-    return temp_data.get("temp_result", {})
+    return temp_data
 
 # 一時的なresultを削除する関数
 def delete_temp_result():
@@ -98,20 +89,22 @@ def difference_in_hands(data):
         return True
     return False
 
-def create_game_data_json(folder_path="game_data_json_files", base_filename="", data={}):
+def create_game_data_json(folder_path="game_data_json_files", file_name="", data={}):
     """
-    現在の日時（時分秒まで）をファイル名に含めて、JSONファイルを作成する関数。
+    指定されたファイル名でJSONファイルを作成する関数。
+    データ内に作成日時を記録します。
 
     Args:
         folder_path (str): ファイルを作成したいフォルダーのパス。
-        base_filename (str): ファイル名の基本部分（例: 'name'）。
+        file_name (str): ファイル名（例: 'my_game.json'）。
         data (dict/list): ファイルに書き込むデータ。
     """
     
-    timestamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
+    # 保存するデータに作成日時を追加
+    timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data_to_save = {"created_at": timestamp_str}
+    data_to_save.update(data)
     
-    # ファイル名を結合: "name_YYYYMMDDhhmmss.json"
-    file_name = f"{base_filename}_{timestamp_str}.json"
     
     # フォルダーの存在を確認し、なければ作成する
     try:
@@ -130,7 +123,7 @@ def create_game_data_json(folder_path="game_data_json_files", base_filename="", 
     # JSONデータをファイルに書き込む
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(data_to_save, f, ensure_ascii=False, indent=4)
         
         print(f"JSONファイルが正常に作成されました: {file_path}")
         
@@ -141,10 +134,11 @@ def create_game_data_json(folder_path="game_data_json_files", base_filename="", 
 # ファイル名チェック
 # 重複、空文字チェックなど
 def file_name_check(file_name=""):
-    if file_name.strip() == "":
+    base_name = file_name.replace(".json", "")
+    if base_name.strip() == "":
         return False
 
-    if os.path.exists(os.path.join("game_data_json_files", f"{file_name}.json")):
+    if os.path.exists(os.path.join("game_data_json_files", file_name)):
         return False
 
     return True
@@ -164,24 +158,35 @@ def difference_check(save_data, record_flg, file_name="game_data"):
         if difference_in_hands(hand_tiles):
             print("前回の手牌データ（更新後）:", load_prev_hand())
 
+            # タプルを辞書に変換
+            step_data = {
+                "dora_indicators": save_data[0],
+                "hand_tiles": save_data[1],
+                "melded_blocks": save_data[2],
+                "river_tiles": save_data[3],
+                "turn": save_data[4]
+            }
+
             # 一時的にresultを保存
-            save_temp_result(save_data)
+            save_temp_result(step_data)
             change_flg = True
     
     # 記録終了ボタンが押された場合
     if record_flg == 2:
+        json_file_name = f"{file_name}.json"
         # ファイルの名前が重複している場合、エラーを返す
-        if not file_name_check(file_name):
+        if not file_name_check(json_file_name):
             return {'message': "File name is invalid.", 'status': "412"}
 
         # すべてのデータをまとめてJSONファイルを作成
-        final_data = load_temp_result()
-        create_game_data_json(folder_path="game_data_json_files", base_filename=file_name, data=final_data)
+        temp_result_data = load_temp_result()
+        # 辞書をそのまま渡す
+        create_game_data_json(folder_path="game_data_json_files", file_name=json_file_name, data=temp_result_data)
         # 一時的なresultと前回のhand_tilesを削除
         delete_prev_hand()
         delete_temp_result()
 
-        return {'message': "Data saved successfully.", 'status': "200", 'file_name': f"{file_name}.json"}
+        return {'message': "Data saved successfully.", 'status': "200", 'file_name': json_file_name}
     
     if not change_flg:
         return {'message': "No changes in hand tiles.", 'status': "200"}
