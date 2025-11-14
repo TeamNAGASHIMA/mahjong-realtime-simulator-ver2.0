@@ -21,7 +21,10 @@ const GameStatusArea = ({
   isCalculationDisabled,
   isRecognizing,
   onBoardStateChange,
-  onResetBoardState, // ★★★ 追加: 新しいプロップを受け取る ★★★
+  onResetBoardState,
+  settings,
+  use3D,
+  onModeChange, // ★★★ 修正箇所1: onModeChangeプロップを受け取る
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
@@ -29,6 +32,9 @@ const GameStatusArea = ({
         boardState={boardState}
         onBoardStateChange={onBoardStateChange}
         onResetBoardState={onResetBoardState} 
+        settings={settings}
+        use3D={use3D}
+        onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
       />
 
       <ButtonContainer
@@ -41,6 +47,7 @@ const GameStatusArea = ({
         results={calculationResults}
         isLoading={isLoadingCalculation}
         currentTurn={boardState ? boardState.turn : 1}
+        settings={settings}
       />
     </div>
   );
