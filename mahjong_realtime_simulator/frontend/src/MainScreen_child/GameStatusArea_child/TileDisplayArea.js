@@ -1,7 +1,7 @@
 // TileDisplayArea.js
 import React, { useState, useEffect } from 'react';
 
-// --- 画像リソースのインポート ---
+// --- 画像リソースのインポート --- (省略)
 import M1 from '../../img/M1.png';
 import M2 from '../../img/M2.png';
 import M3 from '../../img/M3.png';
@@ -41,28 +41,10 @@ import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
 
-// --- データマッピング ---
-const TILE_IMAGES = {
-  M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, 
-  P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9,  
-  S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9,  
-  Z1, Z2, Z3, Z4, Z5, Z6, Z7,
-};
-const TILE_NUM_TO_NAME = {
-  0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9',
-  9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
-  18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
-  27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 
-};
-const TILE_NUM_TO_IMAGE_KEY = {
-  0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9',
-  9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
-  18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
-  27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 
-};
-
+// --- データマッピング --- (省略)
+const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, };
+const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', };
+const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5',  };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
 const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
 
@@ -71,7 +53,19 @@ const styles = `
   body { background-color: #222; margin: 0; font-family: sans-serif; }
   .tile-pool { 
     display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; 
-    padding: 20px; border-radius: 5px; margin: 10px 
+    padding: 20px; border-radius: 5px; margin: 10px;
+    position: relative;
+  }
+  .tile-pool-close-button {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(0,0,0,0.5); color: white;
+    border: 1px solid white; border-radius: 50%;
+    width: 28px; height: 28px; font-size: 20px;
+    line-height: 26px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tile-pool-close-button:hover {
+    background: rgba(255,255,255,0.8); color: black;
   }
   .tile-wrapper { 
     transition: all 0.2s ease-in-out; cursor: pointer; 
@@ -87,6 +81,19 @@ const styles = `
     box-shadow: 0 8px 15px rgba(50, 150, 255, 0.5); 
   }
   .tile-pool .tile-wrapper:hover { transform: scale(1.1); }
+  .empty-pool-tile {
+    width: 45px; height: 65px; background-color: #7f8c8d;
+    border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,0.3);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease-in-out;
+  }
+  .empty-pool-tile:hover {
+    transform: translateY(-5px) scale(1.1);
+    background-color: #95a5a6;
+  }
+  .empty-pool-tile-text {
+    font-size: 24px; color: white; font-weight: bold; user-select: none;
+  }
   .tile-display-container { 
     padding: 10px; box-sizing: border-box; 
     border-radius: 8px; margin: 10px; 
@@ -197,7 +204,7 @@ const styles = `
   
   .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.8);
     display: flex; justify-content: center; align-items: center; z-index: 1000;
   }
   .modal-content {
@@ -208,52 +215,19 @@ const styles = `
     font-size: 1.2em; font-weight: bold;
     margin-bottom: 15px; padding-bottom: 10px;
   }
-  .modal-tabs {
-    display: flex; margin-bottom: 20px;
-  }
-  .modal-tab-button {
-    background: none; border: none; font-size: 1em; font-weight: bold;
-    padding: 10px 20px; cursor: pointer; transition: all 0.2s;
-    border-bottom: 3px solid transparent; text-transform: uppercase;
-  }
+  .modal-tabs { display: flex; margin-bottom: 20px; }
+  .modal-tab-button { background: none; border: none; font-size: 1em; font-weight: bold; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; text-transform: uppercase; }
   .modal-tab-button:disabled { cursor: not-allowed; }
-  .meld-candidate-list {
-    display: flex; flex-wrap: wrap; gap: 15px; min-height: 80px;
-  }
-  .meld-candidate-item {
-    border-radius: 5px; padding: 10px;
-    cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s;
-  }
+  .meld-candidate-list { display: flex; flex-wrap: wrap; gap: 15px; min-height: 80px; }
+  .meld-candidate-item { border-radius: 5px; padding: 10px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s; }
   .meld-candidate-item .tile-wrapper { margin-right: -2px; }
   .meld-candidate-item .tile-img { width: 30px; height: 44px; }
-  .meld-candidate-item .kan-type-label {
-      width: auto; height: auto; background: none; box-shadow: none;
-      font-size: 0.8em; font-weight: bold; margin-left: 8px;
-      display: flex; align-items: center;
-  }
+  .meld-candidate-item .kan-type-label { width: auto; height: auto; background: none; box-shadow: none; font-size: 0.8em; font-weight: bold; margin-left: 8px; display: flex; align-items: center; }
   .modal-actions { margin-top: 20px; text-align: right; }
-  .modal-cancel-button {
-    background-color: #e74c3c; color: white; border: none;
-    padding: 8px 16px; border-radius: 4px; cursor: pointer;
-    transition: background-color 0.2s;
-  }
+  .modal-cancel-button { background-color: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
   .modal-cancel-button:hover { background-color: #c0392b; }
-  .reset-button {
-    font-family: "'Inter', sans-serif";
-    font-size: 0.8em;
-    color: #ffffff;
-    background-color: #dc3545;
-    border: 1px solid #c82333;
-    padding: 4px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    margin-left: 10px;
-  }
-  .reset-button:hover {
-    background-color: #c82333;
-  }
+  .reset-button { font-family: "'Inter', sans-serif"; font-size: 0.8em; color: #ffffff; background-color: #dc3545; border: 1px solid #c82333; padding: 4px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; margin-left: 10px; }
+  .reset-button:hover { background-color: #c82333; }
 
   /* --- Theme Specific Styles --- */
   .theme-dark .tile-display-container, .theme-dark .tile-pool { background-color: #005522; }
@@ -261,30 +235,44 @@ const styles = `
   .theme-dark .player-label, .theme-dark .own-wind { color: #FFFFFF; }
   .theme-dark .player-sub-label { color: #DDDDDD; }
   .theme-dark .own-wind:hover { color: #ffff99; }
-  .theme-dark .modal-content { background-color: #2c3e50; color: #ecf0f1; }
-  .theme-dark .modal-header { border-bottom: 1px solid #34495e; }
-  .theme-dark .modal-tabs { border-bottom: 2px solid #34495e; }
-  .theme-dark .modal-tab-button { color: #95a5a6; }
+  .theme-dark .status-header, .theme-dark .clickable-text { color: #FFFFFF; }
+  .theme-dark .tile-pool-close-button { background: rgba(0,0,0,0.5); color: white; border: 1px solid white; }
+  .theme-dark .tile-pool-close-button:hover { background: rgba(255,255,255,0.8); color: black; }
+  
+  /* ★★★ 修正: ダークテーマのモーダルスタイル ★★★ */
+  .theme-dark .modal-content { 
+    background-color: #34495e; /* 背景を明確に */
+    color: #ecf0f1;
+    border: 2px solid #567d9e; /* 境界線を追加 */
+  }
+  .theme-dark .modal-header { color: #ecf0f1; border-bottom: 1px solid #567d9e; }
+  .theme-dark .modal-tabs { border-bottom: 2px solid #567d9e; }
+  .theme-dark .modal-tab-button { color: #bdc3c7; }
   .theme-dark .modal-tab-button.active { color: #ecf0f1; border-bottom-color: #3498db; }
   .theme-dark .modal-tab-button:disabled { color: #7f8c8d; }
-  .theme-dark .meld-candidate-item { background-color: #34495e; }
+  .theme-dark .meld-candidate-item { background-color: #2c3e50; }
   .theme-dark .meld-candidate-item:hover { background-color: #4a627a; }
-  .theme-dark .status-header, .theme-dark .clickable-text { color: #FFFFFF; }
+  .theme-dark .kan-type-label { color: #ecf0f1; }
 
   .theme-light .tile-display-container, .theme-light .tile-pool { background-color: #d0e0d0; }
   .theme-light .player-display, .theme-light .own-hand-area { background-color: #4f739e; }
   .theme-light .player-label, .theme-light .own-wind { color: #FFFFFF; }
   .theme-light .player-sub-label { color: #DDDDDD; }
   .theme-light .own-wind:hover { color: #ffff99; }
-  .theme-light .modal-content { background-color: #ffffff; color: #333; }
-  .theme-light .modal-header { border-bottom: 1px solid #dddddd; }
+  .theme-light .status-header, .theme-light .clickable-text { color: #333333; }
+  .theme-light .tile-pool-close-button { background: rgba(255,255,255,0.5); color: black; border: 1px solid black; }
+  .theme-light .tile-pool-close-button:hover { background: rgba(0,0,0,0.8); color: white; }
+
+  /* ★★★ 修正: ライトテーマのモーダルスタイル ★★★ */
+  .theme-light .modal-content { background-color: #ffffff; color: #333; border: 2px solid #bdc3c7; }
+  .theme-light .modal-header { color: #333; border-bottom: 1px solid #dddddd; }
   .theme-light .modal-tabs { border-bottom: 2px solid #dddddd; }
   .theme-light .modal-tab-button { color: #777777; }
   .theme-light .modal-tab-button.active { color: #333333; border-bottom-color: #3498db; }
   .theme-light .modal-tab-button:disabled { color: #aaaaaa; }
   .theme-light .meld-candidate-item { background-color: #f0f0f0; }
   .theme-light .meld-candidate-item:hover { background-color: #e5e5e5; }
-  .theme-light .status-header, .theme-light .clickable-text { color: #333333; }
+  .theme-light .kan-type-label { color: #333; }
 `;
 
 // --- 子コンポーネント定義 ---
@@ -340,6 +328,12 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
     </div>
   );
 };
+
+const EmptyPoolTile = ({ onClick }) => (
+  <div className="empty-pool-tile" onClick={onClick} title="牌を削除">
+    <span className="empty-pool-tile-text">✕</span>
+  </div>
+);
 
 const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
   const slots = Array(5).fill(null);
@@ -717,10 +711,43 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   
   const handlePoolTileClick = (newTileNum) => {
     if (!selection.type) return;
-    
-    const newBoardState = JSON.parse(JSON.stringify(boardState)); 
+
+    if (selection.type.startsWith('add_') && newTileNum === null) {
+        return;
+    }
+
+    const newBoardState = JSON.parse(JSON.stringify(boardState));
     const sortedHand = [...newBoardState.hand_tiles].sort((a, b) => a - b);
-    
+
+    if (newTileNum === null) {
+        switch (selection.type) {
+            case 'hand': {
+                const tileToRemove = sortedHand[selection.index];
+                const originalIndex = newBoardState.hand_tiles.findIndex(t => t === tileToRemove);
+                if (originalIndex > -1) newBoardState.hand_tiles.splice(originalIndex, 1);
+                break;
+            }
+            case 'tsumo':
+                newBoardState.tsumo_tile = null;
+                break;
+            case 'discard':
+                newBoardState.player_discards[selection.playerKey].splice(selection.index, 1);
+                break;
+            case 'dora':
+                newBoardState.dora_indicators.splice(selection.index, 1);
+                break;
+            case 'meld':
+                alert("面子の牌を個別に削除することはできません。面子全体を削除するには、再度同じ面子の牌をクリックしてください。");
+                setSelection({ type: null });
+                return;
+            default:
+                break;
+        }
+        onBoardStateChange(newBoardState);
+        setSelection({ type: null });
+        return;
+    }
+
     const getSelectedTileNum = () => {
         if (!selection || !selection.type) return null;
         switch (selection.type) {
@@ -916,7 +943,20 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         className={`tile-display-container theme-${settings.theme}`}
         style={{ fontSize: settings.fontSize }}
       >
-        {selection.type && <div className="tile-pool">{ALL_TILES_IN_POOL.map(tileNum => <Tile key={`pool-${tileNum}`} tileNum={tileNum} size="pool" onClick={() => handlePoolTileClick(tileNum)} />)}</div>}
+        {selection.type && (
+          <div className="tile-pool">
+            <button className="tile-pool-close-button" onClick={() => setSelection({ type: null })}>×</button>
+            {!selection.type.startsWith('add_') && <EmptyPoolTile onClick={() => handlePoolTileClick(null)} />}
+            {ALL_TILES_IN_POOL.map(tileNum => 
+              <Tile 
+                key={`pool-${tileNum}`} 
+                tileNum={tileNum} 
+                size="pool" 
+                onClick={() => handlePoolTileClick(tileNum)} 
+              />
+            )}
+          </div>
+        )}
         <div onClick={(e) => { e.stopPropagation(); setSelection({type: null}); }}>
           <div onClick={e => e.stopPropagation()}>
             <StatusHeader 
