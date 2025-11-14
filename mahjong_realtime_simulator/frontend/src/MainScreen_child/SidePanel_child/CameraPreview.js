@@ -25,12 +25,25 @@ const CameraPreview = forwardRef(({
   boardFlip,
   setBoardFlip,
   handFlip,
-  setHandFlip
+  setHandFlip,
+  guideFrameColor
 }, ref) => {
   const [isSupportMode, setIsSupportMode] = useState(false);
   const [hoveredButton, setHoveredButton] = useState(null);
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
+
+  const guideFrameStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    height: '100%', // 親要素(短い辺)の高さに合わせる
+    aspectRatio: '1 / 1', // 高さを基準に正方形にする
+    border: `3px solid ${guideFrameColor}`,
+    boxSizing: 'border-box',
+    pointerEvents: 'none'
+  };
 
   // 盤面カメラの映像を表示するuseEffect
   useEffect(() => {
@@ -106,7 +119,11 @@ const CameraPreview = forwardRef(({
       <div style={{ display: isSupportMode ? 'none' : 'block' }}>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>盤面</div>
-          <video ref={boardVideoRef} style={{ ...styles.previewBox, transform: getTransform(boardFlip) }} autoPlay playsInline muted></video>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <video ref={boardVideoRef} style={{ ...styles.previewBox, transform: getTransform(boardFlip) }} autoPlay playsInline muted></video>
+            {/* ガイド枠を描画 */}
+            {guideFrameColor !== 'none' && <div style={guideFrameStyle}></div>}
+          </div>
           <div style={styles.flipButtonsContainer}>
             <button style={{ ...styles.flipButton, ...(boardFlip.horizontal && styles.flipButtonActive), ...(!boardFlip.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
             <button style={{ ...styles.flipButton, ...(boardFlip.vertical && styles.flipButtonActive), ...(!boardFlip.vertical && hoveredButton === 'board_v' && styles.buttonHover) }} onClick={() => handleFlip('board', 'vertical')} onMouseOver={() => setHoveredButton('board_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>

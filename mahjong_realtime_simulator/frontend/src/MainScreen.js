@@ -178,6 +178,8 @@ const MainScreen = () => {
   const [boardFlip, setBoardFlip] = useState({ horizontal: true, vertical: false });
   const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
+  const [guideFrameColor, setGuideFrameColor] = useState('black');
+
   // --- 関数定義 ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
@@ -465,18 +467,37 @@ const MainScreen = () => {
   };
 
   const renderModal = () => {
-    // (省略...変更なし)
-    switch (activeModal) {
-      case 'settings': return <SettingsModal settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
-      case 'camera':
-        return ( <CameraModal onClose={closeModal} isCameraActive={isCameraActive} onConnectOrReconnect={handleConnectOrReconnect} devices={devices} selectedBoardCamera={selectedBoardCamera} setSelectedBoardCamera={setSelectedBoardCamera} selectedHandCamera={selectedHandCamera} setSelectedHandCamera={setSelectedHandCamera} errorMessage={cameraError} boardFlip={boardFlip} setBoardFlip={setBoardFlip} handFlip={handFlip} setHandFlip={setHandFlip} /> );
-      case 'display': return <DisplayModal onClose={closeModal} />;
-      case 'help': return <HelpModal onClose={closeModal} />;
-      case 'contact': return <ContactModal onClose={closeModal} />;
-      case 'version': return <VersionInfoModal onClose={closeModal} />;
-      default: return null;
-    }
-  };
+  switch (activeModal) {
+    case 'settings': return <SettingsModal settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
+    
+    case 'camera':
+      return (
+        <CameraModal
+          onClose={closeModal}
+          isCameraActive={isCameraActive}
+          onConnectOrReconnect={handleConnectOrReconnect}
+          devices={devices}
+          selectedBoardCamera={selectedBoardCamera}
+          setSelectedBoardCamera={setSelectedBoardCamera}
+          selectedHandCamera={selectedHandCamera}
+          setSelectedHandCamera={setSelectedHandCamera}
+          errorMessage={cameraError}
+          boardFlip={boardFlip}
+          setBoardFlip={setBoardFlip}
+          handFlip={handFlip}
+          setHandFlip={setHandFlip}
+            guideFrameColor={guideFrameColor}
+            setGuideFrameColor={setGuideFrameColor}          
+        />
+      );
+      
+    case 'display': return <DisplayModal onClose={closeModal} />;
+    case 'help': return <HelpModal onClose={closeModal} />;
+    case 'contact': return <ContactModal onClose={closeModal} />;
+    case 'version': return <VersionInfoModal onClose={closeModal} />;
+    default: return null;
+  }
+};
 
   const handleResetBoardState = () => {
     setBoardState(INITIAL_GAME_STATE);
@@ -514,6 +535,7 @@ const MainScreen = () => {
             setBoardFlip={setBoardFlip}
             handFlip={handFlip}
             setHandFlip={setHandFlip}
+            guideFrameColor={guideFrameColor}
           />
         </div>
       </div>
