@@ -38,7 +38,7 @@ const GameStatusArea = ({
       />
 
       <ButtonContainer
-        onClick={onStartCalculation}
+        onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
       />
