@@ -6,7 +6,9 @@ export const CameraModal = ({
   onClose, isCameraActive, onConnectOrReconnect, devices,
   selectedBoardCamera, setSelectedBoardCamera,
   selectedHandCamera, setSelectedHandCamera, errorMessage,
-  boardFlip, setBoardFlip, handFlip, setHandFlip
+  boardFlip, setBoardFlip, handFlip, setHandFlip,
+  // ▼▼▼【追加】MainScreenからガイド枠関連のpropsを受け取る ▼▼▼
+  guideFrameColor, setGuideFrameColor
 }) => {
   const [hoveredButton, setHoveredButton] = useState(null);
   const boardVideoRef = useRef(null);
@@ -50,13 +52,28 @@ export const CameraModal = ({
   const localStyles = {
     connectButton: { ...styles.button, width: '100%', marginBottom: '15px', marginLeft: 0 },
     previewContainer: { display: 'flex', justifyContent: 'space-around', marginBottom: '20px', textAlign: 'center' },
-    previewBox: { width: '200px', height: '112px', backgroundColor: '#000', border: '1px solid #555', margin: '5px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '14px' },
+    // ▼▼▼【修正】previewBoxにposition: 'relative'を追加してガイド枠の基準にする ▼▼▼
+    previewBox: { position: 'relative', width: '200px', height: '112px', backgroundColor: '#000', border: '1px solid #555', margin: '5px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '14px' },
     videoPreview: { width: '100%', height: '100%', objectFit: 'cover' },
     assignmentContainer: { marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' },
     errorMessage: { color: '#ff6b6b', textAlign: 'center', marginBottom: '15px' },
     flipButtonsContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '8px' },
     flipButton: { ...styles.button, padding: '4px 8px', fontSize: '12px', marginLeft: 0, minWidth: '80px' },
     flipButtonActive: { backgroundColor: '#6ca7ff', color: '#fff', fontWeight: 'bold' },
+  };
+
+  // ▼▼▼【追加】ガイド枠のスタイルを定義するオブジェクト ▼▼▼
+  // プレビューボックスの短い辺(height: 112px)に合わせて正方形を作成
+  const guideFrameStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '112px', // 短い辺のサイズに合わせる
+    height: '112px',
+    border: `3px solid ${guideFrameColor}`, // 色を動的に変更
+    boxSizing: 'border-box',
+    pointerEvents: 'none' // マウスイベントを透過させる
   };
 
   return (
@@ -77,6 +94,8 @@ export const CameraModal = ({
               <p>盤面カメラ</p>
               <div style={localStyles.previewBox}>
                 <video ref={boardVideoRef} style={{ ...localStyles.videoPreview, transform: getTransform(boardFlip) }} autoPlay playsInline muted />
+                {/* ▼▼▼【追加】ガイド枠を描画するdiv要素（色が 'none' でない場合のみ表示） ▼▼▼ */}
+                {guideFrameColor && guideFrameColor !== 'none' && <div style={guideFrameStyle}></div>}
               </div>
               <div style={localStyles.flipButtonsContainer}>
                 <button style={{ ...localStyles.flipButton, ...(boardFlip.horizontal && localStyles.flipButtonActive), ...(!boardFlip.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
@@ -109,6 +128,25 @@ export const CameraModal = ({
               </select>
             </div>
           </div>
+
+          {/* ▼▼▼【追加】ガイド枠の色設定UI ▼▼▼ */}
+          <div style={{ marginTop: '20px', borderTop: '1px solid #444', paddingTop: '20px' }}>
+            <h4>盤面カメラ ガイド枠設定</h4>
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel}>線の色</label>
+              <select
+                style={styles.formInput}
+                value={guideFrameColor}
+                onChange={(e) => setGuideFrameColor(e.target.value)}
+              >
+                <option value="none">なし</option>
+                <option value="black">黒</option>
+                <option value="white">白</option>
+                <option value="red">赤</option>
+              </select>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 // GameStatusArea.js
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
-import CalculationButton from './GameStatusArea_child/ButtonContainer';
+import ButtonContainer from './GameStatusArea_child/ButtonContainer';
 import CalculationResults from './GameStatusArea_child/CalculationResults';
 
 const styles = { 
@@ -37,7 +37,7 @@ const GameStatusArea = ({
         onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
       />
 
-      <CalculationButton
+      <ButtonContainer
         onClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
