@@ -24,6 +24,7 @@ const GameStatusArea = ({
   onResetBoardState,
   settings,
   use3D,
+  isSimulatorMode,  
   onModeChange, // ★★★ 修正箇所1: onModeChangeプロップを受け取る
 }) => {
   return (
@@ -34,6 +35,7 @@ const GameStatusArea = ({
         onResetBoardState={onResetBoardState} 
         settings={settings}
         use3D={use3D}
+        isSimulatorMode={isSimulatorMode}        
         onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
       />
 
@@ -41,6 +43,7 @@ const GameStatusArea = ({
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
+        isSimulatorMode={isSimulatorMode}        
       />
 
       <CalculationResults

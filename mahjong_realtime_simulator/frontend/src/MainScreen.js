@@ -187,11 +187,10 @@ const MainScreen = () => {
 
   // ★★★ 修正箇所2: モード切替用のハンドラを追加 ★★★
   const handleModeChange = () => {
-    // flagが1なら0に、0なら1に切り替える
-    const newFlag = settings.flag === 1 ? 0 : 1;
+    const newFlag = settings.flag === 1 ? 0 : 1; // 1なら0に、0なら1に切り替え
     handleSettingsChange({ flag: newFlag });
+    console.log(`モードが ${newFlag === 1 ? 'リアルタイムシミュレーター' : '牌譜'} に切り替わりました。`);
   };
-
   const handleDisplayChange = (newDisplaySettings) => {
     if (newDisplaySettings.use3D !== undefined) {
       setUse3DDisplay(newDisplaySettings.use3D);
@@ -506,6 +505,8 @@ const MainScreen = () => {
     setIsRecognizing(false);
   };
 
+  const isSimulatorMode = settings.flag === 1;
+
   return (
     <div style={appContainerStyle}>
       <Header onMenuClick={handleMenuClick} />
@@ -518,6 +519,7 @@ const MainScreen = () => {
             onResetBoardState={handleResetBoardState} 
             use3D={use3DDisplay}
             settings={settings}
+            isSimulatorMode={isSimulatorMode}            
             onModeChange={handleModeChange} // ★★★ 修正箇所3: モード切替関数を渡す
           />
         </div>
@@ -536,6 +538,7 @@ const MainScreen = () => {
             handFlip={handFlip}
             setHandFlip={setHandFlip}
             guideFrameColor={guideFrameColor}
+            isSimulatorMode={isSimulatorMode}
           />
         </div>
       </div>

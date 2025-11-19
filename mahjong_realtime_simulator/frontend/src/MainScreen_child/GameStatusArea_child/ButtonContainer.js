@@ -3,6 +3,7 @@
 import React from 'react';
 import CalculationButton from './ButtonContainer_child/CalculationButton'; // 元の計算開始ボタン
 import RecordButton from './ButtonContainer_child/RecordButton';           // 新しく作成した記録ボタン
+import TurnSelector from './TurnSelector';
 
 const containerStyles = {
   display: 'flex',
@@ -21,11 +22,11 @@ const calculationButtonWrapperStyles = {
 };
 
 
-const ButtonContainer = ({ onCalculationClick, isLoading, isDisabled, calculationText }) => {
+const ButtonContainer = ({ onCalculationClick, isLoading, isDisabled, calculationText,  isSimulatorMode }) => {
   return (
     <div style={containerStyles}>
       <div style={recordButtonWrapperStyles}>
-        <RecordButton />
+        {isSimulatorMode ? <RecordButton /> : <TurnSelector />}
       </div>
       <div style={calculationButtonWrapperStyles}>
         <CalculationButton
