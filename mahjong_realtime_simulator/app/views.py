@@ -243,16 +243,27 @@ def tiles_req(request):
             # 牌譜フォルダのパスを取得
             haihu_dir = settings.HAIHU_ROOT
             if 'file_name' not in Req_BODY:
-                # file_nameがリクエストに含まれていない場合 (牌譜一覧を返す想定)
-                # 保存したjson名+日付を返す
-                pass
-                # return JsonResponse(
-                #     {
-                #         'message': "successful",
-                #         'file_list': 
-                #     }, 
-                #     status=200
-                # )
+                # 牌譜フォルダが存在しない場合は作成
+                os.makedirs(haihu_dir, exist_ok=True)
+                
+                # フォルダ内のJSONファイル一覧を取得
+                json_files = [f for f in os.listdir(haihu_dir) if f.endswith('.json')]
+                
+                file_list = []
+                for file_name in json_files:
+                    file_path = os.path.join(haihu_dir, file_name)
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        # JSONデータからcreated_atを取得
+                        created_at = data.get('created_at', 'N/A') 
+                        file_list.append({'file_name': file_name, 'date': created_at})
+                return JsonResponse(
+                    {
+                        'message': "successful",
+                        'file_list': file_list
+                    }, 
+                    status=200
+                )
             else:
                 # file_nameがリクエストに含まれている場合 (特定の牌譜を返す想定)
                 req_file_name = Req_BODY["file_name"]
