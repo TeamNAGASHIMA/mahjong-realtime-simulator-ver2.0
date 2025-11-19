@@ -1,70 +1,61 @@
-// SidePanel.js
+// SidePanel.js (構文エラー修正版)
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import CameraPreview from './SidePanel_child/CameraPreview';
 import SettingsPanel from './SidePanel_child/SettingsPanel';
+import KifuSelector from './GameStatusArea_child/KifuSelector';
 
 const styles = {
   sidePanelContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px', // MainScreenに合わせて調整
+    gap: '15px',
     width: '260px',
-    flexShrink: 0,
-  }
+    height: '100%',
+  },
+  topSection: {
+    flex: '1 1 0',
+    minHeight: 0,
+    display: 'flex',
+  },
 };
 
 const SidePanel = forwardRef((props, ref) => {
-  // MainScreenから渡される全てのpropsを分割代入で受け取る
-  const {
-    selectedBoardCamera,
-    selectedHandCamera,
-    isRecognizing,
-    settings,
-    onSettingsChange,
-    // ▼▼▼ MainScreenから反転設定のpropsを受け取ります ▼▼▼
-    boardFlip,
-    setBoardFlip,
-    handFlip,
-    setHandFlip,
-    guideFrameColor,
-  } = props;
+  const { isSimulatorMode } = props;
 
   const cameraRef = useRef(null);
   const settingsRef = useRef(null);
 
-  // 親コンポーネント(MainScreen)がこのコンポーネントの関数を呼び出せるように設定
   useImperativeHandle(ref, () => ({
     getSidePanelData: () => {
-      const images = cameraRef.current?.getPreviewImages();
       const panelSettings = settingsRef.current?.getSettings();
+      if (!isSimulatorMode) {
+        return {
+          images: { boardImage: null, handImage: null },
+          settings: panelSettings || { syanten_type: 1, flag: 0 },
+        };
+      }
+      const images = cameraRef.current?.getPreviewImages();
       return {
         images: images || { boardImage: null, handImage: null },
-        settings: panelSettings || { syanten_type: 1, flag: 0 },
+        settings: panelSettings || { syanten_type: 1, flag: 1 },
       };
     }
   }));
 
   return (
     <div style={styles.sidePanelContainer}>
-      {/* CameraPreviewコンポーネントに必要なpropsをすべて渡す */}
-      <CameraPreview
-        ref={cameraRef}
-        boardCameraId={selectedBoardCamera}
-        handCameraId={selectedHandCamera}
-        isRecognizing={isRecognizing}
-        // ▼▼▼ 受け取った反転設定のpropsをそのままCameraPreviewに渡します ▼▼▼
-        boardFlip={boardFlip}
-        setBoardFlip={setBoardFlip}
-        handFlip={handFlip}
-        setHandFlip={setHandFlip}
-        guideFrameColor={guideFrameColor}
-      />
-      <SettingsPanel
-        ref={settingsRef}
-        settings={settings}
-        onSettingsChange={onSettingsChange}
-      />
+      <div style={styles.topSection}>
+        {isSimulatorMode ? (
+          <CameraPreview ref={cameraRef} {...props} />
+        ) : (
+          <KifuSelector />
+        )}
+      </div>
+      
+      {/* ★★★ 修正点: 自己完結タグ "/>" で正しく閉じる ★★★ */}
+      <SettingsPanel ref={settingsRef} {...props} />
+
     </div>
   );
 });
