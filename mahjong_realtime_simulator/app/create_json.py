@@ -1,5 +1,6 @@
 import json
 import os
+from django.conf import settings
 from datetime import datetime
 
 
@@ -133,12 +134,12 @@ def create_game_data_json(folder_path="game_data_json_files", file_name="", data
 
 # ファイル名チェック
 # 重複、空文字チェックなど
-def file_name_check(file_name=""):
+def file_name_check(folder_path, file_name=""):
     base_name = file_name.replace(".json", "")
     if base_name.strip() == "":
         return False
 
-    if os.path.exists(os.path.join("game_data_json_files", file_name)):
+    if os.path.exists(os.path.join(folder_path, file_name)):
         return False
 
     return True
@@ -173,15 +174,16 @@ def difference_check(save_data, record_flg, file_name="game_data"):
     
     # 記録終了ボタンが押された場合
     if record_flg == 2:
+        haihu_dir = settings.HAIHU_ROOT
         json_file_name = f"{file_name}.json"
         # ファイルの名前が重複している場合、エラーを返す
-        if not file_name_check(json_file_name):
+        if not file_name_check(haihu_dir, json_file_name):
             return {'message': "File name is invalid.", 'status': "412"}
 
         # すべてのデータをまとめてJSONファイルを作成
         temp_result_data = load_temp_result()
         # 辞書をそのまま渡す
-        create_game_data_json(folder_path="game_data_json_files", file_name=json_file_name, data=temp_result_data)
+        create_game_data_json(folder_path=haihu_dir, file_name=json_file_name, data=temp_result_data)
         # 一時的なresultと前回のhand_tilesを削除
         delete_prev_hand()
         delete_temp_result()

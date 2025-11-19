@@ -11,8 +11,10 @@ from django.conf import settings
 import os
 
 def mahjong_render(request):
+    
     # return render(request, 'app/mahjong_render.html')
-    # test
+    
+    # debug
     return render(request, 'app/test.html')
 
 
@@ -161,7 +163,8 @@ def tiles_save(request):
                 return JsonResponse(
                     {
                         'message': "No record flag provided.",
-                    }, status=420
+                    }, 
+                    status=420
                 )
             else:
                 record_flag = int(Req_BODY["record_flag"])
@@ -237,17 +240,33 @@ def tiles_req(request):
     if request.method == 'POST':
         try:
             Req_BODY = request.POST
+            # 牌譜フォルダのパスを取得
+            haihu_dir = settings.HAIHU_ROOT
             if 'file_name' not in Req_BODY:
+                # file_nameがリクエストに含まれていない場合 (牌譜一覧を返す想定)
+                # 保存したjson名+日付を返す
                 pass
-                # 保存したjson名を返す
+                # return JsonResponse(
+                #     {
+                #         'message': "successful",
+                #         'file_list': 
+                #     }, 
+                #     status=200
+                # )
             else:
-                req_file_neme = Req_BODY["file_name"]
-                # 参照ファイル名と一致する牌譜データを返す
-                if req_file_neme == "":
+                # file_nameがリクエストに含まれている場合 (特定の牌譜を返す想定)
+                req_file_name = Req_BODY["file_name"]
+                # 完全なファイルパスを作成
+                file_path = os.path.join(haihu_dir, req_file_name)
+                # ファイル名が牌譜フォルダ内に存在するかチェック
+                if req_file_name and os.path.exists(file_path):
+                    # ファイルが存在した場合の処理
                     pass
         except Exception as e:
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+    else:
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 
 def imageChangeNp(request_image):
