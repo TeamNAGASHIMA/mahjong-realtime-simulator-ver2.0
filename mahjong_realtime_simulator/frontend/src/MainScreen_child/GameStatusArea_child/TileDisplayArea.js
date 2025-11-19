@@ -310,18 +310,21 @@ const styles = `
 
 // --- 子コンポーネント定義 ---
 const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) => {
-  const buttonText = isSimulatorMode ? 'リアルタイムシミュレーター' : '牌譜';
+  // isSimulatorMode (true/false) に基づいてボタンのテキストを決定する
+  const dynamicButtonText = isSimulatorMode ? '牌譜' : 'リアルタイムシミュレーター';  
+
   const buttonStyle = {
     fontFamily: "'Inter', sans-serif", fontSize: '0.8em', color: '#ffffff',
     backgroundColor: '#E39C40', border: `1px solid #eda040`,
     padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
     whiteSpace: 'nowrap', transition: 'all 0.3s ease',
   };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0 15px 0' }}>
       <span className="status-header" style={{ fontFamily: "'Inter', sans-serif", fontSize: '1em', fontWeight: 'bold' }}>{title}</span>
       <div>
-        <button style={buttonStyle} onClick={onModeChange}>{buttonText}</button>
+        <button style={buttonStyle} onClick={onModeChange}>{dynamicButtonText}</button>
         <button className="reset-button" onClick={onResetClick}>全クリア</button>
       </div>
     </div>
@@ -1040,9 +1043,10 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
             <StatusHeader 
               title={headerTitle} 
               onResetClick={handleClearAll}
-              isSimulatorMode={settings.flag === 1}
+              isSimulatorMode={settings.flag === 1} // flagが1ならtrue、それ以外ならfalseを渡す
               onModeChange={onModeChange}
             />
+            
             <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} />
             <div className="upper-game-area">
               <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
