@@ -1,13 +1,13 @@
-// Header/CameraModal.js
+// Header/CameraModal.js (1080p固定・厳格モード)
+
 import React, { useState, useEffect, useRef } from 'react';
-import { styles } from './styles'; // 共通スタイルをインポート
+import { styles } from './styles';
 
 export const CameraModal = ({
   onClose, isCameraActive, onConnectOrReconnect, devices,
   selectedBoardCamera, setSelectedBoardCamera,
   selectedHandCamera, setSelectedHandCamera, errorMessage,
   boardFlip, setBoardFlip, handFlip, setHandFlip,
-  // ▼▼▼【追加】MainScreenからガイド枠関連のpropsを受け取る ▼▼▼
   guideFrameColor, setGuideFrameColor
 }) => {
   const [hoveredButton, setHoveredButton] = useState(null);
@@ -17,10 +17,30 @@ export const CameraModal = ({
   useEffect(() => {
     let activeStream = null;
     if (isCameraActive && selectedBoardCamera) {
-      const constraints = { video: { deviceId: { exact: selectedBoardCamera } } };
+      // ★★★ 1920x1080 を exact で要求 ★★★
+      const constraints = {
+        video: {
+          deviceId: { exact: selectedBoardCamera },
+          width: { exact: 1920 },
+          height: { exact: 1080 }
+        }
+      };
+
+      console.log(`[CameraModal] 盤面カメラに1920x1080を要求します...`);
       navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => { activeStream = stream; if (boardVideoRef.current) boardVideoRef.current.srcObject = stream; })
-        .catch(err => console.error('カメラモーダル - 盤面カメラ起動失敗:', err));
+        .then(stream => {
+          console.log(`[CameraModal] 盤面カメラ 1920x1080 での起動に成功。`);
+          activeStream = stream;
+          if (boardVideoRef.current) {
+            boardVideoRef.current.srcObject = stream;
+          }
+        })
+        .catch(err => {
+          // ★★★ エラーをコンソールに明確に表示 ★★★
+          console.error(`[CameraModal] 盤面カメラを1920x1080で起動できませんでした。カメラがこの解像度に対応しているか確認してください。`, err.name);
+          // エラーが発生した場合、プレビューをクリアする
+          if (boardVideoRef.current) boardVideoRef.current.srcObject = null;
+        });
     }
     return () => {
       if (activeStream) activeStream.getTracks().forEach(track => track.stop());
@@ -31,10 +51,28 @@ export const CameraModal = ({
   useEffect(() => {
     let activeStream = null;
     if (isCameraActive && selectedHandCamera) {
-      const constraints = { video: { deviceId: { exact: selectedHandCamera } } };
+      // ★★★ 1920x1080 を exact で要求 ★★★
+      const constraints = {
+        video: {
+          deviceId: { exact: selectedHandCamera },
+          width: { exact: 1920 },
+          height: { exact: 1080 }
+        }
+      };
+      
+      console.log(`[CameraModal] 手牌カメラに1920x1080を要求します...`);
       navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => { activeStream = stream; if (handVideoRef.current) handVideoRef.current.srcObject = stream; })
-        .catch(err => console.error('カメラモーダル - 手牌カメラ起動失敗:', err));
+        .then(stream => {
+          console.log(`[CameraModal] 手牌カメラ 1920x1080 での起動に成功。`);
+          activeStream = stream;
+          if (handVideoRef.current) {
+            handVideoRef.current.srcObject = stream;
+          }
+        })
+        .catch(err => {
+          console.error(`[CameraModal] 手牌カメラを1920x1080で起動できませんでした。カメラがこの解像度に対応しているか確認してください。`, err.name);
+          if (handVideoRef.current) handVideoRef.current.srcObject = null;
+        });
     }
     return () => {
       if (activeStream) activeStream.getTracks().forEach(track => track.stop());
@@ -42,39 +80,11 @@ export const CameraModal = ({
     };
   }, [selectedHandCamera, isCameraActive]);
 
-  const handleFlip = (cameraType, axis) => {
-    const setter = cameraType === 'board' ? setBoardFlip : setHandFlip;
-    setter(prev => ({ ...prev, [axis]: !prev[axis] }));
-  };
-
+  // ... (以降のコードは変更なし。省略せずに展開します)
+  const handleFlip = (cameraType, axis) => { const setter = cameraType === 'board' ? setBoardFlip : setHandFlip; setter(prev => ({ ...prev, [axis]: !prev[axis] })); };
   const getTransform = (flipState) => `scale(${flipState.horizontal ? -1 : 1}, ${flipState.vertical ? -1 : 1})`;
-
-  const localStyles = {
-    connectButton: { ...styles.button, width: '100%', marginBottom: '15px', marginLeft: 0 },
-    previewContainer: { display: 'flex', justifyContent: 'space-around', marginBottom: '20px', textAlign: 'center' },
-    // ▼▼▼【修正】previewBoxにposition: 'relative'を追加してガイド枠の基準にする ▼▼▼
-    previewBox: { position: 'relative', width: '200px', height: '112px', backgroundColor: '#000', border: '1px solid #555', margin: '5px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '14px' },
-    videoPreview: { width: '100%', height: '100%', objectFit: 'cover' },
-    assignmentContainer: { marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' },
-    errorMessage: { color: '#ff6b6b', textAlign: 'center', marginBottom: '15px' },
-    flipButtonsContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '8px' },
-    flipButton: { ...styles.button, padding: '4px 8px', fontSize: '12px', marginLeft: 0, minWidth: '80px' },
-    flipButtonActive: { backgroundColor: '#6ca7ff', color: '#fff', fontWeight: 'bold' },
-  };
-
-  // ▼▼▼【追加】ガイド枠のスタイルを定義するオブジェクト ▼▼▼
-  // プレビューボックスの短い辺(height: 112px)に合わせて正方形を作成
-  const guideFrameStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '112px', // 短い辺のサイズに合わせる
-    height: '112px',
-    border: `3px solid ${guideFrameColor}`, // 色を動的に変更
-    boxSizing: 'border-box',
-    pointerEvents: 'none' // マウスイベントを透過させる
-  };
+  const localStyles = { connectButton: { ...styles.button, width: '100%', marginBottom: '15px', marginLeft: 0 }, previewContainer: { display: 'flex', justifyContent: 'space-around', marginBottom: '20px', textAlign: 'center' }, previewBox: { position: 'relative', width: '200px', height: '112px', backgroundColor: '#000', border: '1px solid #555', margin: '5px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '14px' }, videoPreview: { width: '100%', height: '100%', objectFit: 'cover' }, assignmentContainer: { marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' }, errorMessage: { color: '#ff6b6b', textAlign: 'center', marginBottom: '15px' }, flipButtonsContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '8px' }, flipButton: { ...styles.button, padding: '4px 8px', fontSize: '12px', marginLeft: 0, minWidth: '80px' }, flipButtonActive: { backgroundColor: '#6ca7ff', color: '#fff', fontWeight: 'bold' }, };
+  const guideFrameStyle = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '112px', height: '112px', border: `3px solid ${guideFrameColor}`, boxSizing: 'border-box', pointerEvents: 'none' };
 
   return (
     <div style={styles.modalOverlay} onClick={onClose}>
@@ -94,12 +104,11 @@ export const CameraModal = ({
               <p>盤面カメラ</p>
               <div style={localStyles.previewBox}>
                 <video ref={boardVideoRef} style={{ ...localStyles.videoPreview, transform: getTransform(boardFlip) }} autoPlay playsInline muted />
-                {/* ▼▼▼【追加】ガイド枠を描画するdiv要素（色が 'none' でない場合のみ表示） ▼▼▼ */}
                 {guideFrameColor && guideFrameColor !== 'none' && <div style={guideFrameStyle}></div>}
               </div>
               <div style={localStyles.flipButtonsContainer}>
-                <button style={{ ...localStyles.flipButton, ...(boardFlip.horizontal && localStyles.flipButtonActive), ...(!boardFlip.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
-                <button style={{ ...localStyles.flipButton, ...(boardFlip.vertical && localStyles.flipButtonActive), ...(!boardFlip.vertical && hoveredButton === 'board_v' && styles.buttonHover) }} onClick={() => handleFlip('board', 'vertical')} onMouseOver={() => setHoveredButton('board_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
+                <button style={{ ...localStyles.flipButton, ...(boardFlip.horizontal && styles.flipButtonActive), ...(!boardFlip.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
+                <button style={{ ...localStyles.flipButton, ...(boardFlip.vertical && styles.flipButtonActive), ...(!boardFlip.vertical && hoveredButton === 'board_v' && styles.buttonHover) }} onClick={() => handleFlip('board', 'vertical')} onMouseOver={() => setHoveredButton('board_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
               </div>
             </div>
             <div>
@@ -108,8 +117,8 @@ export const CameraModal = ({
                 <video ref={handVideoRef} style={{ ...localStyles.videoPreview, transform: getTransform(handFlip) }} autoPlay playsInline muted />
               </div>
               <div style={localStyles.flipButtonsContainer}>
-                <button style={{ ...localStyles.flipButton, ...(handFlip.horizontal && localStyles.flipButtonActive), ...(!handFlip.horizontal && hoveredButton === 'hand_h' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'horizontal')} onMouseOver={() => setHoveredButton('hand_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
-                <button style={{ ...localStyles.flipButton, ...(handFlip.vertical && localStyles.flipButtonActive), ...(!handFlip.vertical && hoveredButton === 'hand_v' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'vertical')} onMouseOver={() => setHoveredButton('hand_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
+                <button style={{ ...localStyles.flipButton, ...(handFlip.horizontal && styles.flipButtonActive), ...(!handFlip.horizontal && hoveredButton === 'hand_h' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'horizontal')} onMouseOver={() => setHoveredButton('hand_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
+                <button style={{ ...localStyles.flipButton, ...(handFlip.vertical && styles.flipButtonActive), ...(!handFlip.vertical && hoveredButton === 'hand_v' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'vertical')} onMouseOver={() => setHoveredButton('hand_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
               </div>
             </div>
           </div>
@@ -128,25 +137,13 @@ export const CameraModal = ({
               </select>
             </div>
           </div>
-
-          {/* ▼▼▼【追加】ガイド枠の色設定UI ▼▼▼ */}
           <div style={{ marginTop: '20px', borderTop: '1px solid #444', paddingTop: '20px' }}>
             <h4>盤面カメラ ガイド枠設定</h4>
             <div style={styles.formGroup}>
               <label style={styles.formLabel}>線の色</label>
-              <select
-                style={styles.formInput}
-                value={guideFrameColor}
-                onChange={(e) => setGuideFrameColor(e.target.value)}
-              >
-                <option value="none">なし</option>
-                <option value="black">黒</option>
-                <option value="white">白</option>
-                <option value="red">赤</option>
-              </select>
+              <select style={styles.formInput} value={guideFrameColor} onChange={(e) => setGuideFrameColor(e.target.value)}><option value="none">なし</option><option value="black">黒</option><option value="white">白</option><option value="red">赤</option></select>
             </div>
           </div>
-
         </div>
       </div>
     </div>
