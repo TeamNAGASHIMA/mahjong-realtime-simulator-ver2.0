@@ -271,8 +271,22 @@ def tiles_req(request):
                 file_path = os.path.join(haihu_dir, req_file_name)
                 # ファイル名が牌譜フォルダ内に存在するかチェック
                 if req_file_name and os.path.exists(file_path):
-                    # ファイルが存在した場合の処理
-                    pass
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        game_data = json.load(f)
+                    
+                    # temp_resultキーのデータを取得
+                    temp_result = game_data.get('temp_result', [])
+
+                    return JsonResponse(
+                        {
+                            'message': "successful",
+                            'temp_result': temp_result
+                        },
+                        status=200
+                    )
+                else:
+                    return JsonResponse({'message': f"File '{req_file_name}' not found."}, status=404)
+
         except Exception as e:
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
