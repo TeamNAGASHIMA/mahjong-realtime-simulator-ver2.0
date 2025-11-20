@@ -3,6 +3,45 @@
 
 import cv2
 import numpy as np
+import os
+
+# --- 定数定義 ---
+# 各プレイヤーの捨て牌領域の定義（画像の幅・高さに対する比率）
+# これらの値は、使用するカメラとテーブルのセットアップに合わせて調整する必要があります。
+# --------------------------------------------------------------------------
+# 注意: これらの比率はボード全体の画像に対するものです。
+# 例えば、横幅の0.5は画像中央、縦幅の0.8は画像の下から20%の位置を指します。
+# --------------------------------------------------------------------------
+DISCARD_REGIONS = {
+    # 1. 自分（画面下）の捨て牌
+    'bottom': {
+        'center_x_ratio': 0.5,
+        'center_y_ratio': 0.72, # 卓の中央よりやや下
+        'width_ratio': 0.18,    # 牌が横に並ぶ幅
+        'height_ratio': 0.2    # 牌が縦に積まれる高さ（通常3段まで）
+    },
+    # 2. 下家（画面右）の捨て牌
+    'right': {
+        'center_x_ratio': 0.63,  # 卓の中央よりやや右
+        'center_y_ratio': 0.5,
+        'width_ratio': 0.12,     # 牌が横に積まれる幅（通常3段まで）
+        'height_ratio': 0.32     # 牌が縦に並ぶ高さ
+    },
+    # 3. 対面（画面上）の捨て牌
+    'top': {
+        'center_x_ratio': 0.5,
+        'center_y_ratio': 0.29, # 卓の中央よりやや上
+        'width_ratio': 0.18,
+        'height_ratio': 0.2
+    },
+    # 4. 上家（画面左）の捨て牌
+    'left': {
+        'center_x_ratio': 0.38,  # 卓の中央よりやや左
+        'center_y_ratio': 0.5,
+        'width_ratio': 0.12,
+        'height_ratio': 0.32
+    }
+}
 
 def _get_crop_coordinates(image_np: np.ndarray, 
                         center_x_ratio: float, center_y_ratio: float,
@@ -67,62 +106,10 @@ def crop_discard_main(image_np: np.ndarray) -> dict[str, np.ndarray]:
         print("致命的エラー: main (crop_discard_detection) - 入力画像が空または不正です。")
         return {}
 
-    # 各プレイヤーの捨て牌領域の定義（画像の幅・高さに対する比率）
-    # これらの値は、使用するカメラとテーブルのセットアップに合わせて調整する必要があります。
-    # 例: 卓の中央に捨て牌が集まる一般的な麻雀卓の配置を想定。
-    # ここでは仮の値を設定しています。実際の使用環境に合わせて調整してください。
-    # --------------------------------------------------------------------------
-    # 注意: これらの比率はボード全体の画像に対するものです。
-    # 例えば、横幅の0.5は画像中央、縦幅の0.8は画像の下から20%の位置を指します。
-    # --------------------------------------------------------------------------
-
-    # 1. 自分（画面下）の捨て牌
-    # 河の領域の中心X座標、中心Y座標、幅、高さの比率
-    BOTTOM_DISCARD_REGION = {
-        'center_x_ratio': 0.5,
-        'center_y_ratio': 0.7, # 卓の中央よりやや下
-        'width_ratio': 0.2,     # 牌が横に並ぶ幅
-        'height_ratio': 0.2   # 牌が縦に積まれる高さ（通常3段まで）
-    }
-
-    # 2. 下家（画面右）の捨て牌
-    RIGHT_DISCARD_REGION = {
-        'center_x_ratio': 0.65,  # 卓の中央よりやや右
-        'center_y_ratio': 0.5,
-        'width_ratio': 0.18,    # 牌が横に積まれる幅（通常3段まで）
-        'height_ratio': 0.25     # 牌が縦に並ぶ高さ
-    }
-
-    # 3. 対面（画面上）の捨て牌
-    TOP_DISCARD_REGION = {
-        'center_x_ratio': 0.5,
-        'center_y_ratio': 0.27, # 卓の中央よりやや上
-        'width_ratio': 0.2,
-        'height_ratio': 0.2
-    }
-
-    # 4. 上家（画面左）の捨て牌
-    LEFT_DISCARD_REGION = {
-        'center_x_ratio': 0.35,  # 卓の中央よりやや左
-        'center_y_ratio': 0.45,
-        'width_ratio': 0.18,
-        'height_ratio': 0.25
-    }
-
     # 各領域を切り出す
     cropped_discard_areas = {}
     
-    # デバッグ表示用オリジナル画像のコピー (imshowコメントアウトに伴い不要だが、残しておく)
-    # debug_original_image = image_np.copy()
-
-    regions_to_process = {
-        'bottom': BOTTOM_DISCARD_REGION,
-        'right': RIGHT_DISCARD_REGION,
-        'top': TOP_DISCARD_REGION,
-        'left': LEFT_DISCARD_REGION
-    }
-
-    for key, params in regions_to_process.items():
+    for key, params in DISCARD_REGIONS.items():
         x, y, w, h = _get_crop_coordinates(
             image_np,
             params['center_x_ratio'], params['center_y_ratio'],
@@ -135,52 +122,71 @@ def crop_discard_main(image_np: np.ndarray) -> dict[str, np.ndarray]:
             cropped_img = image_np[y:y+h, x:x+w]
         
         cropped_discard_areas[key] = cropped_img
-
-        # デバッグ表示 (各領域の切り出しを視覚的に確認)
-        # これらの行をコメントアウト
-        # if cropped_img is not None:
-        #     color_map = {
-        #         'bottom': (0, 255, 0),  # 緑
-        #         'right': (0, 255, 255), # 黄
-        #         'top': (255, 0, 0),     # 青
-        #         'left': (255, 255, 0)   # シアン
-        #     }
-        #     color = color_map.get(key, (255, 255, 255))
-        #     cv2.rectangle(debug_original_image, (x, y), (x + w, y + h), color, 2)
-        #     cv2.putText(debug_original_image, key, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-        #     if w > 50 and h > 50: 
-        #         cv2.imshow(f"Cropped Discard: {key}", cropped_img)
-
-
-    # これらの行をコメントアウト
-    # cv2.imshow("Original Image with Discard Regions", debug_original_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-
+        
     return cropped_discard_areas
 
 
 # --- スクリプトのエントリーポイント ---
 if __name__ == '__main__':
-    # テスト用設定
-    TEST_IMAGE_PATH = 'test_mahjong.jpg' # テスト用画像パス
-    
+    # --- テスト用設定 ---
+    TEST_IMAGE_PATH = 'board_tiles_image_2.jpg' # テスト用画像パス
+    OUTPUT_DIR = 'output_discards'           # 出力ディレクトリ名
+
     # --- 実行 ---
+    # 出力ディレクトリを作成（存在しない場合）
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
     input_image_np = cv2.imread(TEST_IMAGE_PATH)
 
     if input_image_np is None:
         print(f"エラー: 画像ファイル '{TEST_IMAGE_PATH}' が見つからないか、読み込めません。")
     else:
         print("discard_detectionのテストを開始します。")
-        # main関数を呼び出すだけ (imshowは内部で実行されない)
+        
+        # 1. main関数を呼び出し、切り出し結果を取得
         result_cropped_dict = crop_discard_main(input_image_np)
 
-        if result_cropped_dict:
-            print("\nテスト完了: 4人分の捨て牌領域が切り出され、辞書として返されました。")
-            for key, img_np in result_cropped_dict.items():
-                if img_np is not None:
-                    h, w, _ = img_np.shape
-                    print(f"  '{key}' 領域: サイズ = {w}x{h} ピクセル")
-        else:
+        if not result_cropped_dict:
             print("\nテスト完了: 捨て牌領域の切り出しに失敗しました。")
+        else:
+            # 2. 切り出した各画像をファイルに保存
+            print(f"\n切り出した画像を '{OUTPUT_DIR}/' に保存します...")
+            for key, img_np in result_cropped_dict.items():
+                if img_np is not None and img_np.size > 0:
+                    h, w, _ = img_np.shape
+                    save_path = os.path.join(OUTPUT_DIR, f"cropped_discard_{key}.jpg")
+                    cv2.imwrite(save_path, img_np)
+                    print(f"  -> '{key}' 領域 (サイズ: {w}x{h}) を '{save_path}' に保存しました。")
+                else:
+                    print(f"  -> '{key}' 領域は切り出せませんでした。")
+
+            # 3. 範囲を可視化した画像を生成して保存
+            print(f"\n切り出し範囲を可視化した画像を '{OUTPUT_DIR}/' に保存します...")
+            visualized_image = input_image_np.copy()
+
+            color_map = {
+                'bottom': (0, 255, 0),  # 緑
+                'right': (0, 255, 255), # 黄
+                'top': (255, 0, 0),     # 青
+                'left': (255, 255, 0)   # シアン
+            }
+
+            for key, params in DISCARD_REGIONS.items():
+                # ヘルパー関数を使って再度座標を計算
+                x, y, w, h = _get_crop_coordinates(
+                    input_image_np,
+                    params['center_x_ratio'], params['center_y_ratio'],
+                    params['width_ratio'], params['height_ratio']
+                )
+                if w > 0 and h > 0:
+                    color = color_map.get(key, (255, 255, 255))
+                    # 矩形を描画
+                    cv2.rectangle(visualized_image, (x, y), (x + w, y + h), color, 3) # 線を太くして見やすく
+                    # ラベルを描画
+                    cv2.putText(visualized_image, key, (x + 5, y + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+            visualized_save_path = os.path.join(OUTPUT_DIR, "visualized_discard_regions.jpg")
+            cv2.imwrite(visualized_save_path, visualized_image)
+            print(f"  -> 可視化画像を '{visualized_save_path}' に保存しました。")
+
+            print("\nテスト完了。")
