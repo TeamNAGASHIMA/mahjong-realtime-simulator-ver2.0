@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>麻雀牌表示</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+
+    <!-- ✅ importmap -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+            "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/OrbitControls.js",
+            "three/examples/jsm/geometries/RoundedBoxGeometry.js": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/geometries/RoundedBoxGeometry.js"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <canvas id="myCanvas"></canvas>
+
+
+    <!-- ✅ 正しい static タグの使い方 -->
+    <script type="module" src="{% static 'js/main.js' %}"></script>
+</body>
+
+
+</html>

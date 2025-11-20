@@ -220,49 +220,132 @@ function getRandomTiles(count = 13) {
 const overlay = document.createElement("div");
 overlay.id = "tileOverlay";
 Object.assign(overlay.style, {
-    display: "none",
     position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100%",
-    height: "100%",
-    background: "rgba(0,0,0,0.7)",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)", // 中央配置
+    width: "500px",   // 横幅
+    height: "400px",  // 高さ
+    background: "rgba(255, 255, 255, 0.95)",
+    borderRadius: "10px",
+    boxShadow: "0 0 20px rgba(0,0,0,0.3)",
+    display: "none",
+    zIndex: "1000",
+    padding: "20px",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: "1000",
 });
-overlay.style.display = "none";
 
+const closeBtn = document.createElement("button");
+closeBtn.textContent = "×";
+Object.assign(closeBtn.style, {
+    position: "absolute",
+    top: "0px",
+    right: "5px",
+    background: "transparent",
+    border: "none",
+    fontSize: "24px",
+    cursor: "pointer",
+    color: "#333",
+});
+closeBtn.onmouseenter = () => (closeBtn.style.color = "#ff3333");
+closeBtn.onmouseleave = () => (closeBtn.style.color = "#333");
+closeBtn.onclick = (event) => {
+    event.stopPropagation(); // 下層クリック防止
+    overlay.style.display = "none"; // 閉じる
+};
+overlay.appendChild(closeBtn);
+
+// ======== グリッド設定 ========
 const tileGrid = document.createElement("div");
 Object.assign(tileGrid.style, {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, 100px)",
-    gap: "10px",
-    background: "white",
-    padding: "20px",
-    maxHeight: "80%",
-    overflowY: "auto"
+    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", // 各ボタンを自動調整
+    gap: "15px",             // ボタン間の余白
+    width: "100%",           // 横幅いっぱいに広げる
+    height: "100%",          // オーバーレイ内にフィット
+    justifyItems: "center",  // 各ボタンを中央揃え
+    alignContent: "start",   // 上から詰める
+    overflowY: "auto",
 });
-
 overlay.appendChild(tileGrid);
 document.body.appendChild(overlay);
 
-// 牌のサムネイル生成関数
+// ======== ボタン生成 ========
 function showTileOverlay(onSelect) {
     tileGrid.innerHTML = ""; // 前回の内容をクリア
+
+    // ======== グリッド設定 ========
+    Object.assign(tileGrid.style, {
+        display: "grid",
+        gridTemplateColumns: "repeat(5, 1fr)", // 横5列
+        gap: "8px",              // 少し詰める
+        width: "85%",            // 画面幅に収まるように調整 ✅
+        height: "100%",
+        justifyItems: "center",
+        alignContent: "start",
+        overflowY: "auto",       // 縦スクロールはOK
+        margin: "0 auto",
+    });
+
+    // ======== 各牌ボタン生成 ========
     for (const key in tileMakers) {
         const thumbBtn = document.createElement("button");
-        thumbBtn.textContent = key;
-        thumbBtn.style.width = "100px";
-        thumbBtn.style.height = "50px";
-        thumbBtn.onclick = () => {
+
+        // ✅ ボタン共通スタイル（さらに小型化）
+        Object.assign(thumbBtn.style, {
+            width: "70px",           // ← さらに少し小さめ ✅
+            height: "95px",          // ← 高さも比例して調整 ✅
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "0",
+            margin: "2px",           // 余白を最小化 ✅
+            transition: "transform 0.15s ease",
+        });
+
+        // ✅ 画像設定
+        const img = document.createElement("img");
+        img.src = `/static/js/img/${key}.png`;
+        Object.assign(img.style, {
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            background: "transparent",
+            border: "none",
+            pointerEvents: "none",
+        });
+
+        thumbBtn.appendChild(img);
+
+        // ✅ ホバー効果（拡大アニメ）
+        thumbBtn.onmouseenter = () => thumbBtn.style.transform = "scale(1.05)";
+        thumbBtn.onmouseleave = () => thumbBtn.style.transform = "scale(1.0)";
+
+        // ✅ クリック時
+        thumbBtn.onclick = (event) => {
+            event.stopPropagation();
             overlay.style.display = "none";
             onSelect(key);
         };
+
         tileGrid.appendChild(thumbBtn);
     }
+
     overlay.style.display = "flex";
 }
+
+// ======== オーバーレイクリック時の下層クリック防止 ========
+overlay.addEventListener("click", (event) => {
+    event.stopPropagation();
+});
+
+
 
 // --------------------
 // 手牌クリック処理を変更
@@ -273,6 +356,10 @@ function onHandTileClick(index) {
         // 新しい牌作成
         const newTile = tileMakers[tileKey]();
         newTile.geometry.computeBoundingBox();
+
+        // 影を復活させる設定を追加
+        newTile.castShadow = true;
+        newTile.receiveShadow = true;
 
         // 古い牌の位置・回転をコピー
         newTile.position.copy(oldTile.position);
@@ -288,7 +375,6 @@ function onHandTileClick(index) {
         scene.add(newTile);
     });
 }
-
 
 // --------------------
 // placePlayerHand 修正
@@ -329,69 +415,300 @@ function placePlayerHand(tiles, direction = "south") {
 // Raycasterクリック処理
 // --------------------
 
-// 画面表示用の簡単な div を作成
-const coordDisplay = document.createElement("div");
-coordDisplay.style.position = "fixed";
-coordDisplay.style.top = "10px";
-coordDisplay.style.left = "10px";
-coordDisplay.style.padding = "100px 150px";  // 少し大きめに
-coordDisplay.style.background = "rgba(0,0,0,0.8)";
-coordDisplay.style.color = "yellow";        // 目立つ色
-coordDisplay.style.fontFamily = "monospace";
-coordDisplay.style.fontSize = "18px";      // 文字サイズを大きく
-coordDisplay.style.fontWeight = "bold";    // 太字
-coordDisplay.style.zIndex = 1000;
-document.body.appendChild(coordDisplay);
-
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 window.addEventListener("click", (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // オーバレイが表示されている場合は処理を中断
+    if (overlay.style.display === "flex") return;
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(playerHand);
 
     if (intersects.length > 0) {
-        const obj = intersects[0].object;
+        const clickedTile = intersects[0].object;
+        const handIndex = playerHand.indexOf(clickedTile);
 
-        // --- ここから座標→インデックス計算 ---
-        const spacing = 4;
-        const widths = playerHand.map(tile => {
-            const box = tile.geometry.boundingBox;
-            return box.max.x - box.min.x;
-        });
-        const totalWidth = widths.reduce((sum, w) => sum + w, 0) + spacing * (widths.length - 1);
-        let start = -totalWidth / 2;
-
-        // 左端からの相対座標
-        const relX = obj.position.x - start;
-
-        // インデックスを探索
-        let index = 0;
-        let cursor = 0;
-        for (let i = 0; i < widths.length; i++) {
-            const w = widths[i];
-            if (relX >= cursor && relX < cursor + w + spacing) {
-                index = i;
-                break;
-            }
-            cursor += w + spacing;
+        if (handIndex !== -1) {
+            onHandTileClick(handIndex); // ✅ オーバレイも表示される
         }
-        // --- 計算完了 ---
-
-        // ハンドリング
-        onHandTileClick(index);
-
-        // デバッグ表示
-        const pos = obj.position;
-        coordDisplay.textContent = `index: ${index}, x: ${pos.x.toFixed(1)}, y: ${pos.y.toFixed(1)}, z: ${pos.z.toFixed(1)}`;
-    } else {
-        coordDisplay.textContent = "";
     }
 });
 
 
+// --------------------
+// 捨て牌クリック処理
+// --------------------
+function onDiscardTileClick(index) {
+    const oldTile = discardTiles[index];
+    showTileOverlay((tileKey) => {
+        // 新しい牌を作成
+        const newTile = tileMakers[tileKey]();
+        newTile.geometry.computeBoundingBox();
+
+        // 影設定
+        newTile.castShadow = true;
+        newTile.receiveShadow = true;
+
+        // 位置と回転を維持
+        newTile.position.copy(oldTile.position);
+        newTile.rotation.copy(oldTile.rotation);
+
+        // シーンと配列を更新
+        scene.remove(oldTile);
+        discardTiles[index] = newTile;
+        scene.add(newTile);
+    });
+}
+
+// 捨て牌を並べる関数
+let discardTiles = [];
+function placeDiscardTiles(tiles, direction = "south") {
+    const spacing = 4;
+    const rowSpacing = 10;
+    const maxPerRow = 6;
+    const box = tiles[0].geometry.boundingBox;
+    const tileWidth = box.max.x - box.min.x;
+    const tileHeight = box.max.y - box.min.y;
+
+    const startX = -(tileWidth + spacing) * (maxPerRow - 1) / 2;
+
+    // 再配置時の重複防止
+    // ※ 方向ごとに置く場合、呼び出し前に必要に応じてクリアするか、ここでクリアして全方向まとめて呼ぶ
+    // 今回は呼び出しごとに追加する仕様ならこの行は不要だが、安全のため一度空にする場合は uncomment
+    // discardTiles.length = 0;
+
+    for (let i = 0; i < tiles.length; i++) {
+        const tile = tiles[i];
+        const row = Math.floor(i / maxPerRow);
+        const col = i % maxPerRow;
+
+        const isReverseCol = (direction === "north" || direction === "east");
+        const displayCol = isReverseCol ? (maxPerRow - 1 - col) : col;
+
+        let x = 0, z = 0;
+
+        if (direction === "south") {
+            x = startX + displayCol * (tileWidth + spacing);
+            z = 300 + row * (tileWidth + spacing + rowSpacing);
+        } else if (direction === "north") {
+            x = startX + displayCol * (tileWidth + spacing);
+            z = -300 - row * (tileWidth + spacing + rowSpacing);
+        } else if (direction === "east") {
+            x = 300 + row * (tileWidth + spacing + rowSpacing);
+            z = startX + displayCol * (tileWidth + spacing);
+        } else if (direction === "west") {
+            x = -300 - row * (tileWidth + spacing + rowSpacing);
+            z = startX + displayCol * (tileWidth + spacing);
+        }
+
+        tile.position.set(x, tileHeight / 4, z);
+
+        if (direction === "south") {
+            tile.rotation.x = -Math.PI / 2;
+        } else if (direction === "north") {
+            tile.rotation.x = -Math.PI / 2;
+            tile.rotation.z = Math.PI;
+        } else if (direction === "east") {
+            tile.rotation.x = -Math.PI / 2;
+            tile.rotation.z = Math.PI / 2;
+        } else if (direction === "west") {
+            tile.rotation.x = -Math.PI / 2;
+            tile.rotation.z = -Math.PI / 2;
+        }
+
+        // 影を落とす設定
+        tile.castShadow = true;
+        tile.receiveShadow = false;
+
+        scene.add(tile);
+
+        // ---------- ここが重要 ----------
+        // 捨て牌配列に登録（クリック検出用）
+        discardTiles.push(tile);
+    }
+}
+
+// --------------------
+// 捨て牌クリック検出用 Raycaster
+// --------------------
+(function setupDiscardTileClickListener() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // renderer.domElement に対してリスナを付ける（キャンバス内クリックのみ）
+    renderer.domElement.addEventListener("click", (event) => {
+        // オーバーレイが表示されている場合は無視
+        if (overlay && overlay.style.display === "flex") return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        // 子を含めて当たり判定
+        const intersects = raycaster.intersectObjects(discardTiles, true);
+
+        if (intersects.length === 0) return;
+
+        // 最初のヒットを処理
+        const hit = intersects[0].object;
+
+        // 直接見つかるか試す
+        let index = discardTiles.indexOf(hit);
+
+        // 見つからない場合は親方向に辿って探す（子メッシュの場合のフォールバック）
+        if (index === -1) {
+            let obj = hit;
+            while (obj) {
+                index = discardTiles.indexOf(obj);
+                if (index !== -1) break;
+                obj = obj.parent;
+            }
+        }
+
+        // さらにフォールバック：ヒットオブジェクトのuuid が一致するかで判定
+        if (index === -1) {
+            index = discardTiles.findIndex(d => d.uuid === hit.parent?.uuid || d.uuid === hit.uuid);
+        }
+
+        if (index !== -1) {
+            console.log("捨て牌クリック -> index:", index, "hit:", hit);
+            // 下層の手牌クリックに行かないように標準動作止める
+            event.stopPropagation();
+            event.preventDefault();
+
+            onDiscardTileClick(index);
+        }
+    }, false);
+})();
+
+
+
+// 鳴き牌を並べる関数
+let meldTiles = []; // ← 鳴き牌を格納（クリック検出用）
+
+function placeMeld(tiles, direction = "south", meldIndex = 0, rotatedIndex = null) {
+    const spacing = 10;
+    const widths = tiles.map(tile => {
+        tile.geometry.computeBoundingBox();
+        const box = tile.geometry.boundingBox;
+        return box.max.x - box.min.x;
+    });
+
+    const tileHeight = tiles[0].geometry.boundingBox.max.y - tiles[0].geometry.boundingBox.min.y;
+    const totalWidth = widths.reduce((sum, w) => sum + w, 0) + spacing * (tiles.length - 1);
+    let start = -totalWidth / 2;
+
+    for (let i = 0; i < tiles.length; i++) {
+        const tile = tiles[i];
+        const width = widths[i];
+
+        let x = 0, y = 20, z = 0;
+        const offset = 900;
+        const sideOffset = 850 - meldIndex * 220;
+
+        let rotX = -Math.PI / 2;
+        let rotZ = 0;
+        const isRotated = i === rotatedIndex;
+
+        if (direction === "south") {
+            x = sideOffset + start + width / 2;
+            z = offset;
+            rotZ = isRotated ? Math.PI / 2 : 0;
+        } else if (direction === "north") {
+            x = -sideOffset + start + width / 2;
+            z = -offset;
+            rotZ = isRotated ? -Math.PI / 2 : Math.PI;
+        } else if (direction === "east") {
+            x = offset;
+            z = -sideOffset + start + width / 2;
+            rotZ = isRotated ? Math.PI : Math.PI / 2;
+        } else if (direction === "west") {
+            x = -offset;
+            z = sideOffset + start + width / 2;
+            rotZ = isRotated ? 0 : -Math.PI / 2;
+        }
+
+        tile.rotation.set(rotX, 0, rotZ);
+        tile.position.set(x, y, z);
+        tile.castShadow = true;
+        scene.add(tile);
+
+        // ✅ 鳴き牌として登録
+        meldTiles.push(tile);
+
+        start += width + spacing;
+    }
+}
+
+
+// --------------------
+// 鳴き牌クリック処理
+// --------------------
+function onMeldTileClick(index) {
+    const oldTile = meldTiles[index];
+    showTileOverlay((tileKey) => {
+        const newTile = tileMakers[tileKey]();
+        newTile.geometry.computeBoundingBox();
+        newTile.castShadow = true;
+        newTile.receiveShadow = true;
+
+        // 位置・回転を引き継ぐ
+        newTile.position.copy(oldTile.position);
+        newTile.rotation.copy(oldTile.rotation);
+
+        scene.remove(oldTile);
+        meldTiles[index] = newTile;
+        scene.add(newTile);
+    });
+}
+
+
+// --------------------
+// 鳴き牌クリック検出用 Raycaster
+// --------------------
+(function setupMeldTileClickListener() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+        if (overlay && overlay.style.display === "flex") return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(meldTiles, true);
+
+        if (intersects.length === 0) return;
+
+        const hit = intersects[0].object;
+        let index = meldTiles.indexOf(hit);
+
+        if (index === -1) {
+            let obj = hit;
+            while (obj) {
+                index = meldTiles.indexOf(obj);
+                if (index !== -1) break;
+                obj = obj.parent;
+            }
+        }
+
+        if (index !== -1) {
+            console.log("🟢 鳴き牌クリック index:", index);
+            event.stopPropagation();
+            event.preventDefault();
+            onMeldTileClick(index);
+        }
+    });
+})();
 
 
 
@@ -448,135 +765,89 @@ function placeHiddenHand(count, direction = "north") {
 }
 
 
-// 捨て牌を並べる関数
-function placeDiscardTiles(tiles, direction = "south") {
-    const spacing = 4;
-    const rowSpacing = 10;
-    const maxPerRow = 6;
-    const box = tiles[0].geometry.boundingBox;
-    const tileWidth = box.max.x - box.min.x;
-    const tileHeight = box.max.y - box.min.y;
+// --------------------
+// ドラ牌エリアの作成
+// --------------------
+const doraContainer = document.createElement("div");
+doraContainer.id = "doraContainer";
+Object.assign(doraContainer.style, {
+    position: "fixed",
+    top: "10px",
+    left: "10px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+    padding: "6px 8px",
+    background: "rgba(255, 255, 255, 0.8)",
+    borderRadius: "8px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+    zIndex: "1000",
+});
 
-    const startX = -(tileWidth + spacing) * (maxPerRow - 1) / 2;
+// タイトル
+const doraTitle = document.createElement("div");
+doraTitle.textContent = "ドラ";
+Object.assign(doraTitle.style, {
+    fontSize: "16px",
+    fontWeight: "bold",
+    color: "#c00",
+    textAlign: "center",
+    marginBottom: "2px",
+});
+doraContainer.appendChild(doraTitle);
 
-    for (let i = 0; i < tiles.length; i++) {
-        const tile = tiles[i];
-        const row = Math.floor(i / maxPerRow);
-        const col = i % maxPerRow;
+// 牌エリア
+const doraTilesContainer = document.createElement("div");
+Object.assign(doraTilesContainer.style, {
+    display: "flex",
+    gap: "6px",
+});
+doraContainer.appendChild(doraTilesContainer);
 
-        const isReverseCol = (direction === "north" || direction === "east");
-        const displayCol = isReverseCol ? (maxPerRow - 1 - col) : col;
+document.body.appendChild(doraContainer);
 
-        let x = 0, z = 0;
+// --------------------
+// ドラ牌配列の管理
+// --------------------
+let doraTiles = [];
 
-        if (direction === "south") {
-            x = startX + displayCol * (tileWidth + spacing);
-            z = 300 + row * (tileWidth + spacing + rowSpacing);
-        } else if (direction === "north") {
-            x = startX + displayCol * (tileWidth + spacing);
-            z = -300 - row * (tileWidth + spacing + rowSpacing);
-        } else if (direction === "east") {
-            x = 300 + row * (tileWidth + spacing + rowSpacing);
-            z = startX + displayCol * (tileWidth + spacing);
-        } else if (direction === "west") {
-            x = -300 - row * (tileWidth + spacing + rowSpacing);
-            z = startX + displayCol * (tileWidth + spacing);
-        }
-
-        tile.position.set(x, tileHeight / 4, z);
-
-        if (direction === "south") {
-            tile.rotation.x = -Math.PI / 2;
-        } else if (direction === "north") {
-            tile.rotation.x = -Math.PI / 2;
-            tile.rotation.z = Math.PI;
-        } else if (direction === "east") {
-            tile.rotation.x = -Math.PI / 2;
-            tile.rotation.z = Math.PI / 2;
-        } else if (direction === "west") {
-            tile.rotation.x = -Math.PI / 2;
-            tile.rotation.z = -Math.PI / 2;
-        }
-
-        // 影を落とす設定
-        tile.castShadow = true;
-        tile.receiveShadow = false;
-
-        scene.add(tile);
-    }
+// ドラ牌を追加する関数
+function addDoraTile(tileKey) {
+    doraTiles.push(tileKey);
+    updateDoraDisplay();
 }
 
+// ドラ表示更新（クリックで変更可能にする）
+function updateDoraDisplay() {
+    doraTilesContainer.innerHTML = ""; // 一度クリア
+    doraTiles.forEach((key, index) => {
+        const img = document.createElement("img");
+        img.src = `/static/js/img/${key}.png`;
+        Object.assign(img.style, {
+            width: "50px",
+            height: "auto",
+            objectFit: "contain",
+            borderRadius: "4px",
+            //cursor: "pointer",
+        });
 
-//ポンとか
-function placeMeld(tiles, direction = "south", meldIndex = 0, rotatedIndex = null) {
-    const spacing = 10;
-    const widths = tiles.map(tile => {
-        tile.geometry.computeBoundingBox();
-        const box = tile.geometry.boundingBox;
-        return box.max.x - box.min.x;
+        // クリックで牌を変更
+        img.addEventListener("click", () => {
+            showTileOverlay((newKey) => {
+                doraTiles[index] = newKey;  // 配列を更新
+                updateDoraDisplay();        // 再表示
+            });
+        });
+
+        doraTilesContainer.appendChild(img);
     });
-
-    const tileHeight = tiles[0].geometry.boundingBox.max.y - tiles[0].geometry.boundingBox.min.y;
-    const totalWidth = widths.reduce((sum, w) => sum + w, 0) + spacing * (tiles.length - 1);
-    let start = -totalWidth / 2;
-
-    for (let i = 0; i < tiles.length; i++) {
-        const tile = tiles[i];
-        const width = widths[i];
-
-        let x = 0, y = 20, z = 0;
-        const offset = 900;
-        const sideOffset = 850 - meldIndex * 220;
-
-        // 向きの設定
-        let rotX = -Math.PI / 2;
-        let rotZ = 0;
-
-        const isRotated = i === rotatedIndex;
-
-        if (direction === "south") {
-            x = sideOffset + start + width / 2;
-            z = offset;
-            rotZ = isRotated ? Math.PI / 2 : 0;
-        } else if (direction === "north") {
-            x = -sideOffset + start + width / 2;
-            z = -offset;
-            rotZ = isRotated ? -Math.PI / 2 : Math.PI;
-        } else if (direction === "east") {
-            x = offset;
-            z = -sideOffset + start + width / 2;
-            rotZ = isRotated ? Math.PI : Math.PI / 2;
-        } else if (direction === "west") {
-            x = -offset;
-            z = sideOffset + start + width / 2;
-            rotZ = isRotated ? 0 : -Math.PI / 2;
-        }
-
-        tile.rotation.set(rotX, 0, rotZ);
-        tile.position.set(x, y, z);
-        tile.castShadow = true;
-        scene.add(tile);
-
-        start += width + spacing;
-    }
 }
 
 
-
-
-
-
-
-// // 右上に残り枚数表示用のDOMを作成（html bodyにあらかじめ<div id="remainingCount"></div>が必要です）
-// function updateRemainingCountDisplay() {
-//     const container = document.getElementById("remainingCount");
-//     container.innerHTML = "<b>残り枚数</b><br>";
-
-//     for (const key in maxTileCounts) {
-//         const remain = maxTileCounts[key] - currentTileCounts[key];
-//         container.innerHTML += `${key}: ${remain}<br>`;
-//     }
-// }
+// 初期表示（例）
+addDoraTile("createman3_5Mesh");
+//addDoraTile("createji3_2Mesh");
 
 
 
@@ -631,7 +902,7 @@ dealHiddenTiles(13);
 placeHiddenHand(13, "west");
 
 
-placeDiscardTiles(getRandomTiles(1), "south");
+placeDiscardTiles(getRandomTiles(8), "south");
 placeDiscardTiles(getRandomTiles(7), "east");
 placeDiscardTiles(getRandomTiles(18), "north");
 placeDiscardTiles(getRandomTiles(22), "west");
@@ -662,7 +933,7 @@ window.addEventListener("keydown", (event) => {
     const right = new THREE.Vector3();
     right.crossVectors(forward, up).normalize();
 
-    switch(event.key) {
+    switch (event.key) {
         case "ArrowUp":
             camera.position.addScaledVector(forward, step);
             controls.target.addScaledVector(forward, step);
