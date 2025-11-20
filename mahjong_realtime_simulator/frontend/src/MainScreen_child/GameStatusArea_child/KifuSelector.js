@@ -50,32 +50,51 @@ const dummyKifuData = [
   { id: 3, name: '2023-11-02_10-00.txt' },
 ];
 
-const KifuSelector = () => {
-  const [selectedKifu, setSelectedKifu] = useState(null);
+// ★★★ 変更点1: propsで `kifuFileList` と `onKifuSelect` を受け取る ★★★
+const KifuSelector = ({ kifuFileList, onKifuSelect }) => {
+  const [selectedKifuId, setSelectedKifuId] = useState(null);
 
-  const handleSelect = (kifu) => {
-    setSelectedKifu(kifu.id);
-    console.log(`記録データ「${kifu.name}」が選択されました。`);
-    // ここで選択されたデータを読み込む処理を呼び出す
+  const handleSelect = (file) => {
+    setSelectedKifuId(file.file_name); // 視覚的な選択状態を更新
+    onKifuSelect(file.file_name);     // ★★★ 親コンポーネントの関数を呼び出す
   };
+
+  // ★★★ 変更点2: kifuFileListが空の場合の表示を追加 ★★★
+  if (!kifuFileList || kifuFileList.length === 0) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>記録データ選択</div>
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          利用可能な牌譜データがありません。
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>記録データ選択</div>
       <ul style={styles.list}>
-        {dummyKifuData.map(kifu => (
+        {/* ★★★ 変更点3: dummyKifuDataの代わりにkifuFileListをmapする ★★★ */}
+        {kifuFileList.map(file => (
           <li
-            key={kifu.id}
+            key={file.file_name}
             style={
-              selectedKifu === kifu.id
+              selectedKifuId === file.file_name
                 ? { ...styles.listItem, ...styles.selectedItem }
                 : styles.listItem
             }
-            onClick={() => handleSelect(kifu)}
-            onMouseOver={(e) => { if (selectedKifu !== kifu.id) e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
-            onMouseOut={(e) => { if (selectedKifu !== kifu.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+            onClick={() => handleSelect(file)}
+            onMouseOver={(e) => { if (selectedKifuId !== file.file_name) e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
+            onMouseOut={(e) => { if (selectedKifuId !== file.file_name) e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            {kifu.name}
+            {/* ファイル名と日付を表示 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{file.file_name}</span>
+              <span style={{ fontSize: '0.8em', color: selectedKifuId === file.file_name ? '#fff' : '#888' }}>
+                {new Date(file.date).toLocaleString()}
+              </span>
+            </div>
           </li>
         ))}
       </ul>

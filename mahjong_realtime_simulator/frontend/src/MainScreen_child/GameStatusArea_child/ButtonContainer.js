@@ -22,11 +22,17 @@ const calculationButtonWrapperStyles = {
 };
 
 
-const ButtonContainer = ({ onCalculationClick, isLoading, isDisabled, calculationText,  isSimulatorMode }) => {
+const ButtonContainer = ({ onCalculationClick, isLoading, isDisabled, calculationText,  isSimulatorMode, isRecording, onRecordStart, onRecordStop }) => {
   return (
     <div style={containerStyles}>
       <div style={recordButtonWrapperStyles}>
-        {isSimulatorMode ? <RecordButton /> : <TurnSelector />}
+        {isSimulatorMode ? (
+          <RecordButton 
+            isRecording={isRecording}
+            onRecordStart={onRecordStart}
+            onRecordStop={onRecordStop}
+          />
+        ) : <TurnSelector />}
       </div>
       <div style={calculationButtonWrapperStyles}>
         <CalculationButton
