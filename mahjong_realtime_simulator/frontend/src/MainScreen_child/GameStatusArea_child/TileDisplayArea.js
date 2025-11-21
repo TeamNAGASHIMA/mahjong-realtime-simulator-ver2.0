@@ -1,7 +1,7 @@
 // TileDisplayArea.js
 import React, { useState, useEffect } from 'react';
 
-// --- 画像リソースのインポート ---
+//牌の画像
 import M1 from '../../img/M1.png';
 import M2 from '../../img/M2.png';
 import M3 from '../../img/M3.png';
@@ -40,37 +40,71 @@ import Z5 from '../../img/Z5.png';
 import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
-// --- データマッピング ---
-const TILE_IMAGES = {
-  M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, 
-  P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9,  
-  S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9,  
-  Z1, Z2, Z3, Z4, Z5, Z6, Z7,
-};
-const TILE_NUM_TO_NAME = {
-  0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9',
-  9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
-  18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
-  27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 
-};
-const TILE_NUM_TO_IMAGE_KEY = {
-  0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9',
-  9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9',
-  18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9',
-  27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 
-  34: 'RM5', 35: 'RP5', 36: 'RS5', 
-};
+//横向きの牌画像
+import YM1 from '../../img/YM1.png';
+import YM2 from '../../img/YM2.png';
+import YM3 from '../../img/YM3.png';
+import YM4 from '../../img/YM4.png';
+import YM5 from '../../img/YM5.png';
+import YM6 from '../../img/YM6.png';
+import YM7 from '../../img/YM7.png';
+import YM8 from '../../img/YM8.png';
+import YM9 from '../../img/YM9.png';
+import YRM5 from '../../img/YRM5.png';
+import YP1 from '../../img/YP1.png';
+import YP2 from '../../img/YP2.png';
+import YP3 from '../../img/YP3.png';
+import YP4 from '../../img/YP4.png';
+import YP5 from '../../img/YP5.png';
+import YP6 from '../../img/YP6.png';
+import YP7 from '../../img/YP7.png';
+import YP8 from '../../img/YP8.png';
+import YP9 from '../../img/YP9.png';
+import YRP5 from '../../img/YRP5.png';
+import YS1 from '../../img/YS1.png';
+import YS2 from '../../img/YS2.png';
+import YS3 from '../../img/YS3.png';
+import YS4 from '../../img/YS4.png';
+import YS5 from '../../img/YS5.png';
+import YRS5 from '../../img/YRS5.png';
+import YS6 from '../../img/YS6.png';
+import YS7 from '../../img/YS7.png';
+import YS8 from '../../img/YS8.png';
+import YS9 from '../../img/YS9.png';
+import YZ1 from '../../img/YZ1.png';
+import YZ2 from '../../img/YZ2.png';
+import YZ3 from '../../img/YZ3.png';
+import YZ4 from '../../img/YZ4.png';
+import YZ5 from '../../img/YZ5.png';
+import YZ6 from '../../img/YZ6.png';
+import YZ7 from '../../img/YZ7.png';
 
+
+// --- データマッピング ---
+const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, YM1, YM2, YM3, YM4, YM5, YRM5, YM6, YM7, YM8, YM9, YP1, YP2, YP3, YP4, YP5, YRP5, YP6, YP7, YP8, YP9, YS1, YS2, YS3, YS4, YS5, YRS5, YS6, YS7, YS8, YS9, YZ1, YZ2, YZ3, YZ4, YZ5, YZ6, YZ7 };
+const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
+const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
 const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
 
-// --- CSS定義 --- (既存のスタイルにボタン用スタイルを追加)
+// --- CSS定義 ---
 const styles = `
   body { background-color: #222; margin: 0; font-family: sans-serif; }
   .tile-pool { 
     display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; 
-    padding: 20px; background-color: #005522; border-radius: 5px; margin: 10px 
+    padding: 20px; border-radius: 5px; margin: 10px;
+    position: relative;
+  }
+  .tile-pool-close-button {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(0,0,0,0.5); color: white;
+    border: 1px solid white; border-radius: 50%;
+    width: 28px; height: 28px; font-size: 20px;
+    line-height: 26px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tile-pool-close-button:hover {
+    background: rgba(255,255,255,0.8); color: black;
   }
   .tile-wrapper { 
     transition: all 0.2s ease-in-out; cursor: pointer; 
@@ -86,8 +120,21 @@ const styles = `
     box-shadow: 0 8px 15px rgba(50, 150, 255, 0.5); 
   }
   .tile-pool .tile-wrapper:hover { transform: scale(1.1); }
+  .empty-pool-tile {
+    width: 45px; height: 65px; background-color: #7f8c8d;
+    border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,0.3);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease-in-out;
+  }
+  .empty-pool-tile:hover {
+    transform: translateY(-5px) scale(1.1);
+    background-color: #95a5a6;
+  }
+  .empty-pool-tile-text {
+    font-size: 24px; color: white; font-weight: bold; user-select: none;
+  }
   .tile-display-container { 
-    background-color: #005522; padding: 10px; box-sizing: border-box; 
+    padding: 10px; box-sizing: border-box; 
     border-radius: 8px; margin: 10px; 
   }
   .upper-game-area { 
@@ -95,7 +142,7 @@ const styles = `
     margin-bottom: 10px; align-items: flex-start; 
   }
   .player-display {
-    background-color: #4f739e; padding: 8px; border-radius: 6px; 
+    padding: 8px; border-radius: 6px; 
     box-sizing: border-box; display: flex; flex-direction: column; 
     flex-basis: 0; flex-grow: 1;
   }
@@ -103,16 +150,14 @@ const styles = `
     display: flex; justify-content: center; align-items: baseline; gap: 8px; 
     margin-bottom: 8px; min-height: 20px; 
   }
-  .player-label { font-size: 16px; color: #FFFFFF; font-weight: bold; }
-  .player-sub-label { font-size: 14px; color: #DDDDDD; }
+  .player-label { font-size: 1.1em; font-weight: bold; }
+  .player-sub-label { font-size: 0.9em; }
   .other-player-melds-area {
     display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px;
     min-height: 45px; margin-bottom: 8px; padding-right: 5px;
   }
   .other-player-meld-set { display: flex; align-items: flex-end; }
   .other-player-meld-set .tile-wrapper { margin-left: -1px; }
-  .other-player-meld-set .tile-img { width: 26px; height: 38px; }
-  .other-player-meld-set .meld-tile-exposed .tile-img { transform: rotate(-90deg) translateY(6px); }
   .discard-area { 
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
     width: 100%; cursor: pointer; box-sizing: border-box;
@@ -131,18 +176,23 @@ const styles = `
   }
   .dora-indicator-grid {
     display: grid; grid-template-columns: repeat(5, 26px); grid-template-rows: 38px;
-    gap: 3px; justify-content: flex-start; background-color: rgba(0,0,0,0.1);
-    padding: 4px; border-radius: 4px;
+    gap: 3px; justify-content: flex-start; 
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 5px;
+    border-radius: 4px;
   }
   .dora-slot {
-    width: 26px; height: 38px; background-color: rgba(0,0,0,0.2); 
-    border: 1px dashed rgba(255,255,255,0.3); border-radius: 3px; cursor: pointer;
+    width: 26px; height: 38px; 
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    border-radius: 3px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
   .dora-slot .tile-img { width: 100%; height: 100%; }
   .own-hand-area { 
     display: flex; align-items: flex-end; justify-content: flex-start; 
-    padding: 10px; min-height: 85px; width: 100%; background-color: #4f739e; 
+    padding: 10px; min-height: 85px; width: 100%; 
     border-radius: 6px; box-sizing: border-box; margin-top: 10px; 
   }
   .hand-controls {
@@ -151,12 +201,11 @@ const styles = `
     align-self: center;
   }
   .own-wind { 
-    font-size: 24px; color: #FFFFFF; font-weight: bold; text-align: center;
+    font-size: 1.5em; font-weight: bold; text-align: center;
     cursor: pointer; user-select: none; transition: color 0.2s;
   }
-  .own-wind:hover { color: #ffff99; }
   .meld-button {
-    font-size: 14px; font-weight: bold; color: #fff; background-color: #4CAF50;
+    font-size: 0.9em; font-weight: bold; color: #fff; background-color: #4CAF50;
     border: none; border-radius: 4px; padding: 6px 12px; margin-top: 8px;
     cursor: pointer; transition: background-color 0.2s;
   }
@@ -168,10 +217,8 @@ const styles = `
   .own-melds-area { display: flex; align-items: flex-end; gap: 10px; margin-left: 15px; }
   .own-meld-set { display: flex; align-items: flex-end; }
   .own-meld-set .tile-wrapper { margin-right: -1px; }
-  .own-meld-set .tile-wrapper.meld-tile-exposed { transform: rotate(-90deg) translateX(10px) translateY(-10px); }
   .own-meld-set .tile-wrapper:hover { transform: translateY(-5px); }
   .own-meld-set .tile-wrapper.selected { transform: translateY(-12px); }
-  .own-meld-set .tile-wrapper.selected.meld-tile-exposed { transform: rotate(-90deg) translateX(10px) translateY(-22px); }
   .hand-tiles-container { display: flex; align-items: flex-end; flex-grow: 1; flex-wrap: wrap; }
   .hand-tile { margin-right: 2px; }
   .tsumo-tile { margin-left: 10px; }
@@ -192,91 +239,107 @@ const styles = `
   
   .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.8);
     display: flex; justify-content: center; align-items: center; z-index: 1000;
   }
   .modal-content {
-    background-color: #2c3e50; padding: 20px; border-radius: 8px;
+    padding: 20px; border-radius: 8px;
     width: 640px; max-width: 90%;
   }
   .modal-header {
-    color: #ecf0f1; font-size: 1.2em; font-weight: bold;
-    margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #34495e;
+    font-size: 1.2em; font-weight: bold;
+    margin-bottom: 15px; padding-bottom: 10px;
   }
-  .modal-tabs {
-    display: flex; border-bottom: 2px solid #34495e; margin-bottom: 20px;
-  }
-  .modal-tab-button {
-    background: none; border: none; color: #95a5a6; font-size: 16px; font-weight: bold;
-    padding: 10px 20px; cursor: pointer; transition: all 0.2s;
-    border-bottom: 3px solid transparent; text-transform: uppercase;
-  }
-  .modal-tab-button.active { color: #ecf0f1; border-bottom-color: #3498db; }
-  .modal-tab-button:disabled { color: #7f8c8d; cursor: not-allowed; }
-  .meld-candidate-list {
-    display: flex; flex-wrap: wrap; gap: 15px; min-height: 80px;
-  }
-  .meld-candidate-item {
-    background-color: #34495e; border-radius: 5px; padding: 10px;
-    cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s;
-  }
-  .meld-candidate-item:hover { background-color: #4a627a; }
+  .modal-tabs { display: flex; margin-bottom: 20px; }
+  .modal-tab-button { background: none; border: none; font-size: 1em; font-weight: bold; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; text-transform: uppercase; }
+  .modal-tab-button:disabled { cursor: not-allowed; }
+  .meld-candidate-list { display: flex; flex-wrap: wrap; gap: 15px; min-height: 80px; }
+  .meld-candidate-item { border-radius: 5px; padding: 10px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s; }
   .meld-candidate-item .tile-wrapper { margin-right: -2px; }
   .meld-candidate-item .tile-img { width: 30px; height: 44px; }
-  .meld-candidate-item .kan-type-label {
-      width: auto; height: auto; background: none; box-shadow: none;
-      color: #ecf0f1; font-size: 12px; font-weight: bold; margin-left: 8px;
-      display: flex; align-items: center;
-  }
+  .meld-candidate-item .kan-type-label { width: auto; height: auto; background: none; box-shadow: none; font-size: 0.8em; font-weight: bold; margin-left: 8px; display: flex; align-items: center; }
   .modal-actions { margin-top: 20px; text-align: right; }
-  .modal-cancel-button {
-    background-color: #e74c3c; color: white; border: none;
-    padding: 8px 16px; border-radius: 4px; cursor: pointer;
-    transition: background-color 0.2s;
-  }
+  .modal-cancel-button { background-color: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
   .modal-cancel-button:hover { background-color: #c0392b; }
-  .reset-button { /* 追加ボタンのスタイル */
-    font-family: "'Inter', sans-serif";
-    font-size: 12px;
-    color: #ffffff;
-    background-color: #dc3545; /* 赤系の色 */
-    border: 1px solid #c82333;
-    padding: 4px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    margin-left: 10px; /* 他のボタンとの間隔 */
+  .reset-button { font-family: "'Inter', sans-serif"; font-size: 0.8em; color: #ffffff; background-color: #dc3545; border: 1px solid #c82333; padding: 4px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; margin-left: 10px; }
+  .reset-button:hover { background-color: #c82333; }
+
+  /* --- Theme Specific Styles --- */
+  .theme-dark .tile-display-container, .theme-dark .tile-pool { background-color: #005522; }
+  .theme-dark .player-display, .theme-dark .own-hand-area { background-color: #4f739e; }
+  .theme-dark .player-label, .theme-dark .own-wind { color: #FFFFFF; }
+  .theme-dark .player-sub-label { color: #DDDDDD; }
+  .theme-dark .own-wind:hover { color: #ffff99; }
+  .theme-dark .status-header, .theme-dark .clickable-text { color: #FFFFFF; }
+  .theme-dark .tile-pool-close-button { background: rgba(0,0,0,0.5); color: white; border: 1px solid white; }
+  .theme-dark .tile-pool-close-button:hover { background: rgba(255,255,255,0.8); color: black; }
+  
+  .theme-dark .modal-content { 
+    background-color: #34495e;
+    color: #ecf0f1;
+    border: 2px solid #567d9e;
   }
-  .reset-button:hover {
-    background-color: #c82333;
-  }
+  .theme-dark .modal-header { color: #ecf0f1; border-bottom: 1px solid #567d9e; }
+  .theme-dark .modal-tabs { border-bottom: 2px solid #567d9e; }
+  .theme-dark .modal-tab-button { color: #bdc3c7; }
+  .theme-dark .modal-tab-button.active { color: #ecf0f1; border-bottom-color: #3498db; }
+  .theme-dark .modal-tab-button:disabled { color: #7f8c8d; }
+  .theme-dark .meld-candidate-item { background-color: #2c3e50; }
+  .theme-dark .meld-candidate-item:hover { background-color: #4a627a; }
+  .theme-dark .kan-type-label { color: #ecf0f1; }
+
+  .theme-light .tile-display-container, .theme-light .tile-pool { background-color: #d0e0d0; }
+  .theme-light .player-display, .theme-light .own-hand-area { background-color: #4f739e; }
+  .theme-light .player-label, .theme-light .own-wind { color: #FFFFFF; }
+  .theme-light .player-sub-label { color: #DDDDDD; }
+  .theme-light .own-wind:hover { color: #ffff99; }
+  .theme-light .status-header, .theme-light .clickable-text { color: #333333; }
+  .theme-light .tile-pool-close-button { background: rgba(255,255,255,0.5); color: black; border: 1px solid black; }
+  .theme-light .tile-pool-close-button:hover { background: rgba(0,0,0,0.8); color: white; }
+
+  .theme-light .modal-content { background-color: #ffffff; color: #333; border: 2px solid #bdc3c7; }
+  .theme-light .modal-header { color: #333; border-bottom: 1px solid #dddddd; }
+  .theme-light .modal-tabs { border-bottom: 2px solid #dddddd; }
+  .theme-light .modal-tab-button { color: #777777; }
+  .theme-light .modal-tab-button.active { color: #333333; border-bottom-color: #3498db; }
+  .theme-light .modal-tab-button:disabled { color: #aaaaaa; }
+  .theme-light .meld-candidate-item { background-color: #f0f0f0; }
+  .theme-light .meld-candidate-item:hover { background-color: #e5e5e5; }
+  .theme-light .kan-type-label { color: #333; }
 `;
 
 // --- 子コンポーネント定義 ---
-const StatusHeader = ({ title, onResetClick }) => {
-  const [isSimulatorMode, setIsSimulatorMode] = useState(false);
-  const handleToggleClick = () => setIsSimulatorMode(prevMode => !prevMode);
-  const buttonText = isSimulatorMode ? 'リアルタイムシミュレーター' : '牌譜';
+const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) => {
+  // isSimulatorMode (true/false) に基づいてボタンのテキストを決定する
+  const dynamicButtonText = isSimulatorMode ? '牌譜' : 'リアルタイムシミュレーター';  
+
   const buttonStyle = {
-    fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#ffffff',
+    fontFamily: "'Inter', sans-serif", fontSize: '0.8em', color: '#ffffff',
     backgroundColor: '#E39C40', border: `1px solid #eda040`,
     padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
     whiteSpace: 'nowrap', transition: 'all 0.3s ease',
   };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0 15px 0' }}>
-      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#FFFFFF', fontWeight: 'bold' }}>{title}</span>
-      <div> {/* ボタンを並べるためのコンテナ */}
-        <button style={buttonStyle} onClick={handleToggleClick}>{buttonText}</button>
-        <button className="reset-button" onClick={onResetClick}>全クリア</button> {/* ★★★ 追加: 全クリアボタン ★★★ */}
+      <span className="status-header" style={{ fontFamily: "'Inter', sans-serif", fontSize: '1em', fontWeight: 'bold' }}>{title}</span>
+      <div>
+        <button style={buttonStyle} onClick={onModeChange}>{dynamicButtonText}</button>
+        <button className="reset-button" onClick={onResetClick}>全クリア</button>
       </div>
     </div>
   );
 };
 
-const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
-  if (tileNum === 'b') {
+const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical' }) => {
+  const getHorizontalTileNum = (verticalNum) => {
+    if (verticalNum === null || verticalNum === 'b' || verticalNum >= 100) return verticalNum;
+    return verticalNum + 100;
+  };
+  
+  const displayTileNum = orientation === 'horizontal' ? getHorizontalTileNum(tileNum) : tileNum;
+
+  if (displayTileNum === 'b') {
     const sizeStyles = {
         hand: { width: '45px', height: '65px' },
         meld: { width: '45px', height: '65px' },
@@ -288,9 +351,10 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
       </div>
     );
   }
-  const imageKey = TILE_NUM_TO_IMAGE_KEY[tileNum] || 'b';
+
+  const imageKey = TILE_NUM_TO_IMAGE_KEY[displayTileNum] || 'b';
   const src = TILE_IMAGES[imageKey];
-  const alt = TILE_NUM_TO_NAME[tileNum] || '不明';
+  const alt = TILE_NUM_TO_NAME[tileNum] || '不明'; 
   
   const sizeStyles = {
     hand: { width: '45px', height: '65px' },
@@ -298,16 +362,32 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false }) => {
     discard: { width: '100%', height: '100%' },
     pool: { width: '45px', height: '65px' }, 
     dora: { width: '100%', height: '100%' },
-    meld: { width: '45px', height: '65px' },
-    other_meld: { width: '26px', height: '38px' }
+    meld: { 
+      vertical: { width: '45px', height: '65px' },
+      horizontal: { width: '65px', height: '45px' }
+    },
+    other_meld: { 
+      vertical: { width: '26px', height: '38px' },
+      horizontal: { width: '38px', height: '26px' }
+    }
   };
+
+  const finalSizeStyle = (size === 'meld' || size === 'other_meld')
+    ? sizeStyles[size][orientation]
+    : sizeStyles[size];
   
   return (
     <div className={`tile-wrapper ${isSelected ? 'selected' : ''}`} onClick={onClick}>
-        <img src={src} alt={alt} style={sizeStyles[size]} className="tile-img" />
+        <img src={src} alt={alt} style={finalSizeStyle} className="tile-img" />
     </div>
   );
 };
+
+const EmptyPoolTile = ({ onClick }) => (
+  <div className="empty-pool-tile" onClick={onClick} title="牌を削除">
+    <span className="empty-pool-tile-text">✕</span>
+  </div>
+);
 
 const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
   const slots = Array(5).fill(null);
@@ -355,9 +435,13 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                     const isSelected = selection.type === 'meld' && selection.playerKey === playerKey && selection.meldIndex === meldIndex && selection.tileIndex === tileIndex;
 
                     return (
-                        <div key={tileIndex} className={`tile-wrapper ${isExposed ? 'meld-tile-exposed' : ''} ${isSelected ? 'selected' : ''}`}
+                        <div key={tileIndex} className={`tile-wrapper ${isSelected ? 'selected' : ''}`}
                             onClick={(e) => { e.stopPropagation(); onMeldTileClick(playerKey, meldIndex, tileIndex); }}>
-                          <Tile tileNum={finalTileNum} size="other_meld" />
+                          <Tile 
+                            tileNum={finalTileNum} 
+                            size="other_meld" 
+                            orientation={isExposed ? 'horizontal' : 'vertical'}
+                          />
                         </div>
                     );
                   })}
@@ -394,9 +478,13 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection }) => {
             const finalTileNum = isClosed ? 'b' : tileNum;
             const isSelected = selection.type === 'meld' && selection.playerKey === 'self' && selection.meldIndex === meldIndex && selection.tileIndex === tileIndex;
             return (
-              <div key={tileIndex} className={`tile-wrapper ${isExposed ? 'meld-tile-exposed' : ''} ${isSelected ? 'selected' : ''}`} 
+              <div key={tileIndex} className={`tile-wrapper ${isSelected ? 'selected' : ''}`} 
                   onClick={(e) => { e.stopPropagation(); onMeldTileClick('self', meldIndex, tileIndex); }}>
-                <Tile tileNum={finalTileNum} size="meld" />
+                <Tile 
+                  tileNum={finalTileNum} 
+                  size="meld"
+                  orientation={isExposed ? 'horizontal' : 'vertical'}
+                />
               </div>
             );
           })}
@@ -420,7 +508,7 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
       if (ponCandidates.length > 0) setSelectedMeldType('pon');
       else if (chiCandidates.length > 0) setSelectedMeldType('chi');
       else if (kanCandidates.length > 0) setSelectedMeldType('kan');
-      else setSelectedMeldType('pon'); // デフォルトはポンに設定 (候補がなくてもタブは表示される)
+      else setSelectedMeldType('pon');
     }
   }, [isOpen, ponCandidates.length, chiCandidates.length, kanCandidates.length]); 
 
@@ -432,9 +520,6 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
     kanCandidates;
 
   const getMeldDisplayTiles = (candidate) => {
-      // 鳴き候補の表示は、手牌から使う牌か、完成形かによって分ける
-      // ここでは、hand_tilesがあればそれを使い、なければtilesを使う
-      // また、他家からの鳴きでは捨てられた牌も表示に含める
       if (candidate.from && candidate.called_tile !== undefined) {
           return [...(candidate.hand_tiles || candidate.tiles), candidate.called_tile];
       }
@@ -489,7 +574,8 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) => { 
+const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange }) => { 
+
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
   const RED_TO_NORMAL_MAP = { 34: 4, 35: 13, 36: 22 };
@@ -532,6 +618,8 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   const [isMeldModalOpen, setIsMeldModalOpen] = useState(false);
 
   const findMeldCandidates = (currentBoardState) => {
+    if (!currentBoardState) return [];
+
     const { hand_tiles: hand, tsumo_tile: tsumoTile, melds: { self: selfMelds }, last_discard: lastDiscard } = currentBoardState;
 
     const candidates = [];
@@ -547,20 +635,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
         const discardedTile = lastDiscard.tile;
         const normDiscarded = normalize(discardedTile);
         
-        // ポン
         if (normalizedGroups[normDiscarded] && normalizedGroups[normDiscarded].length >= 2) {
             getCombinations(normalizedGroups[normDiscarded], 2).forEach(combo => {
                 candidates.push({ type: 'pon', hand_tiles: combo, from: lastDiscard.from, called_tile: discardedTile });
             });
         }
-        // 大明槓
         if (normalizedGroups[normDiscarded] && normalizedGroups[normDiscarded].length >= 3) {
             getCombinations(normalizedGroups[normDiscarded], 3).forEach(combo => {
                 candidates.push({ type: 'daiminkan', hand_tiles: combo, from: lastDiscard.from, called_tile: discardedTile });
             });
         }
-        // チー (上家からのみ)
-        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && discardedTile < 27) { // 字牌はチーできない
+        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && discardedTile < 27) {
             const n = normalize(discardedTile);
             const suit = Math.floor(n / 9);
 
@@ -577,25 +662,20 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
                 }
             };
             
-            // n-2, n-1, (n)
             if (n >= 2) checkChiPattern(n - 2, n - 1);
-            // n-1, (n), n+1
             if (n >= 1 && n <= 7) checkChiPattern(n - 1, n + 1);
-            // (n), n+1, n+2
             if (n <= 6) checkChiPattern(n + 1, n + 2);
         }
-    } else { // ツモ牌があるか、手牌内での鳴き（暗槓・加槓・オープンなポンチー）
-        // 暗槓
+    } else {
         for (const norm in normalizedGroups) {
             if (normalizedGroups[norm].length === 4) {
                 candidates.push({ type: 'ankan', tiles: normalizedGroups[norm] });
             }
         }
         
-        // 加槓
         selfMelds.forEach((meld, meldIndex) => {
             if (meld.type === 'pon') {
-                const norm = normalize(meld.tiles[0]); // meld.tiles[0] は面子を構成する牌
+                const norm = normalize(meld.tiles[0]);
                 if (normalizedGroups[norm] && normalizedGroups[norm].length > 0) {
                     normalizedGroups[norm].forEach(tileInHand => {
                         candidates.push({ type: 'kakan', tiles: [tileInHand], from_meld_index: meldIndex });
@@ -603,11 +683,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
                 }
             }
         });
-        
-        // 手牌内でのポン・チー（ツモアガリ時など） - UI上で選択して行うものなのでここでは生成しない。
-        // モーダルでは他家からの鳴きか暗槓・加槓を表示する方針のため、手牌内のポン・チーは含めない
-        // ポン候補は手牌内に同じ牌が3枚あれば理論上可能だが、鳴きモーダルでは他家からの鳴きを優先。
-        // 暗槓以外に手牌からカンできるのは大明槓・加槓だけなので、暗槓のみ考慮。
     }
     
     const uniqueCandidates = [];
@@ -625,12 +700,13 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   };
   
   const handleSelectMeld = (meldToMake) => {
+    if (!boardState) return;
     const newBoardState = JSON.parse(JSON.stringify(boardState)); 
         let hand = newBoardState.hand_tiles;
         let tsumo = newBoardState.tsumo_tile;
 
-        console.log("Attempting to make meld:", meldToMake); 
-
+        console.log("Attempting to make meld:", meldToMake);
+        
         const removeTilesFromHand = (tilesToRemove) => {
             for (const tile of tilesToRemove) {
                 const indexInHand = hand.findIndex(h => h === tile);
@@ -639,7 +715,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
                 } else if (tsumo === tile) {
                     tsumo = null;
                 } else {
-                    console.warn(`[DEBUG] Tile to remove (${TILE_NUM_TO_NAME[tile] || 'Unknown'} / ${tile}) not found in hand or tsumo tile.`); 
                     return false; 
                 }
             }
@@ -652,16 +727,10 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
                 meldToUpdate.type = 'minkan'; 
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
                 meldToUpdate.tiles.sort((a, b) => a - b);
-                console.log("Kakan created. New meld tiles:", meldToUpdate.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
-            } else {
-                console.error("[ERROR] Failed to remove tiles for kakan.", meldToMake.tiles); 
             }
         } else if (meldToMake.type === 'ankan') {
             if(removeTilesFromHand(meldToMake.tiles)) {
                 newBoardState.melds.self.push({ type: 'ankan', tiles: meldToMake.tiles, from: 'self' });
-                console.log("Ankan created. New meld tiles:", meldToMake.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
-            } else {
-                console.error("[ERROR] Failed to remove tiles for ankan.", meldToMake.tiles); 
             }
         } else if (meldToMake.from) { 
             const fromPlayer = meldToMake.from;
@@ -685,9 +754,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
                 newBoardState.melds.self.push({ type: meldType, tiles: meldTiles, from: fromPlayer, exposed_index });
-                console.log("Pon/Chi/Daiminkan created. New meld tiles:", meldTiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
-            } else {
-                console.error("[ERROR] Failed to remove tiles from hand for pon/chi/daiminkan.", meldToMake.hand_tiles); 
             }
         }
         
@@ -699,11 +765,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
     setIsMeldModalOpen(false);
   };
   
-  // 状態更新は全て onBoardStateChange を経由するように変更
-  const handleTurnChange = () => onBoardStateChange({ ...boardState, turn: (typeof boardState.turn === 'number' && boardState.turn < 22) ? boardState.turn + 1 : 1 });
-  const handleRoundWindChange = () => onBoardStateChange({ ...boardState, round_wind: boardState.round_wind === 27 ? 28 : 27 });
+  const handleTurnChange = () => {
+    if (!boardState) return;
+    onBoardStateChange({ ...boardState, turn: (typeof boardState.turn === 'number' && boardState.turn < 22) ? boardState.turn + 1 : 1 });
+  };
+  const handleRoundWindChange = () => {
+    if (!boardState) return;
+    onBoardStateChange({ ...boardState, round_wind: boardState.round_wind === 27 ? 28 : 27 });
+  };
 
   const handlePlayerWindChange = () => {
+    if (!boardState) return;
     onBoardStateChange(prevBoardState => {
       const WIND_ORDER = [27, 28, 29, 30];
       const currentIndex = WIND_ORDER.indexOf(prevBoardState.player_winds.self);
@@ -713,11 +785,45 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   };
   
   const handlePoolTileClick = (newTileNum) => {
+    if (!boardState) return;
     if (!selection.type) return;
-    
-    const newBoardState = JSON.parse(JSON.stringify(boardState)); 
+
+    if (selection.type.startsWith('add_') && newTileNum === null) {
+        return;
+    }
+
+    const newBoardState = JSON.parse(JSON.stringify(boardState));
     const sortedHand = [...newBoardState.hand_tiles].sort((a, b) => a - b);
-    
+
+    if (newTileNum === null) {
+        switch (selection.type) {
+            case 'hand': {
+                const tileToRemove = sortedHand[selection.index];
+                const originalIndex = newBoardState.hand_tiles.findIndex(t => t === tileToRemove);
+                if (originalIndex > -1) newBoardState.hand_tiles.splice(originalIndex, 1);
+                break;
+            }
+            case 'tsumo':
+                newBoardState.tsumo_tile = null;
+                break;
+            case 'discard':
+                newBoardState.player_discards[selection.playerKey].splice(selection.index, 1);
+                break;
+            case 'dora':
+                newBoardState.dora_indicators.splice(selection.index, 1);
+                break;
+            case 'meld':
+                alert("面子の牌を個別に削除することはできません。面子全体を削除するには、再度同じ面子の牌をクリックしてください。");
+                setSelection({ type: null });
+                return;
+            default:
+                break;
+        }
+        onBoardStateChange(newBoardState);
+        setSelection({ type: null });
+        return;
+    }
+
     const getSelectedTileNum = () => {
         if (!selection || !selection.type) return null;
         switch (selection.type) {
@@ -740,7 +846,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
     ].filter(t => t !== null && t !== undefined);
 
     let tempBoard = [...allTilesOnBoard];
-    // 変更対象の牌を一時的にボードから削除して枚数チェックを行う
     if (originalTileNum !== null && originalTileNum !== undefined) {
       const indexToRemove = tempBoard.indexOf(originalTileNum);
       if (indexToRemove > -1) tempBoard.splice(indexToRemove, 1);
@@ -748,37 +853,29 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
     
     const countInBoard = (tile) => tempBoard.filter(t => t === tile).length;
     
-    // 赤ドラ（赤5萬, 赤5筒, 赤5索）を追加しようとしている場合
     if (AKA_DORA_NUMS.includes(newTileNum)) {
-        // ルール1: 赤ドラは各種1枚まで
         if (countInBoard(newTileNum) >= 1) {
             alert("赤ドラは各種1枚までしか使用できません。");
             return;
         }
-        // ルール2(補完): 通常の5と合わせて4枚まで
         const normalVersion = RED_TO_NORMAL_MAP[newTileNum];
         if (countInBoard(newTileNum) + countInBoard(normalVersion) >= 4) {
             alert("同じ牌（赤含む）は4枚までしか使用できません。");
             return;
         }
     }
-    // 通常の5（5萬, 5筒, 5索）を追加しようとしている場合
     else if (NORMAL_TO_RED_MAP[newTileNum]) {
-        // ルール3: 通常の5は3枚まで
         if (countInBoard(newTileNum) >= 3) {
             alert(`通常の${TILE_NUM_TO_NAME[newTileNum]}は3枚までしか使用できません。`);
             return;
         }
-        // ルール2(補完): 赤ドラと合わせて4枚まで
         const redVersion = NORMAL_TO_RED_MAP[newTileNum];
         if (countInBoard(newTileNum) + countInBoard(redVersion) >= 4) {
             alert("同じ牌（赤含む）は4枚までしか使用できません。");
             return;
         }
     }
-    // 上記以外の牌（1-4, 6-9の数牌、字牌）を追加しようとしている場合
     else {
-        // ルール2: 通常の牌は4枚まで
         if (countInBoard(newTileNum) >= 4) {
             alert(`${TILE_NUM_TO_NAME[newTileNum]} は4枚までしか使用できません。`);
             return;
@@ -811,7 +908,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
             break;
         case 'discard':
             newBoardState.player_discards[selection.playerKey][selection.index] = newTileNum;
-            // 捨て牌の変更時はlast_discardも更新する
             if (selection.playerKey !== 'self' && newBoardState.last_discard.from === selection.playerKey && newBoardState.last_discard.index === selection.index) {
                 newBoardState.last_discard = { tile: newTileNum, from: selection.playerKey, index: selection.index };
             }
@@ -833,44 +929,45 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   };
   
   const handleTileClick = (type, index, playerKey = 'self', options = {}) => {
+      if (!boardState) return;
       const newSelection = {type, index, playerKey, ...options};
       
-      // 全く同じ要素がクリックされたかを判定
       const isSameTile = selection.type === newSelection.type &&
                           selection.index === newSelection.index &&
                           selection.playerKey === newSelection.playerKey &&
                           selection.meldIndex === newSelection.meldIndex; 
 
-      // 同じ自分の鳴き面子がクリックされた場合、面子全体を再クリックで崩すロジックのための判定
       const isSameMeld = selection.type === 'meld' && selection.playerKey === 'self' &&
                           newSelection.type === 'meld' && newSelection.playerKey === 'self' &&
                           selection.meldIndex === newSelection.meldIndex;
 
-      // 同じ牌 or 同じ自分の鳴き面子がクリックされた場合 -> 選択解除
       if (isSameTile || isSameMeld) {
           if (isSameMeld) {
-              // 自分の鳴き面子が再度クリックされた場合に、崩す処理を実行
               onBoardStateChange(prevBoardState => { 
                   const newBoardState = JSON.parse(JSON.stringify(prevBoardState));
                   const meldToBreak = newBoardState.melds.self[selection.meldIndex];
+                  
                   if (meldToBreak) {
-                      console.log("[DEBUG] Breaking meld. Tiles to return to hand:", meldToBreak.tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
-                      newBoardState.hand_tiles.push(...meldToBreak.tiles);
+                      const tilesFromMeld = meldToBreak.tiles;
+                      
+                      const newHand = [
+                        ...newBoardState.hand_tiles,
+                        ...(newBoardState.tsumo_tile !== null ? [newBoardState.tsumo_tile] : []),
+                        ...tilesFromMeld
+                      ];
+                      
+                      newBoardState.hand_tiles = newHand.sort((a, b) => a - b);
+                      newBoardState.tsumo_tile = null;
                       newBoardState.melds.self.splice(selection.meldIndex, 1);
-                      newBoardState.hand_tiles.sort((a, b) => a - b);
-                      console.log("[DEBUG] Hand after breaking meld:", newBoardState.hand_tiles.map(t => `${TILE_NUM_TO_NAME[t] || 'Unknown'} (${t})`)); 
-                  } else {
-                      console.error("[ERROR] Attempted to break non-existent meld at index:", selection.meldIndex); 
                   }
                   return newBoardState;
               });
           }
           setSelection({ type: null }); 
 
-      } else { // 異なる要素がクリックされた場合 -> 新しい要素を選択
+      } else { 
           setSelection(newSelection);
 
-          // もしクリックされたのが他家の捨て牌なら、last_discard も更新する
           if (newSelection.type === 'discard' && newSelection.playerKey !== 'self') {
               onBoardStateChange(prevBoardState => ({ 
                   ...prevBoardState,
@@ -881,14 +978,16 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
                   }
               }));
           } else {
-              // 他の要素が選択された場合 (手牌、自摸牌、自分の捨て牌、ドラなど) は last_discard をクリアする
-              // これにより、鳴き候補は直近の他家捨て牌にのみ反応するようになる
               onBoardStateChange(prevBoardState => ({ 
                   ...prevBoardState,
                   last_discard: { tile: null, from: null, index: null }
               }));
           }
       }
+  }
+
+  if (!boardState) {
+    return <div>Loading board state...</div>;
   }
   
   const sortedHand = [...boardState.hand_tiles].sort((a,b) => a - b);
@@ -897,7 +996,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   const playerWindNames = { self: WIND_NUM_TO_KANJI[boardState.player_winds.self] || '東', shimocha: WIND_NUM_TO_KANJI[boardState.player_winds.shimocha] || '南', toimen: WIND_NUM_TO_KANJI[boardState.player_winds.toimen] || '西', kamicha: WIND_NUM_TO_KANJI[boardState.player_winds.kamicha] || '北' };
   const roundWindKanji = WIND_NUM_TO_KANJI[boardState.round_wind] || '東';
   
-  // ★★★ 修正3: StatusHeader に onResetClick プロップを渡す ★★★
   const headerTitle = (
     <>
       状況 (巡目:<span className="clickable-text" onClick={handleTurnChange}>{boardState?.turn || '未'}</span> 場風:<span className="clickable-text" onClick={handleRoundWindChange}>{roundWindKanji}</span>)
@@ -905,9 +1003,9 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
   );
 
   const handleClearAll = () => {
-    onResetBoardState(); // 親から受け取ったリセット関数を呼び出す
-    setSelection({ type: null }); // 現在の選択状態もクリア
-    setIsMeldModalOpen(false); // 鳴きモーダルも閉じる
+    onResetBoardState();
+    setSelection({ type: null });
+    setIsMeldModalOpen(false);
   };
 
   const MAX_HAND_SLOTS = 13;
@@ -922,11 +1020,33 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
         onSelect={handleSelectMeld}
         onClose={() => setIsMeldModalOpen(false)}
       />
-      <div className="tile-display-container">
-        {selection.type && <div className="tile-pool">{ALL_TILES_IN_POOL.map(tileNum => <Tile key={`pool-${tileNum}`} tileNum={tileNum} size="pool" onClick={() => handlePoolTileClick(tileNum)} />)}</div>}
+      <div 
+        className={`tile-display-container theme-${settings.theme}`}
+        style={{ fontSize: settings.fontSize }}
+      >
+        {selection.type && (
+          <div className="tile-pool">
+            <button className="tile-pool-close-button" onClick={() => setSelection({ type: null })}>×</button>
+            {!selection.type.startsWith('add_') && <EmptyPoolTile onClick={() => handlePoolTileClick(null)} />}
+            {ALL_TILES_IN_POOL.map(tileNum => 
+              <Tile 
+                key={`pool-${tileNum}`} 
+                tileNum={tileNum} 
+                size="pool" 
+                onClick={() => handlePoolTileClick(tileNum)} 
+              />
+            )}
+          </div>
+        )}
         <div onClick={(e) => { e.stopPropagation(); setSelection({type: null}); }}>
           <div onClick={e => e.stopPropagation()}>
-            <StatusHeader title={headerTitle} onResetClick={handleClearAll} /> {/* ★★★ 修正3: onResetClickを渡す ★★★ */}
+            <StatusHeader 
+              title={headerTitle} 
+              onResetClick={handleClearAll}
+              isSimulatorMode={settings.flag === 1} // flagが1ならtrue、それ以外ならfalseを渡す
+              onModeChange={onModeChange}
+            />
+            
             <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} />
             <div className="upper-game-area">
               <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
@@ -950,17 +1070,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState }) 
               </div>
               <div className="hand-and-melds-container">
                 <div className="hand-tiles-container">
-                  {[...Array(MAX_HAND_SLOTS - numMelds * 3)].map((_, i) => (
-                    <div key={i} className="hand-tile" onClick={() => (sortedHand[i] === undefined) && setSelection({ type: 'add_hand' })}>
-                      {sortedHand[i] !== undefined ? ( 
-                        <div onClick={() => handleTileClick('hand', i)}>
-                          <Tile tileNum={sortedHand[i]} size="hand" isSelected={selection.type === 'hand' && selection.index === i} />
-                        </div>
-                      ) : ( 
-                        <div className="empty-slot">
-                          {selection.type === 'add_hand' && <div className="selection-highlight"></div>}
-                        </div>
-                      )}
+                  {sortedHand.map((tileNum, i) => (
+                    <div key={`hand-tile-${i}`} className="hand-tile" onClick={() => handleTileClick('hand', i)}>
+                      <Tile tileNum={tileNum} size="hand" isSelected={selection.type === 'hand' && selection.index === i} />
+                    </div>
+                  ))}
+
+                  {[...Array(Math.max(0, (MAX_HAND_SLOTS - numMelds * 3) - sortedHand.length))].map((_, i) => (
+                    <div key={`empty-slot-${i}`} className="hand-tile" onClick={() => setSelection({ type: 'add_hand' })}>
+                      <div className="empty-slot">
+                        {selection.type === 'add_hand' && <div className="selection-highlight"></div>}
+                      </div>
                     </div>
                   ))}
                   <div className="tsumo-tile">
