@@ -240,7 +240,7 @@ const MainScreen = () => {
   const handleConnectOrReconnect = async () => {
     // (省略...変更なし)
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
+      await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }} });
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
       if (videoDevices.length === 0) {
