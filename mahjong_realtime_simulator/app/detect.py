@@ -8,7 +8,7 @@ import os
 from ultralytics import YOLO    # YOLOv8のライブラリ
 from django.conf import settings
 import torch
-from meld_sep import melded_tiles_sep # meld_sep.pyからインポート
+from .meld_sep import melded_tiles_sep # meld_sep.pyからインポート
 
 # ローカルモデルのパスを指定
 LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
