@@ -28,9 +28,12 @@ def melded_tiles_sep(ids_in_order: List[int]) -> List[List[int]]:
             
             id1, id2, id3 = base_ids[0], base_ids[1], base_ids[2]
             
+            # 暗槓チェック（基本IDで比較）
+            is_doublet = (id1 == id2)
+
             # 刻子チェック（基本IDで比較）
             is_triplet = (id1 == id2 and id2 == id3)
-            
+
             if is_triplet:
                 # 4枚目（カン）をチェック
                 if i + 4 <= N and _get_base_id(ids_in_order[i + 3]) == id1:
@@ -42,9 +45,14 @@ def melded_tiles_sep(ids_in_order: List[int]) -> List[List[int]]:
                     final_sets.append(ids_in_order[i : i + 3])
                     i += 3
             else:
-                # 順子またはその他の3枚セットとして確定 -> 元のID 3つをセットに追加
-                final_sets.append(ids_in_order[i : i + 3])
-                i += 3
+                if is_doublet:
+                    # 暗槓
+                    final_sets.append(ids_in_order[i : i + 2]*2)
+                    i += 2
+                else:
+                    # 順子またはその他の3枚セットとして確定 -> 元のID 3つをセットに追加
+                    final_sets.append(ids_in_order[i : i + 3])
+                    i += 3
         
         # 残りの牌の処理 (2枚以下の場合)
         elif i < N:
@@ -74,7 +82,7 @@ if __name__ == '__main__':
     print("テストケース3結果:", result)
 
     # テストケース4
-    test_input = [12, 11, 11, 11]
+    test_input = [12, 12, 11, 11, 11]
     result = melded_tiles_sep(test_input)
     print("テストケース4結果:", result)
 
@@ -82,3 +90,8 @@ if __name__ == '__main__':
     test_input = [103, 3, 3, 103, 4, 5]
     result = melded_tiles_sep(test_input)
     print("テストケース5結果:", result)
+
+    # テストケース6
+    test_input = [6, 7, 8, 0, 0, 31, 31, 31, 131]
+    result = melded_tiles_sep(test_input)
+    print("テストケース6結果:", result)
