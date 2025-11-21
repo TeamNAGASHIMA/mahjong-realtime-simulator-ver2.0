@@ -12,7 +12,7 @@ import os
 
 def mahjong_render(request):
     
-    return render(request, 'app/mahjong_render.html')
+    return render(request, 'app/main.html')
     
     # debug
     # return render(request, 'app/test.html')
