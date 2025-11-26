@@ -56,10 +56,13 @@ def melded_tiles_sep(ids_in_order: List[int]) -> List[List[int]]:
         
         # 残りの牌の処理 (2枚以下の場合)
         elif i < N:
-            remaining_count = N - i
-            # 元のIDリストの残り全てを一つのセットとして追加
-            final_sets.append(ids_in_order[i : i + remaining_count])
-            i += remaining_count
+            # 2枚の場合は暗槓として扱う
+            if i + 2 <= N:
+                final_sets.append(ids_in_order[i : i + 2]*2)
+                i += 2
+            # 1枚の場合は削除
+            elif i + 1 <= N:
+                i += 1
         else:
             break
 
@@ -95,3 +98,13 @@ if __name__ == '__main__':
     test_input = [6, 7, 8, 0, 0, 31, 31, 31, 131]
     result = melded_tiles_sep(test_input)
     print("テストケース6結果:", result)
+
+    # テストケース7
+    test_input = [0, 0, 1, 1, 2, 2, 3, 3]
+    result = melded_tiles_sep(test_input)
+    print("テストケース7結果:", result)
+    
+    # テストケース8
+    test_input = [1, 1]
+    result = melded_tiles_sep(test_input)
+    print("テストケース8結果:", result)
