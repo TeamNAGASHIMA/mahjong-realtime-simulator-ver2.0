@@ -651,6 +651,10 @@ def analyze_mahjong_board(
                                 melded_tiles_by_zone.get("melded_tiles_top", []) + \
                                 melded_tiles_by_zone.get("melded_tiles_left", [])
 
+        # 100以上のIDを元に戻す
+        melded_tiles_mine = [[tile_id - 100 if tile_id >= 100 else tile_id for tile_id in meld] for meld in melded_tiles_mine]
+        melded_tiles_other = [[tile_id - 100 if tile_id >= 100 else tile_id for tile_id in meld] for meld in melded_tiles_other]
+
         # 全ての捨て牌をまとめる
         discard_tiles = []
         for dd in discard_tiles_by_zone.values():
