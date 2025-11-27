@@ -294,6 +294,7 @@ const MainScreen = () => {
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
+      formData.append("mode_flag", settings.flag)
       const response = await fetch('/app/main/', {
           method: 'POST',
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
