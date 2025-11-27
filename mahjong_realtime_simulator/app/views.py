@@ -25,7 +25,8 @@ def main(request):
             Img_FILES = request.FILES
             Req_BODY = request.POST
             # 手牌画像が取得できていなければエラーを返す
-            if 'hand_tiles_image' not in Img_FILES:
+            # haihu_flag = 0 -> 通常計算、1 -> 牌譜保存時の計算
+            if 'hand_tiles_image' not in Img_FILES and Req_BODY["haihu_flag"] != 1:
                 message = "No images of the hand cards included."
                 return JsonResponse({'message': message}, status=400)
             else:
