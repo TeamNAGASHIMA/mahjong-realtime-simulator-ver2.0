@@ -3,7 +3,7 @@
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import CameraPreview from './SidePanel_child/CameraPreview';
 import SettingsPanel from './SidePanel_child/SettingsPanel';
-import KifuSelector from './GameStatusArea_child/KifuSelector';
+import KifuSelector from './SidePanel_child/KifuSelector';
 
 const styles = {
   sidePanelContainer: {
@@ -49,7 +49,9 @@ const SidePanel = forwardRef((props, ref) => {
         {isSimulatorMode ? (
           <CameraPreview ref={cameraRef} {...props} />
         ) : (
-          <KifuSelector />
+          <KifuSelector 
+          kifuFileList={props.kifuFileList}
+          />
         )}
       </div>
       

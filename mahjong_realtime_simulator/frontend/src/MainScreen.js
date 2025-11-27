@@ -294,6 +294,7 @@ const MainScreen = () => {
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
+      formData.append("mode_flag", settings.flag)
       const response = await fetch('/app/main/', {
           method: 'POST',
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
@@ -684,7 +685,7 @@ const MainScreen = () => {
         body: JSON.stringify({}) // 空のPOSTリクエスト
       });
       const data = await response.json();
-      if (data.status === 200 && data.file_list) {
+      if (response.status === 200 && data.file_list) {
         setKifuFileList(data.file_list);
         console.log("牌譜リストを取得しました:", data.file_list);
       } else {
