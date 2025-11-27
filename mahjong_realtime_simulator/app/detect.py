@@ -9,6 +9,8 @@ from ultralytics import YOLO    # YOLOv8のライブラリ
 from django.conf import settings
 import torch
 from .meld_sep import melded_tiles_sep # meld_sep.pyからインポート
+from .result_check import result_check_main # result_check.pyからインポート
+
 
 # ローカルモデルのパスを指定
 LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
@@ -183,7 +185,8 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
             else:
                 orientation = "portrait"
 
-            confidence = float(box.conf[0]) # 信頼度
+            # 信頼度は小数点以下2桁で取得
+            confidence = round(float(box.conf[0]), 2)
             class_id = int(box.cls[0]) # モデルが出力するクラスID
 
             # debug用に検出情報をコンソールに出力
@@ -269,6 +272,15 @@ def turn_calculation(total_discards: int) -> int:
     else:
         return (total_discards - 1) // 4 + 1
 
+def extract_ids_and_confs(detetion_results: list) -> tuple:
+    """検出結果リストからIDと信頼度のリストを抽出します。"""
+    ids = []
+    confs = []
+    for res in detetion_results:
+        ids.append(res["class_id"])
+        confs.append(res["confidence"])
+    return ids, confs
+
 
 def dora_detection(board_image_np: np.ndarray) -> list:
     """盤面画像からドラ表示牌を検出し、その種類（ID）のリストを返します。
@@ -307,14 +319,13 @@ def dora_detection(board_image_np: np.ndarray) -> list:
     # 共通ヘルパー関数を呼び出し、複数の検出結果（牌の種類と信頼度）を取得
     all_raw_results = tile_detection(cropped_dora_np)
 
-    # class_idのみ配列に格納
-    final_tiles = []
-    for rd in all_raw_results:
-        final_tiles.append(rd["class_id"]) # class_idは既に変換済み
+    # ID順にソート
+    all_raw_results = sorted(all_raw_results, key=lambda r: r["x"])
 
-    return sorted(final_tiles)
+    # IDと信頼度を分離
+    return extract_ids_and_confs(all_raw_results)
 
-def open_detection(board_image_np: np.ndarray) -> dict:
+def open_detection(board_image_np: np.ndarray) -> tuple:
     """盤面画像から鳴き牌を検出し、その種類（ID）のリストのリストを返します。
 
     `crop_open_detection.py` を使用して鳴き牌領域を切り出し、
@@ -352,6 +363,12 @@ def open_detection(board_image_np: np.ndarray) -> dict:
         "melded_tiles_top": [],     # 対面（画面上部）
         "melded_tiles_left": []     # 上家（画面左側）
     }
+    melded_confs_by_player_zone = {
+        "melded_tiles_bottom": [],  # 自分
+        "melded_tiles_right": [],   # 下家
+        "melded_tiles_top": [],     # 対面
+        "melded_tiles_left": []     # 上家
+    }
 
     player_map = {
         'bottom': 'melded_tiles_bottom',
@@ -385,20 +402,24 @@ def open_detection(board_image_np: np.ndarray) -> dict:
 
         # 鳴き牌IDのリストを作成
         current_player_melded_ids = []
-        for rd in detection_results:
-            current_player_melded_ids.append(rd["class_id"]) # class_idは既に変換済み
+        current_player_confs = []
 
-            # tile_detectionが返したorientationに基づいてIDを調整する
+        for rd in detection_results:
+            tile_id = rd["class_id"]
             if rd.get("orientation") == "landscape":
-                # 横向きの場合、IDに100を加算する
-                current_player_melded_ids[-1] += 100
+                tile_id += 100
+
+            current_player_melded_ids.append(tile_id)
+            current_player_confs.append(rd["confidence"])
         
         # 鳴き牌の分離処理を実行
-        separated_melds = melded_tiles_sep(current_player_melded_ids)
+        separated_ids, separated_confs = melded_tiles_sep(current_player_melded_ids, current_player_confs)
 
-        melded_tiles_by_player_zone[result_key] = separated_melds
+        melded_tiles_by_player_zone[result_key] = separated_ids
+        melded_confs_by_player_zone[result_key] = separated_confs
     
-    return melded_tiles_by_player_zone
+    return melded_tiles_by_player_zone, melded_confs_by_player_zone
+
 
 def discard_detection(board_image_np: np.ndarray) -> dict:
     """盤面画像から捨て牌を検出し、プレイヤーゾーン別に分類したリストを返します。
@@ -434,6 +455,14 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
 
     # プレイヤーゾーンごとの捨て牌リストを初期化
     discard_by_player_zone = {
+        "discard_tiles_bottom": [],  # 自分（画面下部）
+        "discard_tiles_right": [],   # 下家（画面右側）
+        "discard_tiles_top": [],     # 対面（画面上部）
+        "discard_tiles_left": []     # 上家（画面左側）
+    }
+
+    # 信頼度用の辞書を初期化
+    discard_confs_bty_player_zone = {
         "discard_tiles_bottom": [],  # 自分（画面下部）
         "discard_tiles_right": [],   # 下家（画面右側）
         "discard_tiles_top": [],     # 対面（画面上部）
@@ -501,18 +530,21 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
         detection_results = zone1_tiles + zone2_tiles + zone3_tiles
 
         # 検出された牌のIDを抽出し、現在のプレイヤーゾーンのリストに追加
-        current_zone_tiles = []
+        current_zone_ids = []
+        current_zone_confs = []
+
         for rd in detection_results:
-            current_zone_tiles.append(rd["class_id"]) # class_idは既に変換済み
+            current_zone_ids.append(rd["class_id"])
+            current_zone_confs.append(rd["confidence"])
 
             # 横向きの場合、IDに100を加算する
             if rd.get("orientation") == "landscape":
-                current_zone_tiles[-1] += 100
+                current_zone_ids[-1] += 100
 
-        # 該当するプレイヤーゾーンのリストに牌を追加し、ソート
-        discard_by_player_zone[player_zone_actual_key] = current_zone_tiles
+        discard_by_player_zone[player_zone_actual_key] = current_zone_ids
+        discard_confs_bty_player_zone[player_zone_actual_key] = current_zone_confs
 
-    return discard_by_player_zone
+    return discard_by_player_zone, discard_confs_bty_player_zone
 
 def hand_detection(hand_image_np: np.ndarray) -> list:
     """手牌の画像から手牌を検出し、その種類（ID）のリストを返します。
@@ -532,12 +564,11 @@ def hand_detection(hand_image_np: np.ndarray) -> list:
     # tile_detection はローカル推論版になったため、そのまま呼び出す
     detection_results = tile_detection(hand_image_np)
 
-    # class_idのみ配列に格納する
-    result_array = []
-    for r in detection_results:
-        result_array.append(r["class_id"]) # class_idは既に変換済み
+    # ID順にソート
+    detection_results = sorted(detection_results, key=lambda r: r["x"])
 
-    return sorted(result_array)
+    # IDと信頼度を分離
+    return extract_ids_and_confs(detection_results)
 
 
 def analyze_mahjong_board(
@@ -594,7 +625,7 @@ def analyze_mahjong_board(
             return {'message': "Error: Invalid hand image provided.", 'status': 401}
 
         # 1. 手牌の検出は常に行う
-        hand_tiles = hand_detection(hand_image_np)
+        hand_tiles, hand_confs = hand_detection(hand_image_np)
 
         # 盤面関連の変数を初期化
         melded_tiles_by_zone = {
@@ -603,30 +634,33 @@ def analyze_mahjong_board(
             "melded_tiles_top": [],     # 対面（画面上部）
             "melded_tiles_left": []     # 上家（画面左側）
         }
+        melded_confs_by_zone = {k: [] for k in melded_tiles_by_zone.keys()}
         dora_indicators = []
+        dora_confs = []
         discard_tiles_by_zone = {
             "discard_tiles_bottom": [],  # 自分（画面下部）
             "discard_tiles_right": [],   # 下家（画面右側）
             "discard_tiles_top": [],     # 対面（画面上部）
             "discard_tiles_left": []     # 上家（画面左側）
         }
+        discard_confs_by_zone = {k: [] for k in discard_tiles_by_zone.keys()}
         turn = 1  # 巡目数の初期値
 
         if not is_board_image_empty:
             # board_image_np が有効な場合のみ、盤面関連の検出を行う
             try:
-                melded_tiles_by_zone = open_detection(board_image_np)
+                melded_tiles_by_zone, melded_confs_by_zone = open_detection(board_image_np)
             except (ValueError, ImportError) as e:
                 # クロップモジュール等でエラーがあった場合、警告を表示して続行 
                 pass 
             
             try:
-                dora_indicators = dora_detection(board_image_np)
+                dora_indicators, dora_confs = dora_detection(board_image_np)
             except (ValueError, ImportError) as e:
                 pass 
 
             try:
-                discard_tiles_by_zone = discard_detection(board_image_np)
+                discard_tiles_by_zone, discard_confs_by_zone = discard_detection(board_image_np)
             except (ValueError, ImportError) as e:
                 pass 
 
@@ -641,24 +675,41 @@ def analyze_mahjong_board(
         result = {
             "turn": turn,
             "dora_indicators": dora_indicators,
+            "dora_confs": dora_confs,
             "hand_tiles": hand_tiles,
+            "hand_confs": hand_confs,
             "melded_tiles": melded_tiles_by_zone,
+            "melded_confs": melded_confs_by_zone,
             "discard_tiles": discard_tiles_by_zone,
+            "discard_confs": discard_confs_by_zone,
         }
+
+        result = result_check_main(result)
 
         melded_tiles_mine = melded_tiles_by_zone.get("melded_tiles_bottom", [])
         melded_tiles_other = melded_tiles_by_zone.get("melded_tiles_right", []) + \
                                 melded_tiles_by_zone.get("melded_tiles_top", []) + \
                                 melded_tiles_by_zone.get("melded_tiles_left", [])
+        
+        # 鳴き牌で100以上のIDを元に戻す
+        melded_tiles_mine = [[tile_id % 100 if tile_id >= 100 else tile_id for tile_id in meld] for meld in melded_tiles_mine]
+        melded_tiles_other = [[tile_id % 100 if tile_id >= 100 else tile_id for tile_id in meld] for meld in melded_tiles_other]
+
 
         # 全ての捨て牌をまとめる
         discard_tiles = []
         for dd in discard_tiles_by_zone.values():
             discard_tiles += dd
 
-        # 100以上のIDを元に戻す
-        discard_tiles = [tile_id - 100 if tile_id >= 100 else tile_id for tile_id in discard_tiles]
+        # 捨て牌で100以上のIDを元に戻す
+        discard_tiles = [tile_id % 100 if tile_id >= 100 else tile_id for tile_id in discard_tiles]
         simple_discard_tiles = sorted(discard_tiles)
+
+        # 手牌で100以上のIDを元に戻す
+        hand_tiles = [tile_id % 100 if tile_id >= 100 else tile_id for tile_id in hand_tiles]
+
+        # ドラ表示牌で100以上のIDを元に戻す
+        dora_indicators = [tile_id % 100 if tile_id >= 100 else tile_id for tile_id in dora_indicators]
 
         result_simple = {
             "turn": turn,
