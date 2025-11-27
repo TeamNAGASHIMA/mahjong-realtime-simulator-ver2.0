@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tiles_save APIテストフォーム</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f4f4f4; }
+        .form-group { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: white; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input[type="text"], input[type="number"], input[type="file"], textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        button:hover { background-color: #1e7e34; }
+        #response-output { margin-top: 30px; padding: 15px; background-color: #282c34; color: #ffffff; border: 1px solid #444; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
+        .note { color: #6c757d; font-size: 0.85em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>💾 `tiles_save` API テストフォーム</h1>
+    <p class="note">**DjangoのCSRFトークン**がセットされている環境でのテストを想定しています。</p>
+
+    <input type="hidden" id="csrfToken" value="FETCH_FROM_DJANGO_CONTEXT_OR_COOKIE">
+    <div class="note">現在のトークン: <span id="currentCsrfToken">取得中...</span></div>
+    
+    <div class="form-group">
+        <label for="targetUrl">送信先URL</label>
+        <input type="text" id="targetUrl" value="http://127.0.0.1:8010/app/tiles_save/" placeholder="例: /app/tiles_save/">
+    </div>
+    
+    <form id="saveDataForm">
+        
+        <div class="form-group">
+            <label for="hand_tiles_image">手牌画像 (hand_tiles_image)</label>
+            <input type="file" id="hand_tiles_image" name="hand_tiles_image" accept="image/*" required>
+        </div>
+
+        <div class="form-group">
+            <label for="board_tiles_image">盤面画像 (board_tiles_image) [オプション]</label>
+            <input type="file" id="board_tiles_image" name="board_tiles_image" accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="record_flag">記録フラグ (record_flag)</label>
+            <div class="note">0: 何もしない | 1: **記録中** (中間データ保存) | 2: **記録保存** (save_name必須)</div>
+            <input type="number" id="record_flag" name="record_flag" value="1" min="0" max="2" required>
+        </div>
+
+        <div class="form-group">
+            <label for="save_name">保存名 (save_name)</label>
+            <div class="note">record_flagが2の場合に必要です。</div>
+            <input type="text" id="save_name" name="save_name" value="test_record_001">
+        </div>
+
+        <div class="form-group">
+            <label for="fixes_board_info">修正ボード情報 (fixes_board_info) - JSON形式</label>
+            <div class="note">値は改行のない一行に固定しました。</div>
+            <textarea id="fixes_board_info" name="fixes_board_info" rows="10" required>{"fixes_pai_info": {"version": "0.9.0","zikaze": 27,"bakaze": 27,"turn": 1,"syanten_type": 1,"dora_indicators": [],"flag": 0,"hand_tiles": [],"melded_blocks": [],"counts": []},"fixes_river_tiles": []}</textarea>
+        </div>
+
+        <button type="submit">POSTリクエストを送信</button>
+    </form>
+
+    <div id="response-output">
+        ここにサーバーからの応答が表示されます。
+    </div>
+
+    <script>
+        // MainScreen.jsからコピーしたCSRFトークン取得ヘルパー関数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const csrf = getCookie('csrftoken');
+            document.getElementById('csrfToken').value = csrf || 'NOT_FOUND';
+            document.getElementById('currentCsrfToken').textContent = csrf || '見つかりませんでした (要確認)';
+        });
+
+
+        document.getElementById('saveDataForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const url = document.getElementById('targetUrl').value;
+            const output = document.getElementById('response-output');
+            const csrfToken = document.getElementById('csrfToken').value;
+
+            output.textContent = '送信中...';
+            output.style.backgroundColor = '#007bff'; 
+            output.style.color = 'white';
+            
+            if (!csrfToken || csrfToken === 'NOT_FOUND') {
+                 output.textContent = '❌ エラー: CSRFトークンが見つかりません。Djangoの環境で開いてください。';
+                 output.style.backgroundColor = 'red';
+                 return;
+            }
+
+            // FormDataオブジェクトを作成し、フォームデータを収集 (ファイルとテキストをmultipart/form-data形式で送信)
+            const formData = new FormData(this);
+
+            // ====================================================================
+            // 【★ 修正箇所：JSON文字列から改行コードを削除してFormDataを上書き ★】
+            // JSONDecodeError対策として、改行のないJSONを設定済みだが、念のためJS側で除去ロジックを残す。
+            // ====================================================================
+            const rawJsonText = document.getElementById('fixes_board_info').value;
+            
+            // 改行コード（\rと\n）をすべて空文字に置換し、前後の空白も除去してJSON文字列をクリーンアップ
+            const cleanedJsonText = rawJsonText.replace(/[\r\n]/g, '').trim();
+
+            // クリーンアップした文字列をFormDataにセットし直す (上書き)
+            formData.set('fixes_board_info', cleanedJsonText);
+            // ====================================================================
+
+            // record_flag=2の場合のsave_nameチェック
+            const recordFlag = formData.get('record_flag');
+            const saveName = formData.get('save_name');
+
+            if (recordFlag === '2' && (!saveName || saveName.trim() === '')) {
+                output.textContent = '❌ エラー: record_flagが2の場合、save_nameは必須です。';
+                output.style.backgroundColor = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        // MainScreen.jsと同様にCSRFトークンをヘッダーに設定
+                        'X-CSRFToken': csrfToken 
+                    },
+                    body: formData 
+                });
+
+                let responseData;
+                const contentType = response.headers.get("content-type");
+
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    responseData = await response.json();
+                } else {
+                    responseData = await response.text();
+                }
+                
+                // 応答の表示
+                output.style.backgroundColor = response.ok ? '#1e1e1e' : 'red';
+                output.textContent = `✅ ステータス: ${response.status} (${response.statusText})\n\n`;
+                if (typeof responseData === 'object') {
+                    output.textContent += '応答JSON:\n' + JSON.stringify(responseData, null, 2);
+                } else {
+                    output.textContent += '応答テキスト:\n' + responseData;
+                }
+
+            } catch (error) {
+                output.textContent = '❌ 通信エラーが発生しました: ' + error.message;
+                output.style.backgroundColor = 'red';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+
+</body>
+</html>
