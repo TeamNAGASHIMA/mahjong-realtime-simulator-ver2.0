@@ -684,7 +684,7 @@ const MainScreen = () => {
         body: JSON.stringify({}) // 空のPOSTリクエスト
       });
       const data = await response.json();
-      if (data.status === 200 && data.file_list) {
+      if (response.status === 200 && data.file_list) {
         setKifuFileList(data.file_list);
         console.log("牌譜リストを取得しました:", data.file_list);
       } else {
