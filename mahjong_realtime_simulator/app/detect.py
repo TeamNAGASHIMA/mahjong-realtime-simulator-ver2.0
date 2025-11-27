@@ -646,23 +646,10 @@ def analyze_mahjong_board(
             "discard_tiles": discard_tiles_by_zone,
         }
 
-        # result_simpleの構築
-        temp_melded_tiles_mine = result["melded_tiles"].get("melded_tiles_bottom", [])
-        temp_melded_tiles_other = []
-        for zone in ["melded_tiles_right", "melded_tiles_top", "melded_tiles_left"]:
-            temp_melded_tiles_other.extend(result["melded_tiles"].get(zone, []))
-
-        # 鳴き牌を1次元リストに変換
-        melded_tiles_mine = []
-        melded_tiles_other = []
-        for sublist in temp_melded_tiles_mine:
-            melded_tiles_mine.extend(sublist)
-        for sublist in temp_melded_tiles_other:
-            melded_tiles_other.extend(sublist)
-
-        # 100以上のIDを元に戻す
-        melded_tiles_mine = [tile_id - 100 if tile_id >= 100 else tile_id for tile_id in melded_tiles_mine]
-        melded_tiles_other = [tile_id - 100 if tile_id >= 100 else tile_id for tile_id in melded_tiles_other]
+        melded_tiles_mine = melded_tiles_by_zone.get("melded_tiles_bottom", [])
+        melded_tiles_other = melded_tiles_by_zone.get("melded_tiles_right", []) + \
+                                melded_tiles_by_zone.get("melded_tiles_top", []) + \
+                                melded_tiles_by_zone.get("melded_tiles_left", [])
 
         # 全ての捨て牌をまとめる
         discard_tiles = []
