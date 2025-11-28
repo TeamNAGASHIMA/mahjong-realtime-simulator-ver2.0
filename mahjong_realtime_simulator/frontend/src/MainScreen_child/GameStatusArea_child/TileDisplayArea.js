@@ -79,6 +79,7 @@ import YZ5 from '../../img/YZ5.png';
 import YZ6 from '../../img/YZ6.png';
 import YZ7 from '../../img/YZ7.png';
 
+//1000番台は誤検知の可能性のある牌
 
 // --- データマッピング ---
 const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, YM1, YM2, YM3, YM4, YM5, YRM5, YM6, YM7, YM8, YM9, YP1, YP2, YP3, YP4, YP5, YRP5, YP6, YP7, YP8, YP9, YS1, YS2, YS3, YS4, YS5, YRS5, YS6, YS7, YS8, YS9, YZ1, YZ2, YZ3, YZ4, YZ5, YZ6, YZ7 };
