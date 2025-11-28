@@ -1,360 +1,192 @@
 # crop_open_detection.py
-# 画像の鳴き牌部分を切り出し、プレイヤーごとに分類する (固定位置切り出し版、画面表示なし)
+# 画像の捨て牌部分を切り出す
 
 import cv2
 import numpy as np
 import os
 
-# find_all_tile_faces, is_plausible_tile_bundle, estimate_connected_tiles の各関数は
-# 今回の「固定位置切り出し」の目的では直接使用しないため、そのまま残しますが、
-# 鳴き牌の切り出し処理には影響しません。
-# 将来的に、検出ロジックと固定領域を組み合わせる場合や、
-# 他の目的で牌検出結果を利用する可能性があるため、保持しています。
-
-def find_all_tile_faces(image_np: np.ndarray, debug=False) -> tuple[list, np.ndarray]:
-    """麻雀画像 (NumPy配列) から牌の表面候補を検出する。
-    今回の「固定位置切り出し」の目的では直接使用しないが、他の用途のために保持。
-    """
-    if image_np is None or image_np.size == 0:
-        print("エラー: 入力画像が空または不正です。")
-        return [], None
-
-    original_image_for_drawing = image_np.copy()
-    hsv_image = cv2.cvtColor(image_np, cv2.COLOR_BGR2HSV)
-
-    lower_white = np.array([0, 0, 150])
-    upper_white = np.array([180, 80, 255])
-    mask_white = cv2.inRange(hsv_image, lower_white, upper_white)
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    mask_white_opened = cv2.morphologyEx(mask_white, cv2.MORPH_OPEN, kernel, iterations=1)
-    mask_white_closed = cv2.morphologyEx(mask_white_opened, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    # DEBUG_MODEでも画面には表示しない
-    # if debug and mask_white_closed is not None:
-    #     cv2.imshow("White Mask for Tiles (find_all_tile_faces)", mask_white_closed)
-
-    contours, _ = cv2.findContours(mask_white_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    detected_tiles = []
-
-    min_tile_area = 1500
-    max_tile_area = 50000
-
-    min_valid_ar1 = 0.15
-    max_valid_ar1 = 0.85
-    min_valid_ar2 = 1.15
-    max_valid_ar2 = 4.5
-
-    if debug:
-        print(f"\n--- Filtering Contours in find_all_tile_faces ---")
-        print(f"Area Range: [{min_tile_area} - {max_tile_area}]")
-        print(f"Aspect Ratio Valid Ranges: [{min_valid_ar1:.2f} - {max_valid_ar1:.2f}] OR [{min_valid_ar2:.2f} - {max_valid_ar2:.2f}]")
-
-    for i, cnt in enumerate(contours):
-        area = cv2.contourArea(cnt)
-        if debug:
-            print(f"\nContour #{i}: Area = {area:.0f}")
-
-        if min_tile_area < area < max_tile_area:
-            x, y, w, h = cv2.boundingRect(cnt)
-            if w > 0 and h > 0:
-                aspect_ratio = float(w) / h
-                if debug:
-                    print(f"  Passed Area Filter. Rect: ({x},{y},{w},{h}), Aspect Ratio: {aspect_ratio:.2f}")
-
-                is_ar_valid = (min_valid_ar1 < aspect_ratio < max_valid_ar1) or \
-                                (min_valid_ar2 < aspect_ratio < max_valid_ar2)
-
-                if is_ar_valid:
-                    tile_info = {
-                        'x': x, 'y': y, 'w': w, 'h': h,
-                        'area': area,
-                        'aspect_ratio': aspect_ratio,
-                        'contour': cnt,
-                        'center_x': x + w // 2,
-                        'center_y': y + h // 2,
-                        'orientation': 'horizontal' if w > h else 'vertical'
-                    }
-                    detected_tiles.append(tile_info)
-                    if debug:
-                        print(f"    ==> ACCEPTED (Aspect Ratio OK)")
-                elif debug:
-                    if (max_valid_ar1 <= aspect_ratio <= min_valid_ar2):
-                        print(f"    ==> REJECTED by Aspect Ratio (AR: {aspect_ratio:.2f} is too close to 1.0)")
-                    else:
-                        print(f"    ==> REJECTED by Aspect Ratio (AR: {aspect_ratio:.2f} is outside all valid ranges)")
-            elif debug:
-                print(f"  Passed Area Filter, but w or h is 0. Rect: ({x},{y},{w},{h})")
-        elif debug:
-            print(f"  REJECTED by Area (Area: {area:.0f} is not in [{min_tile_area} - {max_tile_area}])")
-
-    if debug:
-        print(f"\nFound {len(detected_tiles)} tile face candidates after filtering.")
-
-    return detected_tiles, original_image_for_drawing
-
-def is_plausible_tile_bundle(bundle_w: int, bundle_h: int, num_tiles_estimate: int, orientation: str,
-                            single_tile_w_ref: int, single_tile_h_ref: int,
-                            single_tile_ar_horizontal_ref: float,
-                            dim_tolerance_ratio: float = 0.35, debug=False) -> bool:
-    """今回の「固定位置切り出し」の目的では直接使用しないが、他の用途のために保持。"""
-    if num_tiles_estimate <= 0: return False
-    expected_w, expected_h = 0.0, 0.0
-
-    if orientation == 'horizontal':
-        if num_tiles_estimate == 0: return False
-        expected_single_h_for_horizontal = single_tile_w_ref / single_tile_ar_horizontal_ref
-        expected_w = single_tile_w_ref * num_tiles_estimate
-        expected_h = expected_single_h_for_horizontal
-        
-        if not (expected_w * (1 - dim_tolerance_ratio) < bundle_w < expected_w * (1 + dim_tolerance_ratio)):
-            if debug: print(f"      Plausibility Fail (H_Bundle Width): Est.num={num_tiles_estimate}, BundleW={bundle_w:.0f}, ExpectedW={expected_w:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
-            return False
-        if not (expected_h * (1 - dim_tolerance_ratio) < bundle_h < expected_h * (1 + dim_tolerance_ratio)):
-            if debug: print(f"      Plausibility Fail (H_Bundle Height): Est.num={num_tiles_estimate}, BundleH={bundle_h:.0f}, ExpectedH={expected_h:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
-            return False
-    elif orientation == 'vertical':
-        if num_tiles_estimate != 1:
-            if debug: print(f"      Plausibility Fail (V_Bundle Est.Num): Est.num={num_tiles_estimate} != 1 for vertical check")
-            return False
-        expected_w = float(single_tile_w_ref)
-        expected_h = float(single_tile_h_ref)
-        
-        if not (expected_w * (1 - dim_tolerance_ratio) < bundle_w < expected_w * (1 + dim_tolerance_ratio)):
-            if debug: print(f"      Plausibility Fail (V_Bundle Width): Est.num={num_tiles_estimate}, BundleW={bundle_w:.0f}, ExpectedW={expected_w:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
-            return False
-        if not (expected_h * (1 - dim_tolerance_ratio) < bundle_h < expected_h * (1 + dim_tolerance_ratio)):
-            if debug: print(f"      Plausibility Fail (V_Bundle Height): Est.num={num_tiles_estimate}, BundleH={bundle_h:.0f}, ExpectedH={expected_h:.1f} (Tol: {dim_tolerance_ratio*100:.0f}%)")
-            return False
-    else:
-        if debug: print(f"      Plausibility Fail: Unknown orientation '{orientation}'")
-        return False
-    
-    if debug: print(f"      Plausibility OK: Est.num={num_tiles_estimate}, Orient={orientation}")
-    return True
-
-def estimate_connected_tiles(tile_info: dict,
-                            avg_single_vertical_tile_w: int, avg_single_vertical_tile_h: int,
-                            avg_single_horizontal_tile_ar: float,
-                            debug=False) -> tuple[int, str]:
-    """今回の「固定位置切り出し」の目的では直接使用しないが、他の用途のために保持。"""
-    num_estimated = 0
-    orientation = tile_info['orientation']
-    w, h = tile_info['w'], tile_info['h']
-
-    if orientation == 'horizontal':
-        num_tiles_candidate = round(w / avg_single_vertical_tile_w)
-        if num_tiles_candidate > 0:
-            if is_plausible_tile_bundle(w, h, num_tiles_candidate, 'horizontal',
-                                        avg_single_vertical_tile_w, avg_single_vertical_tile_h,
-                                        avg_single_horizontal_tile_ar,
-                                        dim_tolerance_ratio=0.40, debug=debug):
-                num_estimated = int(num_tiles_candidate)
-    elif orientation == 'vertical':
-        if is_plausible_tile_bundle(w, h, 1, 'vertical',
-                                    avg_single_vertical_tile_w, avg_single_vertical_tile_h,
-                                    avg_single_horizontal_tile_ar,
-                                    dim_tolerance_ratio=0.30, debug=debug):
-            num_estimated = 1
-    
-    if debug:
-        print(f"    Estimate for Rect=({tile_info['x']},{tile_info['y']},{w},{h}), AR={tile_info['aspect_ratio']:.2f}, Orient={orientation}: Est枚数={num_estimated}")
-    return num_estimated, orientation
-
-
-def crop_naki_sets_from_fixed_regions(original_full_image_np: np.ndarray, debug=False) -> tuple[dict, np.ndarray]:
-    """麻雀画像から、プレイヤーごとに定義された固定の領域を切り出す。
-
-    Args:
-        original_full_image_np (np.ndarray): 切り出し元の、加工されていないオリジナル画像 (NumPy配列)。
-        debug (bool): デバッグ情報を表示するかどうかのフラグ。
-
-    Returns:
-        tuple[dict, np.ndarray]: プレイヤーごとに分類された鳴き牌画像の辞書と、描画後の画像。
-                                  各プレイヤーには一つの切り出し画像が格納されます。
-    """
-    player_naki_images = {'bottom': [], 'right': [], 'top': [], 'left': []}
-    
-    img_h, img_w = original_full_image_np.shape[:2]
-    
-    # !!! ここに各プレイヤーの鳴き牌領域の固定座標を定義 !!!
-    # これらは画像サイズや卓のレイアウトによって調整が必要です。
-    # 例: {'x': x_start, 'y': y_start, 'w': width, 'h': height}
-    # 値は画像のピクセル数で指定します。
-    # この例では、画像の幅・高さに対する割合で指定しています。
-    # 実際の画像に合わせて、これらの値を微調整してください。
-    
-    fixed_regions = {
-        'bottom': {'x': int(img_w * 0.35), 'y': int(img_h * 0.82), 'w': int(img_w * 0.3), 'h': int(img_h * 0.08)},
-        'right':  {'x': int(img_w * 0.88), 'y': int(img_h * 0.35), 'w': int(img_w * 0.08), 'h': int(img_h * 0.3)},
-        'top':    {'x': int(img_w * 0.35), 'y': int(img_h * 0.10), 'w': int(img_w * 0.3), 'h': int(img_h * 0.08)},
-        'left':   {'x': int(img_w * 0.04), 'y': int(img_h * 0.35), 'w': int(img_w * 0.08), 'h': int(img_h * 0.3)},
+# --- 定数定義 ---
+# 各プレイヤーの捨て牌領域の定義（画像の幅・高さに対する比率）
+# これらの値は、使用するカメラとテーブルのセットアップに合わせて調整する必要があります。
+# --------------------------------------------------------------------------
+# 注意: これらの比率はボード全体の画像に対するものです。
+# 例えば、横幅の0.5は画像中央、縦幅の0.8は画像の下から20%の位置を指します。
+# --------------------------------------------------------------------------
+open_REGIONS = {
+    # 1. 自分（画面下）の捨て牌
+    'bottom': {
+        'center_x_ratio': 0.6,
+        'center_y_ratio': 0.95, # 卓の中央よりやや下
+        'width_ratio': 0.4,    # 牌が横に並ぶ幅
+        'height_ratio': 0.1    # 牌が縦に積まれる高さ（通常3段まで）
+    },
+    # 2. 下家（画面右）の捨て牌
+    'right': {
+        'center_x_ratio': 0.27,  # 卓の中央よりやや右
+        'center_y_ratio': 0.7,
+        'width_ratio': 0.07,     # 牌が横に積まれる幅（通常3段まで）
+        'height_ratio': 0.6     # 牌が縦に並ぶ高さ
+    },
+    # 3. 対面（画面上）の捨て牌
+    'top': {
+        'center_x_ratio': 0.42,
+        'center_y_ratio': 0.05, # 卓の中央よりやや上
+        'width_ratio': 0.4,
+        'height_ratio': 0.1
+    },
+    # 4. 上家（画面左）の捨て牌
+    'left': {
+        'center_x_ratio': 0.77,  # 卓の中央よりやや左
+        'center_y_ratio': 0.3,
+        'width_ratio': 0.07,
+        'height_ratio': 0.6
     }
-    
-    image_for_drawing = original_full_image_np.copy() # デバッグ時に保存する描画用画像
+}
 
-    if debug:
-        print(f"\n--- Cropping Naki Sets from Fixed Regions by Player ---")
-        print(f"Image Dims: W={img_w}, H={img_h}")
-
-    for player, region_coords in fixed_regions.items():
-        x, y, w, h = region_coords['x'], region_coords['y'], region_coords['w'], region_coords['h']
-
-        # 座標が画像範囲内に収まるように調整
-        crop_x1 = max(0, x)
-        crop_y1 = max(0, y)
-        crop_x2 = min(img_w, x + w)
-        crop_y2 = min(img_h, y + h)
-
-        # 有効な領域があるかチェック
-        if crop_x2 > crop_x1 and crop_y2 > crop_y1:
-            cropped_img = original_full_image_np[crop_y1:crop_y2, crop_x1:crop_x2]
-            
-            if cropped_img.size > 0: # 空の画像でないことを確認
-                player_naki_images[player].append(cropped_img) # 各プレイヤーには1つの固定領域を想定
-                if debug:
-                    print(f"  Cropped region for '{player}': ({crop_x1},{crop_y1}) to ({crop_x2},{crop_y2})")
-                
-                # デバッグ用に切り出し領域を描画 (保存用画像に描画)
-                color_map = {'bottom': (255, 0, 0), 'right': (0, 255, 0), 'top': (0, 255, 255), 'left': (255, 0, 255)}
-                cv2.rectangle(image_for_drawing, (crop_x1, crop_y1), (crop_x2, crop_y2),
-                              color_map.get(player, (255,255,255)), 3)
-            elif debug:
-                print(f"  Cropping resulted in an empty image for '{player}' at ({x},{y}).")
-        elif debug:
-            print(f"  Invalid region for '{player}': ({x},{y},{w},{h}) resulted in zero or negative dimensions after clamping.")
-
-    if debug:
-        total_cropped_regions = sum(len(v) for v in player_naki_images.values())
-        print(f"Total {total_cropped_regions} fixed regions cropped.")
-
-    return player_naki_images, image_for_drawing # 描画済みの画像を返す
-
-
-# --- crop_open_main 関数の変更点 ---
-def crop_open_main(image_np: np.ndarray, original_filename: str = 'output.jpg', debug=False) -> dict:
-    """麻雀画像 (NumPy配列) の解析パイプラインを実行し、プレイヤーごとに分類された鳴き牌の切り出し画像リストを返す。
+def _get_crop_coordinates(image_np: np.ndarray, 
+                        center_x_ratio: float, center_y_ratio: float,
+                        width_ratio: float, height_ratio) -> tuple[int, int, int, int]:
+    """
+    画像サイズと中心比率、サイズ比率から切り出し領域のピクセル座標 (x, y, w, h) を計算するヘルパー関数。
 
     Args:
         image_np (np.ndarray): 入力画像データ (NumPy配列)。
-        original_filename (str): 保存時のベースとなる元のファイル名。
-        debug (bool): デバッグ情報を表示するかどうかのフラグ。Trueの場合、詳細なログが表示される。
+        center_x_ratio (float): 画像の幅に対する切り出し領域の中心X座標の比率 (0.0〜1.0)。
+        center_y_ratio (float): 画像の高さに対する切り出し領域の中心Y座標の比率 (0.0〜1.0)。
+        width_ratio (float): 切り出し領域の幅を画像全体の幅に対する比率で指定 (0.0〜1.0)。
+        height_ratio (float): 切り出し領域の高さを画像全体の高さに対する比率で指定 (0.0〜1.0)。
 
     Returns:
-        dict: プレイヤーごとに分類された鳴き牌の領域の画像データ (NumPy配列) の辞書。
-              キーは 'bottom', 'right', 'top', 'left'。検出できなかった場合は空のリストを持つ辞書を返す。
+        tuple[int, int, int, int]: 切り出し領域の左上X座標, 左上Y座標, 幅, 高さ。
+    """
+    h_img, w_img = image_np.shape[:2]
+
+    crop_w = int(w_img * width_ratio)
+    crop_h = int(h_img * height_ratio)
+
+    # 中心座標をピクセルで計算
+    cx_pixels = int(w_img * center_x_ratio)
+    cy_pixels = int(h_img * center_y_ratio)
+
+    # 左上座標
+    start_x = cx_pixels - crop_w // 2
+    start_y = cy_pixels - crop_h // 2
+
+    # 切り抜き範囲が画像の境界を超えないように調整
+    start_x = max(0, start_x)
+    start_y = max(0, start_y)
+    
+    end_x = start_x + crop_w
+    end_y = start_y + crop_h
+
+    # 調整後の幅と高さを再計算
+    crop_w = min(end_x, w_img) - start_x
+    crop_h = min(end_y, h_img) - start_y
+    
+    return start_x, start_y, crop_w, crop_h
+
+
+def crop_open_main(image_np: np.ndarray) -> dict[str, np.ndarray]:
+    """盤面画像から4人分の捨て牌領域を個別に検出・切り出します。
+
+    各プレイヤーの捨て牌（河）の位置は、盤面全体の画像サイズに対する
+    固定の比率として定義されます。この関数は、それらの定義に基づいて
+    各河の領域を切り出し、辞書形式で返します。
+
+    Args:
+        image_np (np.ndarray): 盤面全体の画像データ (NumPy配列)。
+
+    Returns:
+        dict[str, np.ndarray]: 各プレイヤーの捨て牌領域の画像データ (NumPy配列) を格納した辞書。
+                            キーは 'bottom', 'right', 'top', 'left'。
+                            画像が切り出せなかった場合は、そのキーの値はNoneとなります。
+                            入力画像が不正な場合は空の辞書を返します。
     """
     if image_np is None or image_np.size == 0:
-        print("致命的エラー: 元画像が空または不正です。")
-        return {'bottom': [], 'right': [], 'top': [], 'left': []}
+        print("致命的エラー: main (crop_open_detection) - 入力画像が空または不正です。")
+        return {}
 
-    # 1. ステップ1: 牌の表面候補をすべて検出 (この情報は固定位置切り出しには使わないが、将来の拡張のために呼び出しは残す)
-    if debug: print("\n--- Step 1: 牌の表面候補を検出中 (固定位置切り出しでは直接使用しません)... ---")
-    detected_tiles, step1_image_for_debug = find_all_tile_faces(image_np, debug=debug)
+    # 各領域を切り出す
+    cropped_open_areas = {}
     
-    # 検出された牌候補があったとしても、今回の固定位置切り出しでは利用しないため、
-    # その後の処理 (plausible_tile_bundlesの生成など) は行いません。
-    if debug and detected_tiles:
-        print(f"ステップ1で {len(detected_tiles)} 個の牌候補を検出しました (固定位置切り出しでは直接使用しません)。")
-
-    # 2. ステップ2: 鳴きセットを固定位置から切り出し、プレイヤーごとに分類
-    if debug: print("\n--- Step 2: 鳴きセットを固定位置から切り出し、プレイヤーごとに分類中... ---")
-    player_separated_naki_images, image_with_fixed_regions = crop_naki_sets_from_fixed_regions( # 変更: step2_image_for_debug の名前を変更
-        image_np, debug=debug
-    )
-
-    # 3. 結果のサマリー表示 (デバッグ用)
-    if debug:
-        print("\n--- 解析結果 ---")
-        total_cropped = sum(len(imgs) for imgs in player_separated_naki_images.values())
-        if total_cropped > 0:
-            print(f"成功: 合計 {total_cropped} 個の固定鳴き牌領域を切り出しました。")
-            for player, images in player_separated_naki_images.items():
-                if images:
-                    print(f"  - Player '{player}': {len(images)} 個")
-        else:
-            print("切り出し対象の固定鳴き牌領域は見つかりませんでした。")
-
-    # 4. デバッグ用の画像を保存 (画面表示はしない)
-    if debug:
-        print("\nデバッグモード: 画像保存処理を開始します。")
+    for key, params in open_REGIONS.items():
+        x, y, w, h = _get_crop_coordinates(
+            image_np,
+            params['center_x_ratio'], params['center_y_ratio'],
+            params['width_ratio'], params['height_ratio']
+        )
         
-        # --- ここから追加・変更 ---
-        output_folder = "output_open"
-        if not os.path.exists(output_folder):
-            try:
-                os.makedirs(output_folder)
-                print(f"フォルダ '{output_folder}' を作成しました。")
-            except OSError as e:
-                print(f"エラー: フォルダ '{output_folder}' の作成に失敗しました。 reason: {e}")
-                # フォルダ作成に失敗した場合、カレントディレクトリに保存するようにフォールバック
-                output_folder = "." 
-                print(f"警告: '{output_folder}' に画像を保存します。")
-        # --- ここまで追加・変更 ---
-
-        # 描画された画像を保存
-        base_name, ext = os.path.splitext(os.path.basename(original_filename)) # os.path.basename を追加してファイル名のみを取得
-        if not ext:
-            ext = '.jpg'
-
-        # 固定領域が描画された元画像を保存
-        if image_with_fixed_regions is not None and image_with_fixed_regions.size > 0:
-            full_img_save_filename = os.path.join(output_folder, f"{base_name}_fixed_regions_overlay{ext}") # 変更: output_folder をパスに追加
-            try:
-                cv2.imwrite(full_img_save_filename, image_with_fixed_regions)
-                print(f"保存成功: 全体画像に固定領域を描画した画像を {full_img_save_filename} に保存しました。")
-            except Exception as e:
-                print(f"エラー: {full_img_save_filename} の保存に失敗しました。 reason: {e}")
-
-        # 各プレイヤーの切り出し画像を保存
-        print("\n--- 各プレイヤーの切り出し画像の保存処理 ---")
-        save_count = 0
-        for player, images in player_separated_naki_images.items():
-            if not images:
-                continue
-            for i, img in enumerate(images):
-                save_filename = os.path.join(output_folder, f"{base_name}_fixed_crop_{player}_{i+1}{ext}") # 変更: output_folder をパスに追加
-                try:
-                    cv2.imwrite(save_filename, img)
-                    print(f"保存成功: {save_filename}")
-                    save_count += 1
-                except Exception as e:
-                    print(f"エラー: {save_filename} の保存に失敗しました。 reason: {e}")
+        cropped_img = None
+        # 妥当な幅と高さがある場合のみ切り出し
+        if w > 0 and h > 0:
+            cropped_img = image_np[y:y+h, x:x+w]
         
-        if save_count > 0:
-            print(f"合計 {save_count} 個の切り出し画像を保存しました。")
-        else:
-            print("保存対象の切り出し画像はありませんでした。")
-        
-        # 画面表示は行わないため、waitKeyやdestroyAllWindowsは不要
-        # cv2.waitKey(0) 
-        # cv2.destroyAllWindows()
-    
-    return player_separated_naki_images
+        cropped_open_areas[key] = cropped_img
+
+    return cropped_open_areas
 
 
 # --- スクリプトのエントリーポイント ---
 if __name__ == '__main__':
-    # --- 設定 ---
-    IMAGE_FILE = 'test_mahjong_open_1.jpg' # テスト用画像パス
-    DEBUG_MODE = True # テスト時はTrueにして動作確認推奨
-    
+    # --- テスト用設定 ---
+    TEST_IMAGE_PATH = 'board_tiles_image.jpg' # テスト用画像パス
+    OUTPUT_DIR = 'output_opens'           # 出力ディレクトリ名
+
     # --- 実行 ---
-    input_image_np = cv2.imread(IMAGE_FILE)
+    # 出力ディレクトリを作成（存在しない場合）
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    input_image_np = cv2.imread(TEST_IMAGE_PATH)
 
     if input_image_np is None:
-        print(f"エラー: 画像ファイル '{IMAGE_FILE}' が見つからないか、読み込めません。")
+        print(f"エラー: 画像ファイル '{TEST_IMAGE_PATH}' が見つからないか、読み込めません。")
     else:
-        result_naki_dict = crop_open_main(
-            image_np=input_image_np, 
-            original_filename=IMAGE_FILE,
-            debug=DEBUG_MODE
-        )
+        print("open_detectionのテストを開始します。")
+        
+        # 1. main関数を呼び出し、切り出し結果を取得
+        result_cropped_dict = crop_open_main(input_image_np)
 
-        total_sets_found = sum(len(v) for v in result_naki_dict.values())
-        if total_sets_found > 0:
-            print(f"\nテスト完了: 合計 {total_sets_found} 個の固定鳴き牌領域が切り出されました。")
-            for player, images in result_naki_dict.items():
-                print(f"  - Player '{player}': {len(images)} 個の鳴き牌セット")
+        if not result_cropped_dict:
+            print("\nテスト完了: 捨て牌領域の切り出しに失敗しました。")
         else:
-            print("\nテスト完了: 固定鳴き牌領域は切り出されませんでした。")
+            # 2. 切り出した各画像をファイルに保存
+            print(f"\n切り出した画像を '{OUTPUT_DIR}/' に保存します...")
+            for key, img_np in result_cropped_dict.items():
+                if img_np is not None and img_np.size > 0:
+                    h, w, _ = img_np.shape
+                    save_path = os.path.join(OUTPUT_DIR, f"cropped_open_{key}.jpg")
+                    cv2.imwrite(save_path, img_np)
+                    print(f"  -> '{key}' 領域 (サイズ: {w}x{h}) を '{save_path}' に保存しました。")
+                else:
+                    print(f"  -> '{key}' 領域は切り出せませんでした。")
+
+            # 3. 範囲を可視化した画像を生成して保存
+            print(f"\n切り出し範囲を可視化した画像を '{OUTPUT_DIR}/' に保存します...")
+            visualized_image = input_image_np.copy()
+
+            color_map = {
+                'bottom': (0, 255, 0),  # 緑
+                'right': (0, 255, 255), # 黄
+                'top': (255, 0, 0),     # 青
+                'left': (255, 255, 0)   # シアン
+            }
+
+            for key, params in open_REGIONS.items():
+                # ヘルパー関数を使って再度座標を計算
+                x, y, w, h = _get_crop_coordinates(
+                    input_image_np,
+                    params['center_x_ratio'], params['center_y_ratio'],
+                    params['width_ratio'], params['height_ratio']
+                )
+                if w > 0 and h > 0:
+                    color = color_map.get(key, (255, 255, 255))
+                    # 矩形を描画
+                    cv2.rectangle(visualized_image, (x, y), (x + w, y + h), color, 3) # 線を太くして見やすく
+                    # ラベルを描画
+                    cv2.putText(visualized_image, key, (x + 5, y + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+            visualized_save_path = os.path.join(OUTPUT_DIR, "visualized_open_regions.jpg")
+            cv2.imwrite(visualized_save_path, visualized_image)
+            print(f"  -> 可視化画像を '{visualized_save_path}' に保存しました。")
+
+            print("\nテスト完了。")
