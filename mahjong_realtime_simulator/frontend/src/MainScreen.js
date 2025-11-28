@@ -28,6 +28,46 @@ const INITIAL_GAME_STATE = {
   counts: [] // 牌の数
 };
 
+// ★★★ 追加1: 牌譜データをboardState形式に変換するヘルパー関数 ★★★
+const convertKifuDataToBoardState = (kifuTurnData) => {
+  if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
+
+  // melded_blocksの形式を変換
+  const melds = { self: [], shimocha: [], toimen: [], kamicha: [] };
+  if (kifuTurnData.melded_blocks) {
+    melds.self = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_bottom || [], 'self');
+    melds.shimocha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_right || [], 'shimocha');
+    melds.toimen = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_top || [], 'toimen');
+    melds.kamicha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_left || [], 'kamicha');
+  }
+
+  // river_tilesをplayer_discardsに変換
+  const player_discards = { self: [], shimocha: [], toimen: [], kamicha: [] };
+  if (kifuTurnData.river_tiles) {
+    player_discards.self = kifuTurnData.river_tiles.discard_tiles_bottom || [];
+    player_discards.shimocha = kifuTurnData.river_tiles.discard_tiles_right || [];
+    player_discards.toimen = kifuTurnData.river_tiles.discard_tiles_top || [];
+    player_discards.kamicha = kifuTurnData.river_tiles.discard_tiles_left || [];
+  }
+
+  // 手牌とツモ牌を分離 (14枚あればツモ牌ありと判断)
+  let hand_tiles = [...(kifuTurnData.hand_tiles || [])];
+  let tsumo_tile = null;
+  if (hand_tiles.length === 14) {
+    tsumo_tile = hand_tiles.pop();
+  }
+
+  return {
+    ...INITIAL_GAME_STATE, // 不足しているキーは初期値で埋める
+    turn: kifuTurnData.turn || 1,
+    dora_indicators: kifuTurnData.dora_indicators || [],
+    hand_tiles: hand_tiles,
+    tsumo_tile: tsumo_tile,
+    melds: melds,
+    player_discards: player_discards,
+  };
+};
+
 // スタイル定義
 const styles = {
   mainContent: {
@@ -200,7 +240,7 @@ const MainScreen = () => {
   const handleConnectOrReconnect = async () => {
     // (省略...変更なし)
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
+      await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }} });
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
       if (videoDevices.length === 0) {
@@ -254,6 +294,7 @@ const MainScreen = () => {
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
+      formData.append("mode_flag", settings.flag)
       const response = await fetch('/app/main/', {
           method: 'POST',
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
@@ -497,6 +538,104 @@ const MainScreen = () => {
     default: return null;
   }
 };
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingIntervalRef = useRef(null);
+  const RECORDING_INTERVAL = 5000; // 5秒ごとに記録データを送信 (ミリ秒)
+  // ★★★ 追加2: 記録データをバックエンドに送信する共通関数 ★★★
+  const sendRecordingData = async (recordFlag, saveName = '') => {
+    console.log(`sendRecordingData called with flag: ${recordFlag}, saveName: ${saveName}`);
+    if (!sidePanelRef.current) {
+      console.error("sidePanelRef is not available.");
+      return;
+    }
+  
+    // handleCalculateからデータ取得部分を流用
+    const { images, settings: sidePanelSettings } = await sidePanelRef.current.getSidePanelData();
+    const finalSettings = {...settings, ...sidePanelSettings};
+    const formData = new FormData();
+    const handImageBlob = dataURLtoBlob(images.handImage);
+    const boardImageBlob = dataURLtoBlob(images.boardImage);
+  
+    // 画像データが必須
+    if (!handImageBlob || handImageBlob.size === 0) {
+      console.error("手牌カメラの映像が取得できませんでした。");
+      // 記録中ならアラートは出さずにコンソールエラーに留める
+      if (recordFlag !== 1) alert("手牌カメラの映像が取得できませんでした。");
+      return; 
+    }
+  
+    formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+    if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+    
+    // 物体検知用データ
+    const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
+    const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
+    formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
+  
+    // 記録用フラグと保存名を追加
+    formData.append('record_flag', recordFlag);
+    if (recordFlag === 2 && saveName) {
+      formData.append('save_name', saveName);
+    }
+  
+    try {
+      const response = await fetch('/app/tiles_save/', { // エンドポイントを tiles_save/ に変更
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          body: formData
+      });
+  
+      const data = await response.json();
+  
+      if (data.status === 200) {
+        if (recordFlag === 1) {
+          console.log("記録データを送信しました:", data.message);
+          // 成功時、detection_resultで盤面を更新することも可能
+          // setBoardState(...)
+        } else if (recordFlag === 2) {
+          alert(`記録を保存しました: ${data.file_name}`);
+          console.log("記録を保存しました:", data);
+        }
+      } else {
+        // 記録中ならアラートは出さずにコンソールエラーに留める
+        const errorMessage = data.message || "記録データの送信に失敗しました。";
+        console.error(errorMessage);
+        if (recordFlag !== 1) alert(errorMessage);
+      }
+    } catch (err) {
+      console.error('記録APIとの通信に失敗しました:', err);
+      if (recordFlag !== 1) alert('記録APIとの通信に失敗しました。');
+    }
+  };
+
+
+  // ★★★ 追加3: 記録開始ボタンが押されたときの処理 ★★★
+  const handleRecordStart = () => {
+    setIsRecording(true);
+    // まず一度即時送信
+    sendRecordingData(1); 
+    // その後、一定間隔で送信を開始
+    recordingIntervalRef.current = setInterval(() => {
+      sendRecordingData(1);
+    }, RECORDING_INTERVAL);
+    console.log(`記録を開始しました。${RECORDING_INTERVAL / 1000}秒ごとにデータを送信します。`);
+  };
+
+  // ★★★ 追加4: 記録終了・保存が確定したときの処理 ★★★
+  const handleRecordStop = (fileName) => {
+    // インターバルを停止
+    clearInterval(recordingIntervalRef.current);
+    recordingIntervalRef.current = null;
+    
+    if (fileName) { // ファイル名があれば保存処理
+      sendRecordingData(2, fileName);
+    } else { // ファイル名がなければ(キャンセルされたら)何もしない
+      console.log("保存はキャンセルされました。記録を終了します。");
+    }
+
+    // 状態をリセット
+    setIsRecording(false);
+  };
 
   const handleResetBoardState = () => {
     setBoardState(INITIAL_GAME_STATE);
@@ -506,6 +645,83 @@ const MainScreen = () => {
   };
 
   const isSimulatorMode = settings.flag === 1;
+
+   // ★★★ 追加2: 牌譜モード用の状態管理 ★★★
+  const [kifuFileList, setKifuFileList] = useState([]);      // 牌譜ファイルの一覧
+  const [selectedKifuData, setSelectedKifuData] = useState([]); // 選択された牌譜の中身 (temp_result)
+  const [currentKifuTurn, setCurrentKifuTurn] = useState(1);  // 選択中の巡目
+  // ★★★ 追加3: モード切替時に牌譜リストを取得するuseEffect ★★★
+  useEffect(() => {
+    // 牌譜モード (flag: 0) に切り替わったときに実行
+    if (settings.flag === 0) {
+      fetchKifuList();
+    } else {
+      // シミュレーターモードに戻ったら牌譜データをクリア
+      setKifuFileList([]);
+      setSelectedKifuData([]);
+    }
+  }, [settings.flag]);
+
+  // ★★★ 追加4: 牌譜データや巡目が変わった時に盤面を更新するuseEffect ★★★
+  useEffect(() => {
+    if (selectedKifuData.length > 0 && currentKifuTurn >= 1 && currentKifuTurn <= selectedKifuData.length) {
+      // 牌譜データの中から現在の巡目に相当するデータを取得
+      const currentTurnData = selectedKifuData[currentKifuTurn - 1];
+      // boardStateを更新して画面に反映
+      setBoardState(convertKifuDataToBoardState(currentTurnData));
+    }
+  }, [selectedKifuData, currentKifuTurn]);
+
+
+  // ★★★ 追加5: 牌譜ファイル一覧を取得するAPI通信関数 ★★★
+  const fetchKifuList = async () => {
+    try {
+      const response = await fetch('/app/tiles_json_req/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({}) // 空のPOSTリクエスト
+      });
+      const data = await response.json();
+      if (response.status === 200 && data.file_list) {
+        setKifuFileList(data.file_list);
+        console.log("牌譜リストを取得しました:", data.file_list);
+      } else {
+        alert(data.message || "牌譜リストの取得に失敗しました。");
+      }
+    } catch (err) {
+      console.error("牌譜リスト取得APIとの通信に失敗:", err);
+      alert("牌譜リスト取得APIとの通信に失敗しました。");
+    }
+  };
+
+  // ★★★ 追加6: 特定の牌譜ファイルの中身を取得するAPI通信関数 ★★★
+  const handleKifuSelect = async (fileName) => {
+    try {
+      const formData = new FormData();
+      formData.append('file_name', fileName);
+
+      const response = await fetch('/app/tiles_json_req/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData
+      });
+      const data = await response.json();
+      if (data.status === 200 && data.temp_result) {
+        setSelectedKifuData(data.temp_result);
+        setCurrentKifuTurn(1); // 最初の巡目にリセット
+        console.log(`牌譜「${fileName}」を読み込みました。`);
+      } else {
+        alert(data.message || `牌譜「${fileName}」の読み込みに失敗しました。`);
+      }
+    } catch (err) {
+      console.error("牌譜データ取得APIとの通信に失敗:", err);
+      alert("牌譜データ取得APIとの通信に失敗しました。");
+    }
+  };
+
 
   return (
     <div style={appContainerStyle}>
@@ -521,6 +737,12 @@ const MainScreen = () => {
             settings={settings}
             isSimulatorMode={isSimulatorMode}            
             onModeChange={handleModeChange} // ★★★ 修正箇所3: モード切替関数を渡す
+            isRecording={isRecording}
+            onRecordStart={handleRecordStart}
+            onRecordStop={handleRecordStop}
+            // ★★★ 追加7: 牌譜用の状態と関数を子に渡す ★★★
+            selectedKifuData={selectedKifuData}
+            onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す                        
           />
         </div>
         
@@ -539,6 +761,8 @@ const MainScreen = () => {
             setHandFlip={setHandFlip}
             guideFrameColor={guideFrameColor}
             isSimulatorMode={isSimulatorMode}
+            kifuFileList={kifuFileList}
+            onKifuSelect={handleKifuSelect}            
           />
         </div>
       </div>

@@ -163,3 +163,6 @@ PT_URL = '/pt/'
 
 # アップロードされたファイルを保存するサーバー上のディレクトリ
 PT_ROOT = os.path.join(BASE_DIR, 'pt')
+
+# 牌譜JSONファイル保存用ディレクトリ
+HAIHU_ROOT = os.path.join(BASE_DIR, 'game_data_json_files')

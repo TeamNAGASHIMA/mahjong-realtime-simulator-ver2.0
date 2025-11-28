@@ -25,7 +25,8 @@ const GameStatusArea = ({
   settings,
   use3D,
   isSimulatorMode,  
-  onModeChange, // ★★★ 修正箇所1: onModeChangeプロップを受け取る
+  onModeChange,
+  isRecording, onRecordStart, onRecordStop 
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
@@ -43,7 +44,10 @@ const GameStatusArea = ({
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
-        isSimulatorMode={isSimulatorMode}        
+        isSimulatorMode={isSimulatorMode}
+        isRecording={isRecording}
+        onRecordStart={onRecordStart}
+        onRecordStop={onRecordStop}    
       />
 
       <CalculationResults
