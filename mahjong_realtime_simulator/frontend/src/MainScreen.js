@@ -1,5 +1,5 @@
 // MainScreen.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // コンポーネントのインポート
 import { Header } from './Header/Header';
@@ -74,7 +74,7 @@ const styles = {
     display: 'flex',
     flexGrow: 1,
     padding: '15px',
-    gap: '15px',
+    gap: '0', // ★ gapを0にし、リサイズハンドルを含めて配置する
     overflow: 'hidden',
   },
   gameStatusWrapper: {
@@ -82,10 +82,29 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+    paddingRight: '15px', // ★ リサイズハンドルとの余白
   },
   sidePanelWrapper: {
     display: 'flex',
     flexDirection: 'column',
+    // widthはstateで制御するためここでは指定しない
+  },
+  // ★ リサイズ用のつまみ（ハンドル）のスタイル
+  resizeHandle: {
+    width: '10px',
+    cursor: 'col-resize',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    backgroundColor: 'transparent',
+    transition: 'background-color 0.2s',
+  },
+  resizeLine: {
+    width: '4px',
+    height: '40px',
+    backgroundColor: '#666',
+    borderRadius: '2px',
   }
 };
 
@@ -197,12 +216,16 @@ const MainScreen = () => {
   // --- 状態管理 ---
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
+  const [calculationError, setCalculationError] = useState(null);
+
+  // ★★★ 追加: サイドパネルの幅を管理するState (初期値390px) ★★★
+  const [sidePanelWidth, setSidePanelWidth] = useState(390);
 
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
     appBgImage: null, syanten_type: 1, 
-    flag: 1 // ★★★ 修正箇所1: デフォルトを1 (リアルタイムシミュレーター) に設定
+    flag: 1
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
@@ -227,7 +250,7 @@ const MainScreen = () => {
 
   // ★★★ 修正箇所2: モード切替用のハンドラを追加 ★★★
   const handleModeChange = () => {
-    const newFlag = settings.flag === 1 ? 0 : 1; // 1なら0に、0なら1に切り替え
+    const newFlag = settings.flag === 1 ? 0 : 1;
     handleSettingsChange({ flag: newFlag });
     console.log(`モードが ${newFlag === 1 ? 'リアルタイムシミュレーター' : '牌譜'} に切り替わりました。`);
   };
@@ -238,7 +261,6 @@ const MainScreen = () => {
   };
 
   const handleConnectOrReconnect = async () => {
-    // (省略...変更なし)
     try {
       await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }} });
       const allDevices = await navigator.mediaDevices.enumerateDevices();
@@ -270,11 +292,11 @@ const MainScreen = () => {
   };
     
   const handleCalculate = async () => {
-    // (省略...変更なし)
     if (!sidePanelRef.current) return;
     setIsLoadingCalculation(true); 
     setIsRecognizing(true);       
-    setCalculationResults([]);    
+    setCalculationResults([]);
+    setCalculationError(null);
     try {
       const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
       const finalSettings = {...settings, ...sidePanelSettings};
@@ -329,7 +351,7 @@ const MainScreen = () => {
                 recognizedHandTiles = boardState.hand_tiles;
                 recognizedTsumoTile = boardState.tsumo_tile;
             } else {
-                alert("APIが手牌を認識できませんでした。(0枚検出) 手牌の画像が鮮明か、角度が適切か確認してください。");
+                setCalculationError("APIが手牌を認識できませんでした。(0枚検出) 手牌の画像が鮮明か、角度が適切か確認してください。");
                 setIsLoadingCalculation(false); 
                 setIsRecognizing(false); 
                 return;
@@ -405,17 +427,31 @@ const MainScreen = () => {
           if (formattedResults.length > 0) {
             setCalculationResults(formattedResults);
           } else {
-            alert("計算結果の形式が正しくないか、不明な形式です。");
+            setCalculationError("計算結果の形式が正しくないか、不明な形式です。");
           }
         } else {
-          alert("計算結果が返されませんでした。");
+          setCalculationError("計算結果が返されませんでした。");
         }
       } else {
           const errorMessage = data.message?.error || data.message || "Unknown error";
-          if (response.status === 420) { 
-              alert(`計算できませんでした: ${errorMessage}`);
+          if (response.status === 420) {
+            // --- ▼▼▼ ここから修正 ▼▼▼ ---
+            let displayMessage = errorMessage; // デフォルトはサーバーからのメッセージ
+
+            // サーバーからの特定のメッセージが含まれていたら、表示するメッセージを上書きする
+            if (String(errorMessage).includes("The number of tiles in your hand is invalid")) {
+                // 正規表現で数字を抽出
+                const tileCountMatch = String(errorMessage).match(/\((\d+)/);
+                const tileCount = tileCountMatch ? tileCountMatch[1] : '不明な';
+
+                displayMessage = `手牌の枚数が正しくありませんでした。（検出された枚数: ${tileCount}枚）手牌の認識がうまくいっているか確認してください。(errorMessage: ${data.message})`;
+            }
+
+            setCalculationError(`計算できませんでした: ${displayMessage}`);
+            // --- ▲▲▲ ここまで修正 ▲▲▲ ---
+              
           } else { 
-              alert(`エラーが発生しました (Status: ${response.status}): ${errorMessage}`);
+              setCalculationError(`エラーが発生しました (Status: ${response.status}): ${errorMessage}`);
           }
           if (data.detection_result) {
             let detectedResultError = data.detection_result; 
@@ -486,7 +522,7 @@ const MainScreen = () => {
       }
     } catch (err) {
       console.error('通信に失敗しました:', err);
-      alert('通信に失敗しました。詳細はコンソールを確認してください。');
+      setCalculationError('通信に失敗しました。詳細はコンソールを確認してください。');
     } finally {
         setIsLoadingCalculation(false); 
         setIsRecognizing(false);       
@@ -577,7 +613,7 @@ const MainScreen = () => {
         console.error("手牌カメラの映像が取得できませんでした。");
         // 記録中ならアラートは出さずにコンソールエラーに留める
       }
-    
+   
       formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
       if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
     }
@@ -660,6 +696,7 @@ const MainScreen = () => {
     setCalculationResults([]);
     setIsLoadingCalculation(false);
     setIsRecognizing(false);
+    setCalculationError(null);
   };
 
   const isSimulatorMode = settings.flag === 1;
@@ -740,6 +777,35 @@ const MainScreen = () => {
     }
   };
 
+  // ★★★ 追加: リサイズ開始処理 ★★★
+  const startResizing = useCallback((mouseDownEvent) => {
+    mouseDownEvent.preventDefault();
+    
+    const startX = mouseDownEvent.clientX;
+    const startWidth = sidePanelWidth;
+
+    const onMouseMove = (mouseMoveEvent) => {
+      // マウスが左に動くと幅が増え、右に動くと幅が減る（パネルが右側にあるため）
+      const moveX = startX - mouseMoveEvent.clientX;
+      const newWidth = startWidth + moveX;
+
+      // 最小幅と最大幅の制限 (例: 最小260px, 最大800px)
+      if (newWidth >= 260 && newWidth <= 800) {
+        setSidePanelWidth(newWidth);
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default'; // カーソルを戻す
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize'; // ドラッグ中はカーソルを固定
+  }, [sidePanelWidth]);
+
 
   return (
     <div style={appContainerStyle}>
@@ -765,7 +831,18 @@ const MainScreen = () => {
           />
         </div>
         
-        <div style={styles.sidePanelWrapper}>
+        {/* ★★★ 追加: リサイズ用ハンドル ★★★ */}
+        <div
+          style={styles.resizeHandle}
+          onMouseDown={startResizing}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <div style={styles.resizeLine} />
+        </div>
+
+        {/* ★★★ 変更: 幅をstateで動的に指定 ★★★ */}
+        <div style={{ ...styles.sidePanelWrapper, width: `${sidePanelWidth}px` }}>
           <SidePanel
             ref={sidePanelRef}
             isCameraActive={isCameraActive}

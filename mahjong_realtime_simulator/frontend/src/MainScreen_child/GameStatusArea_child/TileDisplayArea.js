@@ -1,7 +1,7 @@
 // TileDisplayArea.js
 import React, { useState, useEffect } from 'react';
 
-//牌の画像
+//牌の画像（縦向きのみ）
 import M1 from '../../img/M1.png';
 import M2 from '../../img/M2.png';
 import M3 from '../../img/M3.png';
@@ -40,51 +40,10 @@ import Z5 from '../../img/Z5.png';
 import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
-//横向きの牌画像
-import YM1 from '../../img/YM1.png';
-import YM2 from '../../img/YM2.png';
-import YM3 from '../../img/YM3.png';
-import YM4 from '../../img/YM4.png';
-import YM5 from '../../img/YM5.png';
-import YM6 from '../../img/YM6.png';
-import YM7 from '../../img/YM7.png';
-import YM8 from '../../img/YM8.png';
-import YM9 from '../../img/YM9.png';
-import YRM5 from '../../img/YRM5.png';
-import YP1 from '../../img/YP1.png';
-import YP2 from '../../img/YP2.png';
-import YP3 from '../../img/YP3.png';
-import YP4 from '../../img/YP4.png';
-import YP5 from '../../img/YP5.png';
-import YP6 from '../../img/YP6.png';
-import YP7 from '../../img/YP7.png';
-import YP8 from '../../img/YP8.png';
-import YP9 from '../../img/YP9.png';
-import YRP5 from '../../img/YRP5.png';
-import YS1 from '../../img/YS1.png';
-import YS2 from '../../img/YS2.png';
-import YS3 from '../../img/YS3.png';
-import YS4 from '../../img/YS4.png';
-import YS5 from '../../img/YS5.png';
-import YRS5 from '../../img/YRS5.png';
-import YS6 from '../../img/YS6.png';
-import YS7 from '../../img/YS7.png';
-import YS8 from '../../img/YS8.png';
-import YS9 from '../../img/YS9.png';
-import YZ1 from '../../img/YZ1.png';
-import YZ2 from '../../img/YZ2.png';
-import YZ3 from '../../img/YZ3.png';
-import YZ4 from '../../img/YZ4.png';
-import YZ5 from '../../img/YZ5.png';
-import YZ6 from '../../img/YZ6.png';
-import YZ7 from '../../img/YZ7.png';
-
-//1000番台は誤検知の可能性のある牌
-
 // --- データマッピング ---
-const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, YM1, YM2, YM3, YM4, YM5, YRM5, YM6, YM7, YM8, YM9, YP1, YP2, YP3, YP4, YP5, YRP5, YP6, YP7, YP8, YP9, YS1, YS2, YS3, YS4, YS5, YRS5, YS6, YS7, YS8, YS9, YZ1, YZ2, YZ3, YZ4, YZ5, YZ6, YZ7 };
-const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
-const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
+const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7 };
+const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5' };
+const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5' };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
 const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
 
@@ -111,16 +70,19 @@ const styles = `
     transition: all 0.2s ease-in-out; cursor: pointer; 
   }
   .tile-wrapper:hover { transform: translateY(-5px); }
+  .tile-wrapper.rotated:hover { transform: translateY(-5px) rotate(90deg); }
   .tile-img { 
     display: block; background-color: #f0ead6; border-radius: 4px; 
     box-shadow: 0 2px 2px rgba(0,0,0,0.3); 
   }
   .tile-wrapper.selected { transform: translateY(-12px); }
+  .tile-wrapper.rotated.selected { transform: translateY(-12px) rotate(90deg); }
   .tile-wrapper.selected .tile-img { 
     border: 3px solid #00aaff; 
     box-shadow: 0 8px 15px rgba(50, 150, 255, 0.5); 
   }
   .tile-pool .tile-wrapper:hover { transform: scale(1.1); }
+  .tile-pool .tile-wrapper.rotated:hover { transform: scale(1.1) rotate(90deg); }
   .empty-pool-tile {
     width: 45px; height: 65px; background-color: #7f8c8d;
     border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,0.3);
@@ -170,8 +132,19 @@ const styles = `
     background-color: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.3);
     border-radius: 3px; cursor: pointer;
   }
-  .discard-slot .tile-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-  .discard-slot .tile-wrapper .tile-img { width: 100%; height: 100%; }
+  .discard-slot .tile-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+  
+  /* ▼▼▼ ここを修正 ▼▼▼ */
+  .discard-slot .tile-wrapper:not(.rotated) .tile-img {
+    width: 100%;
+    height: auto;
+  }
+  .discard-slot .tile-wrapper.rotated .tile-img {
+    width: auto;
+    height: 100%;
+  }
+  /* ▲▲▲ ここまで修正 ▲▲▲ */
+
   .dora-indicator-area { 
     margin: 15px ; display: flex; justify-content: start;
   }
@@ -265,6 +238,19 @@ const styles = `
   .reset-button { font-family: "'Inter', sans-serif"; font-size: 0.8em; color: #ffffff; background-color: #dc3545; border: 1px solid #c82333; padding: 4px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; margin-left: 10px; }
   .reset-button:hover { background-color: #c82333; }
 
+  /* --- 回転用のスタイル --- */
+  .tile-wrapper.rotated {
+    transform: rotate(90deg);
+  }
+  .other-player-meld-set .tile-wrapper.rotated {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+  .own-meld-set .tile-wrapper.rotated {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
   /* --- Theme Specific Styles --- */
   .theme-dark .tile-display-container, .theme-dark .tile-pool { background-color: #005522; }
   .theme-dark .player-display, .theme-dark .own-hand-area { background-color: #4f739e; }
@@ -311,7 +297,6 @@ const styles = `
 
 // --- 子コンポーネント定義 ---
 const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) => {
-  // isSimulatorMode (true/false) に基づいてボタンのテキストを決定する
   const dynamicButtonText = isSimulatorMode ? '牌譜' : 'リアルタイムシミュレーター';  
 
   const buttonStyle = {
@@ -333,52 +318,45 @@ const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) =>
 };
 
 const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical' }) => {
-  const getHorizontalTileNum = (verticalNum) => {
-    if (verticalNum === null || verticalNum === 'b' || verticalNum >= 100) return verticalNum;
-    return verticalNum + 100;
-  };
-  
-  const displayTileNum = orientation === 'horizontal' ? getHorizontalTileNum(tileNum) : tileNum;
+  const isRotated = (tileNum !== null && tileNum >= 100) || orientation === 'horizontal';
+  const baseTileNum = (tileNum !== null && tileNum !== 'b') ? tileNum % 100 : tileNum;
 
-  if (displayTileNum === 'b') {
+  if (baseTileNum === 'b') {
     const sizeStyles = {
         hand: { width: '45px', height: '65px' },
         meld: { width: '45px', height: '65px' },
         other_meld: { width: '26px', height: '38px' },
     };
     return (
-      <div className={`tile-wrapper ${isSelected ? 'selected' : ''}`} onClick={onClick}>
+      <div className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''}`} onClick={onClick}>
         <div style={{...sizeStyles[size], backgroundColor: '#005936', border: '2px solid #f0ead6', borderRadius: '4px', boxSizing: 'border-box'}} className="tile-img" />
       </div>
     );
   }
 
-  const imageKey = TILE_NUM_TO_IMAGE_KEY[displayTileNum] || 'b';
-  const src = TILE_IMAGES[imageKey];
-  const alt = TILE_NUM_TO_NAME[tileNum] || '不明'; 
+  const imageKey = TILE_NUM_TO_IMAGE_KEY[baseTileNum] || null;
+  const src = imageKey ? TILE_IMAGES[imageKey] : null;
+  const alt = TILE_NUM_TO_NAME[baseTileNum] || '不明'; 
   
+  if (!src) return null;
+
+  // ▼▼▼ ここを修正 ▼▼▼
+  // discard のスタイル定義を削除し、CSSに任せる
   const sizeStyles = {
     hand: { width: '45px', height: '65px' },
     tsumo: { width: '45px', height: '65px' },
-    discard: { width: '100%', height: '100%' },
     pool: { width: '45px', height: '65px' }, 
     dora: { width: '100%', height: '100%' },
-    meld: { 
-      vertical: { width: '45px', height: '65px' },
-      horizontal: { width: '65px', height: '45px' }
-    },
-    other_meld: { 
-      vertical: { width: '26px', height: '38px' },
-      horizontal: { width: '38px', height: '26px' }
-    }
+    meld: { width: '45px', height: '65px' },
+    other_meld: { width: '26px', height: '38px' }
   };
-
-  const finalSizeStyle = (size === 'meld' || size === 'other_meld')
-    ? sizeStyles[size][orientation]
-    : sizeStyles[size];
   
+  // sizeが 'discard' の場合は空のオブジェクトを渡し、インラインスタイルを適用しない
+  const finalSizeStyle = sizeStyles[size] || {};
+  // ▲▲▲ ここまで修正 ▲▲▲
+
   return (
-    <div className={`tile-wrapper ${isSelected ? 'selected' : ''}`} onClick={onClick}>
+    <div className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''}`} onClick={onClick}>
         <img src={src} alt={alt} style={finalSizeStyle} className="tile-img" />
     </div>
   );
@@ -575,13 +553,13 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange }) => { 
+const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange, calculationError }) => { // ★★★ 変更1: propsにcalculationErrorを追加 ★★★
 
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
   const RED_TO_NORMAL_MAP = { 34: 4, 35: 13, 36: 22 };
   
-  const normalize = (n) => n === null ? null : RED_TO_NORMAL_MAP[n] ?? n;
+  const normalize = (n) => n === null ? null : (n % 100 in RED_TO_NORMAL_MAP ? RED_TO_NORMAL_MAP[n % 100] : n % 100);
 
   const getCombinations = (array, size) => {
     const result = [];
@@ -600,7 +578,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   
   const isMeldValid = (type, tiles) => {
     if (!tiles || tiles.some(t => t === null || t === undefined)) return false;
-    const normalizedTiles = tiles.map(normalize).sort((a, b) => a - b);
+    const normalizedTiles = tiles.map(t => normalize(t)).sort((a, b) => a - b);
     if (type === 'pon' || type.includes('kan') || type.includes('minkan')) {
       return normalizedTiles.every(t => t === normalizedTiles[0]);
     }
@@ -646,7 +624,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 candidates.push({ type: 'daiminkan', hand_tiles: combo, from: lastDiscard.from, called_tile: discardedTile });
             });
         }
-        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && discardedTile < 27) {
+        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && normalize(discardedTile) < 27) {
             const n = normalize(discardedTile);
             const suit = Math.floor(n / 9);
 
@@ -663,9 +641,9 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 }
             };
             
-            if (n >= 2) checkChiPattern(n - 2, n - 1);
-            if (n >= 1 && n <= 7) checkChiPattern(n - 1, n + 1);
-            if (n <= 6) checkChiPattern(n + 1, n + 2);
+            if (n % 9 >= 2) checkChiPattern(n - 2, n - 1);
+            if (n % 9 >= 1 && n % 9 <= 7) checkChiPattern(n - 1, n + 1);
+            if (n % 9 <= 6) checkChiPattern(n + 1, n + 2);
         }
     } else {
         for (const norm in normalizedGroups) {
@@ -706,8 +684,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         let hand = newBoardState.hand_tiles;
         let tsumo = newBoardState.tsumo_tile;
 
-        console.log("Attempting to make meld:", meldToMake);
-        
         const removeTilesFromHand = (tilesToRemove) => {
             for (const tile of tilesToRemove) {
                 const indexInHand = hand.findIndex(h => h === tile);
@@ -852,35 +828,21 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
       if (indexToRemove > -1) tempBoard.splice(indexToRemove, 1);
     }
     
-    const countInBoard = (tile) => tempBoard.filter(t => t === tile).length;
+    const countInBoard = (tile) => tempBoard.filter(t => normalize(t) === normalize(tile)).length;
+    const countRedInBoard = (redTile) => tempBoard.filter(t => t === redTile || t === redTile + 100).length;
+
+    const normNewTile = normalize(newTileNum);
     
-    if (AKA_DORA_NUMS.includes(newTileNum)) {
-        if (countInBoard(newTileNum) >= 1) {
+    if (AKA_DORA_NUMS.includes(normNewTile)) {
+        if (countRedInBoard(normNewTile) >= 1) {
             alert("赤ドラは各種1枚までしか使用できません。");
             return;
         }
-        const normalVersion = RED_TO_NORMAL_MAP[newTileNum];
-        if (countInBoard(newTileNum) + countInBoard(normalVersion) >= 4) {
-            alert("同じ牌（赤含む）は4枚までしか使用できません。");
-            return;
-        }
     }
-    else if (NORMAL_TO_RED_MAP[newTileNum]) {
-        if (countInBoard(newTileNum) >= 3) {
-            alert(`通常の${TILE_NUM_TO_NAME[newTileNum]}は3枚までしか使用できません。`);
-            return;
-        }
-        const redVersion = NORMAL_TO_RED_MAP[newTileNum];
-        if (countInBoard(newTileNum) + countInBoard(redVersion) >= 4) {
-            alert("同じ牌（赤含む）は4枚までしか使用できません。");
-            return;
-        }
-    }
-    else {
-        if (countInBoard(newTileNum) >= 4) {
-            alert(`${TILE_NUM_TO_NAME[newTileNum]} は4枚までしか使用できません。`);
-            return;
-        }
+    
+    if (countInBoard(newTileNum) >= 4) {
+      alert(`${TILE_NUM_TO_NAME[normNewTile]} は4枚までしか使用できません。`);
+      return;
     }
     
     switch (selection.type) {
@@ -1011,6 +973,19 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
 
   const MAX_HAND_SLOTS = 13;
   const numMelds = boardState.melds.self.length;
+
+  // ★★★ 変更2: エラーメッセージ用のスタイルを定義 ★★★
+  const errorStyle = {
+    color: '#ff4d4d',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    border: '1px solid #ff4d4d',
+    borderRadius: '4px',
+    padding: '10px',
+    marginTop: '10px',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: '0.9em'
+  };
   
   return (
     <>
@@ -1044,7 +1019,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
             <StatusHeader 
               title={headerTitle} 
               onResetClick={handleClearAll}
-              isSimulatorMode={settings.flag === 1} // flagが1ならtrue、それ以外ならfalseを渡す
+              isSimulatorMode={settings.flag === 1}
               onModeChange={onModeChange}
             />
             
@@ -1100,6 +1075,14 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 <OwnMeldArea melds={boardState.melds.self} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} selection={selection}/>
               </div>
             </div>
+            
+            {/* ★★★ 変更3: エラーメッセージ表示エリアを追加 ★★★ */}
+            {calculationError && (
+              <div style={errorStyle}>
+                {calculationError}
+              </div>
+            )}
+
           </div>
         </div>
       </div>
