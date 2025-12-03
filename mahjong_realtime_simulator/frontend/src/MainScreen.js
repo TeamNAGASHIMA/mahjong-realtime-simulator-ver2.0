@@ -1,5 +1,5 @@
 // MainScreen.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // コンポーネントのインポート
 import { Header } from './Header/Header';
@@ -74,7 +74,7 @@ const styles = {
     display: 'flex',
     flexGrow: 1,
     padding: '15px',
-    gap: '15px',
+    gap: '0', // ★ gapを0にし、リサイズハンドルを含めて配置する
     overflow: 'hidden',
   },
   gameStatusWrapper: {
@@ -82,10 +82,29 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+    paddingRight: '15px', // ★ リサイズハンドルとの余白
   },
   sidePanelWrapper: {
     display: 'flex',
     flexDirection: 'column',
+    // widthはstateで制御するためここでは指定しない
+  },
+  // ★ リサイズ用のつまみ（ハンドル）のスタイル
+  resizeHandle: {
+    width: '10px',
+    cursor: 'col-resize',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    backgroundColor: 'transparent',
+    transition: 'background-color 0.2s',
+  },
+  resizeLine: {
+    width: '4px',
+    height: '40px',
+    backgroundColor: '#666',
+    borderRadius: '2px',
   }
 };
 
@@ -198,6 +217,9 @@ const MainScreen = () => {
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
   const [calculationError, setCalculationError] = useState(null);
+
+  // ★★★ 追加: サイドパネルの幅を管理するState (初期値390px) ★★★
+  const [sidePanelWidth, setSidePanelWidth] = useState(390);
 
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
@@ -422,10 +444,6 @@ const MainScreen = () => {
 
                 displayMessage = `手牌の枚数が正しくありませんでした。（検出された枚数: ${tileCount}枚）手牌の認識がうまくいっているか確認してください。(errorMessage: ${data.message})`;
             }
-            // 他にも変換したいエラーメッセージがあれば、ここに else if を追加できます
-            // else if (String(errorMessage).includes("Another specific error")) {
-            //   displayMessage = "別の日本語エラーメッセージ";
-            // }
 
             setCalculationError(`計算できませんでした: ${displayMessage}`);
             // --- ▲▲▲ ここまで修正 ▲▲▲ ---
@@ -740,6 +758,35 @@ const MainScreen = () => {
     }
   };
 
+  // ★★★ 追加: リサイズ開始処理 ★★★
+  const startResizing = useCallback((mouseDownEvent) => {
+    mouseDownEvent.preventDefault();
+    
+    const startX = mouseDownEvent.clientX;
+    const startWidth = sidePanelWidth;
+
+    const onMouseMove = (mouseMoveEvent) => {
+      // マウスが左に動くと幅が増え、右に動くと幅が減る（パネルが右側にあるため）
+      const moveX = startX - mouseMoveEvent.clientX;
+      const newWidth = startWidth + moveX;
+
+      // 最小幅と最大幅の制限 (例: 最小260px, 最大800px)
+      if (newWidth >= 260 && newWidth <= 800) {
+        setSidePanelWidth(newWidth);
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default'; // カーソルを戻す
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize'; // ドラッグ中はカーソルを固定
+  }, [sidePanelWidth]);
+
 
   return (
     <div style={appContainerStyle}>
@@ -765,7 +812,18 @@ const MainScreen = () => {
           />
         </div>
         
-        <div style={styles.sidePanelWrapper}>
+        {/* ★★★ 追加: リサイズ用ハンドル ★★★ */}
+        <div
+          style={styles.resizeHandle}
+          onMouseDown={startResizing}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <div style={styles.resizeLine} />
+        </div>
+
+        {/* ★★★ 変更: 幅をstateで動的に指定 ★★★ */}
+        <div style={{ ...styles.sidePanelWrapper, width: `${sidePanelWidth}px` }}>
           <SidePanel
             ref={sidePanelRef}
             isCameraActive={isCameraActive}
