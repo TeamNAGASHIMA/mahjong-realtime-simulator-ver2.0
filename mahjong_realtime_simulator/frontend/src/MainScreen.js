@@ -197,12 +197,13 @@ const MainScreen = () => {
   // --- 状態管理 ---
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
+  const [calculationError, setCalculationError] = useState(null);
 
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
     appBgImage: null, syanten_type: 1, 
-    flag: 1 // ★★★ 修正箇所1: デフォルトを1 (リアルタイムシミュレーター) に設定
+    flag: 1
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
@@ -227,7 +228,7 @@ const MainScreen = () => {
 
   // ★★★ 修正箇所2: モード切替用のハンドラを追加 ★★★
   const handleModeChange = () => {
-    const newFlag = settings.flag === 1 ? 0 : 1; // 1なら0に、0なら1に切り替え
+    const newFlag = settings.flag === 1 ? 0 : 1;
     handleSettingsChange({ flag: newFlag });
     console.log(`モードが ${newFlag === 1 ? 'リアルタイムシミュレーター' : '牌譜'} に切り替わりました。`);
   };
@@ -238,7 +239,6 @@ const MainScreen = () => {
   };
 
   const handleConnectOrReconnect = async () => {
-    // (省略...変更なし)
     try {
       await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }} });
       const allDevices = await navigator.mediaDevices.enumerateDevices();
@@ -270,11 +270,11 @@ const MainScreen = () => {
   };
     
   const handleCalculate = async () => {
-    // (省略...変更なし)
     if (!sidePanelRef.current) return;
     setIsLoadingCalculation(true); 
     setIsRecognizing(true);       
-    setCalculationResults([]);    
+    setCalculationResults([]);
+    setCalculationError(null);
     try {
       const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
       const finalSettings = {...settings, ...sidePanelSettings};
@@ -282,7 +282,7 @@ const MainScreen = () => {
       const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
       if (!handImageBlob || handImageBlob.size === 0) {
-        alert("手牌カメラの映像が取得できませんでした。カメラが正しく接続・認識されているか確認してください。");
+        setCalculationError("手牌カメラの映像が取得できませんでした。カメラが正しく接続・認識されているか確認してください。");
         setIsLoadingCalculation(false); 
         setIsRecognizing(false); 
         return; 
@@ -327,7 +327,7 @@ const MainScreen = () => {
                 recognizedHandTiles = boardState.hand_tiles;
                 recognizedTsumoTile = boardState.tsumo_tile;
             } else {
-                alert("APIが手牌を認識できませんでした。(0枚検出) 手牌の画像が鮮明か、角度が適切か確認してください。");
+                setCalculationError("APIが手牌を認識できませんでした。(0枚検出) 手牌の画像が鮮明か、角度が適切か確認してください。");
                 setIsLoadingCalculation(false); 
                 setIsRecognizing(false); 
                 return;
@@ -403,17 +403,35 @@ const MainScreen = () => {
           if (formattedResults.length > 0) {
             setCalculationResults(formattedResults);
           } else {
-            alert("計算結果の形式が正しくないか、不明な形式です。");
+            setCalculationError("計算結果の形式が正しくないか、不明な形式です。");
           }
         } else {
-          alert("計算結果が返されませんでした。");
+          setCalculationError("計算結果が返されませんでした。");
         }
       } else {
           const errorMessage = data.message?.error || data.message || "Unknown error";
-          if (response.status === 420) { 
-              alert(`計算できませんでした: ${errorMessage}`);
+          if (response.status === 420) {
+            // --- ▼▼▼ ここから修正 ▼▼▼ ---
+            let displayMessage = errorMessage; // デフォルトはサーバーからのメッセージ
+
+            // サーバーからの特定のメッセージが含まれていたら、表示するメッセージを上書きする
+            if (String(errorMessage).includes("The number of tiles in your hand is invalid")) {
+                // 正規表現で数字を抽出
+                const tileCountMatch = String(errorMessage).match(/\((\d+)/);
+                const tileCount = tileCountMatch ? tileCountMatch[1] : '不明な';
+
+                displayMessage = `手牌の枚数が正しくありませんでした。（検出された枚数: ${tileCount}枚）手牌の認識がうまくいっているか確認してください。(errorMessage: ${data.message})`;
+            }
+            // 他にも変換したいエラーメッセージがあれば、ここに else if を追加できます
+            // else if (String(errorMessage).includes("Another specific error")) {
+            //   displayMessage = "別の日本語エラーメッセージ";
+            // }
+
+            setCalculationError(`計算できませんでした: ${displayMessage}`);
+            // --- ▲▲▲ ここまで修正 ▲▲▲ ---
+              
           } else { 
-              alert(`エラーが発生しました (Status: ${response.status}): ${errorMessage}`);
+              setCalculationError(`エラーが発生しました (Status: ${response.status}): ${errorMessage}`);
           }
           if (data.detection_result) {
             let detectedResultError = data.detection_result; 
@@ -484,7 +502,7 @@ const MainScreen = () => {
       }
     } catch (err) {
       console.error('通信に失敗しました:', err);
-      alert('通信に失敗しました。詳細はコンソールを確認してください。');
+      setCalculationError('通信に失敗しました。詳細はコンソールを確認してください。');
     } finally {
         setIsLoadingCalculation(false); 
         setIsRecognizing(false);       
@@ -540,7 +558,7 @@ const MainScreen = () => {
 };
   const [isRecording, setIsRecording] = useState(false);
   const recordingIntervalRef = useRef(null);
-  const RECORDING_INTERVAL = 5000; // 5秒ごとに記録データを送信 (ミリ秒)
+  const RECORDING_INTERVAL = 5000;
   // ★★★ 追加2: 記録データをバックエンドに送信する共通関数 ★★★
   const sendRecordingData = async (recordFlag, saveName = '') => {
     console.log(`sendRecordingData called with flag: ${recordFlag}, saveName: ${saveName}`);
@@ -548,8 +566,7 @@ const MainScreen = () => {
       console.error("sidePanelRef is not available.");
       return;
     }
-  
-    // handleCalculateからデータ取得部分を流用
+  // handleCalculateからデータ取得部分を流用
     const { images, settings: sidePanelSettings } = await sidePanelRef.current.getSidePanelData();
     const finalSettings = {...settings, ...sidePanelSettings};
     const formData = new FormData();
@@ -579,7 +596,7 @@ const MainScreen = () => {
     }
   
     try {
-      const response = await fetch('/app/tiles_save/', { // エンドポイントを tiles_save/ に変更
+      const response = await fetch('/app/tiles_save/', {
           method: 'POST',
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
           body: formData
@@ -642,6 +659,7 @@ const MainScreen = () => {
     setCalculationResults([]);
     setIsLoadingCalculation(false);
     setIsRecognizing(false);
+    setCalculationError(null);
   };
 
   const isSimulatorMode = settings.flag === 1;
@@ -740,6 +758,7 @@ const MainScreen = () => {
             isRecording={isRecording}
             onRecordStart={handleRecordStart}
             onRecordStop={handleRecordStop}
+            calculationError={calculationError}
             // ★★★ 追加7: 牌譜用の状態と関数を子に渡す ★★★
             selectedKifuData={selectedKifuData}
             onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す                        
