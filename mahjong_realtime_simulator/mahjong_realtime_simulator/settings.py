@@ -67,7 +67,7 @@ ROOT_URLCONF = 'mahjong_realtime_simulator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'frontend/build')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,7 +135,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend/build'),
+    os.path.join(BASE_DIR, 'frontend/build/static'),
     Path.joinpath(BASE_DIR, 'static')
 ]
 
@@ -163,3 +163,6 @@ PT_URL = '/pt/'
 
 # アップロードされたファイルを保存するサーバー上のディレクトリ
 PT_ROOT = os.path.join(BASE_DIR, 'pt')
+
+# 牌譜JSONファイル保存用ディレクトリ
+HAIHU_ROOT = os.path.join(BASE_DIR, 'game_data_json_files')
