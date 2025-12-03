@@ -26,10 +26,10 @@ const GameStatusArea = ({
   use3D,
   isSimulatorMode,  
   onModeChange,
-  isRecording, onRecordStart, onRecordStop,
-  calculationError,      // ★★★ 追加1: propsを受け取る
-  selectedKifuData,      // ★★★ 追加2: propsを受け取る
-  onKifuTurnChange       // ★★★ 追加3: propsを受け取る
+  recordingStatus, 
+  isModalOpen,
+  onRecordingFunction,
+  onSendRecordingData
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
@@ -51,9 +51,10 @@ const GameStatusArea = ({
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
         isSimulatorMode={isSimulatorMode}
-        isRecording={isRecording}
-        onRecordStart={onRecordStart}
-        onRecordStop={onRecordStop}    
+        recordingStatus={recordingStatus}
+        isModalOpen={isModalOpen}
+        onRecordingFunction={onRecordingFunction}
+        onSendRecordingData={onSendRecordingData}
       />
 
       <CalculationResults

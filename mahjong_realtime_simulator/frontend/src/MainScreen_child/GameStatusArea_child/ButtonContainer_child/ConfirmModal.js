@@ -65,7 +65,13 @@ const styles = {
   },
 };
 
-const ConfirmModal = ({ show, title, defaultFileName, onConfirm, onCancel }) => {
+const ConfirmModal = ({ 
+  show,
+  title,
+  defaultFileName,
+  onConfirm,
+  onCancel
+}) => {
   const [fileName, setFileName] = useState(defaultFileName);
   const inputRef = useRef(null);
 
@@ -83,7 +89,8 @@ const ConfirmModal = ({ show, title, defaultFileName, onConfirm, onCancel }) => 
   }
 
   const handleConfirm = () => {
-    onConfirm(fileName.trim() === '' ? defaultFileName : fileName);
+    let trimmedFileName = fileName.trim() === '' ? defaultFileName : fileName;
+    onConfirm(trimmedFileName);
   };
 
   return (
