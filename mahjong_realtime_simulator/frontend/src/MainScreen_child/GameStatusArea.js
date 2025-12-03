@@ -26,7 +26,10 @@ const GameStatusArea = ({
   use3D,
   isSimulatorMode,  
   onModeChange,
-  isRecording, onRecordStart, onRecordStop 
+  recordingStatus, 
+  isModalOpen,
+  onRecordingFunction,
+  onSendRecordingData
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
@@ -45,9 +48,10 @@ const GameStatusArea = ({
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
         isSimulatorMode={isSimulatorMode}
-        isRecording={isRecording}
-        onRecordStart={onRecordStart}
-        onRecordStop={onRecordStop}    
+        recordingStatus={recordingStatus}
+        isModalOpen={isModalOpen}
+        onRecordingFunction={onRecordingFunction}
+        onSendRecordingData={onSendRecordingData}
       />
 
       <CalculationResults

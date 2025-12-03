@@ -281,13 +281,15 @@ const MainScreen = () => {
       const formData = new FormData();
       const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
-      if (!handImageBlob || handImageBlob.size === 0) {
-        alert("手牌カメラの映像が取得できませんでした。カメラが正しく接続・認識されているか確認してください。");
-        setIsLoadingCalculation(false); 
-        setIsRecognizing(false); 
-        return; 
+      if (settings.flag === 1) {
+        if (!handImageBlob || handImageBlob.size === 0) {
+          alert("手牌カメラの映像が取得できませんでした。カメラが正しく接続・認識されているか確認してください。");
+          setIsLoadingCalculation(false); 
+          setIsRecognizing(false); 
+          return; 
+        }
+        formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
       }
-      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
       if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
       const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
@@ -538,19 +540,88 @@ const MainScreen = () => {
     default: return null;
   }
 };
-  const [isRecording, setIsRecording] = useState(false);
-  const recordingIntervalRef = useRef(null);
-  const RECORDING_INTERVAL = 5000; // 5秒ごとに記録データを送信 (ミリ秒)
-  // ★★★ 追加2: 記録データをバックエンドに送信する共通関数 ★★★
-  const sendRecordingData = async (recordFlag, saveName = '') => {
-    console.log(`sendRecordingData called with flag: ${recordFlag}, saveName: ${saveName}`);
+
+  const recordingStatus = useRef(0); // 0: 非記録中, 1: 記録中, 2: 保存待ち
+  const [rendering, setRendering] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // モーダル表示制御用フラグ
+
+  // レコーディング処理全体の制御関数
+  // データのループ送信、保存等の制御は全てここで行っている
+  const recordingFunction = () => {
+    if (recordingStatus.current === 0 && window.confirm('記録を開始しますか？')){
+      console.log('記録を開始しました。')
+      recordingStatus.current = 1;
+      setRendering(true);
+      // ループ処理で記録し続ける
+      sendRecordingData();
+    } else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
+      recordingStatus.current = 2;
+      setRendering(false);
+      setIsModalOpen(true);
+    } else if (recordingStatus.current === 2) {
+      console.log('保存をキャンセルしました。');
+      recordingStatus.current = 0;
+      setIsModalOpen(false);
+    };
+  };
+
+  // /tiles_save/ への記録データ送信関数
+  const tilesSaveEndpointConnecting = async (formData) => {
+    console.log("バックエンド通信：", recordingStatus.current);
+    if (!formData.has('hand_tiles_image')) {
+      const { images } = sidePanelRef.current.getSidePanelData();
+      const handImageBlob = dataURLtoBlob(images.handImage);
+      const boardImageBlob = dataURLtoBlob(images.boardImage);
+      // 画像データが必須
+      if (!handImageBlob || handImageBlob.size === 0) {
+        console.error("手牌カメラの映像が取得できませんでした。");
+        // 記録中ならアラートは出さずにコンソールエラーに留める
+      }
+    
+      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+      if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+    }
+    try {
+      const response = await fetch('/app/tiles_save/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          body: formData
+      });
+  
+      const data = await response.json();
+  
+      if (response.status === 200) {
+        if (recordingStatus.current === 1) {
+          console.log("記録データを送信しました:", data.message);
+          // 成功時、detection_resultで盤面を更新することも可能
+          sendRecordingData();
+        } else if (recordingStatus.current === 2 && isModalOpen) {
+          alert(`記録を保存しました: ${data.file_name}`);
+          console.log("記録を保存しました:", data);
+          recordingStatus.current = 0; // 保存後は非記録状態に戻す
+          setIsModalOpen(false);
+        }
+      } else {
+        // 記録中ならアラートは出さずにコンソールエラーに留める
+        const errorMessage = data.message || "記録データの送信に失敗しました。";
+        console.error(errorMessage);
+        if (recordingStatus.current !== 1) alert(errorMessage);
+      }
+    } catch (err) {
+      console.error('記録APIとの通信に失敗しました:', err);
+    }
+  };
+
+  // 記録ループ用の共通関数
+  const sendRecordingData = async (save_name) => {
+    console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
     if (!sidePanelRef.current) {
       console.error("sidePanelRef is not available.");
       return;
     }
-  
+
     // handleCalculateからデータ取得部分を流用
-    const { images, settings: sidePanelSettings } = await sidePanelRef.current.getSidePanelData();
+    const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
     const finalSettings = {...settings, ...sidePanelSettings};
     const formData = new FormData();
     const handImageBlob = dataURLtoBlob(images.handImage);
@@ -560,12 +631,13 @@ const MainScreen = () => {
     if (!handImageBlob || handImageBlob.size === 0) {
       console.error("手牌カメラの映像が取得できませんでした。");
       // 記録中ならアラートは出さずにコンソールエラーに留める
-      if (recordFlag !== 1) alert("手牌カメラの映像が取得できませんでした。");
-      return; 
     }
   
     formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
     if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+
+    formData.append('syanten_Type', finalSettings.syanten_type); 
+    formData.append('flag', finalSettings.flag);
     
     // 物体検知用データ
     const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
@@ -573,68 +645,14 @@ const MainScreen = () => {
     formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
   
     // 記録用フラグと保存名を追加
-    formData.append('record_flag', recordFlag);
-    if (recordFlag === 2 && saveName) {
-      formData.append('save_name', saveName);
+    formData.append('record_flag', recordingStatus.current);
+
+    if (save_name) {
+      formData.append('save_name', save_name);
     }
   
-    try {
-      const response = await fetch('/app/tiles_save/', { // エンドポイントを tiles_save/ に変更
-          method: 'POST',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') },
-          body: formData
-      });
-  
-      const data = await response.json();
-  
-      if (data.status === 200) {
-        if (recordFlag === 1) {
-          console.log("記録データを送信しました:", data.message);
-          // 成功時、detection_resultで盤面を更新することも可能
-          // setBoardState(...)
-        } else if (recordFlag === 2) {
-          alert(`記録を保存しました: ${data.file_name}`);
-          console.log("記録を保存しました:", data);
-        }
-      } else {
-        // 記録中ならアラートは出さずにコンソールエラーに留める
-        const errorMessage = data.message || "記録データの送信に失敗しました。";
-        console.error(errorMessage);
-        if (recordFlag !== 1) alert(errorMessage);
-      }
-    } catch (err) {
-      console.error('記録APIとの通信に失敗しました:', err);
-      if (recordFlag !== 1) alert('記録APIとの通信に失敗しました。');
-    }
-  };
-
-
-  // ★★★ 追加3: 記録開始ボタンが押されたときの処理 ★★★
-  const handleRecordStart = () => {
-    setIsRecording(true);
-    // まず一度即時送信
-    sendRecordingData(1); 
-    // その後、一定間隔で送信を開始
-    recordingIntervalRef.current = setInterval(() => {
-      sendRecordingData(1);
-    }, RECORDING_INTERVAL);
-    console.log(`記録を開始しました。${RECORDING_INTERVAL / 1000}秒ごとにデータを送信します。`);
-  };
-
-  // ★★★ 追加4: 記録終了・保存が確定したときの処理 ★★★
-  const handleRecordStop = (fileName) => {
-    // インターバルを停止
-    clearInterval(recordingIntervalRef.current);
-    recordingIntervalRef.current = null;
-    
-    if (fileName) { // ファイル名があれば保存処理
-      sendRecordingData(2, fileName);
-    } else { // ファイル名がなければ(キャンセルされたら)何もしない
-      console.log("保存はキャンセルされました。記録を終了します。");
-    }
-
-    // 状態をリセット
-    setIsRecording(false);
+    // エンドポイント「/tiles_save」へのコネクト関数
+    tilesSaveEndpointConnecting(formData);
   };
 
   const handleResetBoardState = () => {
@@ -737,9 +755,10 @@ const MainScreen = () => {
             settings={settings}
             isSimulatorMode={isSimulatorMode}            
             onModeChange={handleModeChange} // ★★★ 修正箇所3: モード切替関数を渡す
-            isRecording={isRecording}
-            onRecordStart={handleRecordStart}
-            onRecordStop={handleRecordStop}
+            recordingStatus={recordingStatus.current} // 0: 非記録中, 1: 記録中, 2: 保存待ち
+            isModalOpen={isModalOpen}
+            onRecordingFunction={recordingFunction}
+            onSendRecordingData={sendRecordingData}
             // ★★★ 追加7: 牌譜用の状態と関数を子に渡す ★★★
             selectedKifuData={selectedKifuData}
             onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す                        
