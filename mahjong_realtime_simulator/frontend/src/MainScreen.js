@@ -108,7 +108,7 @@ const styles = {
   }
 };
 
-// ヘルパー関数 (省略)
+// ヘルパー関数
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
@@ -188,6 +188,41 @@ const createPayloadFromBoardState = (boardState, settings) => {
     return { fixes_pai_info, fixes_river_tiles: fixes_river_tiles_list };
 };
 
+// ★★★ 追加: 保存中のオーバーレイコンポーネント ★★★
+const SavingOverlay = () => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 99999, // 最前面
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontSize: '24px',
+    userSelect: 'none',
+  }}>
+    <div style={{
+      border: '6px solid #f3f3f3',
+      borderTop: '6px solid #3498db',
+      borderRadius: '50%',
+      width: '50px',
+      height: '50px',
+      animation: 'spin 1s linear infinite',
+      marginBottom: '20px'
+    }} />
+    <style>
+      {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+    </style>
+    <div>保存中...</div>
+    <div style={{ fontSize: '16px', marginTop: '10px', opacity: 0.8 }}>しばらくお待ちください</div>
+  </div>
+);
+
 
 // メインコンポーネント
 const MainScreen = () => {
@@ -217,6 +252,9 @@ const MainScreen = () => {
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
   const [calculationError, setCalculationError] = useState(null);
+
+  // ★★★ 追加: 保存処理中かどうかを管理するフラグ ★★★
+  const [isSaving, setIsSaving] = useState(false);
 
   // ★★★ 追加: サイドパネルの幅を管理するState (初期値390px) ★★★
   const [sidePanelWidth, setSidePanelWidth] = useState(390);
@@ -390,7 +428,7 @@ const MainScreen = () => {
             turn: detectedResult.turn ?? 1,
             round_wind: boardState.round_wind, 
             hand_tiles: recognizedHandTiles,
-            tsumo_tile: recognizedTsumoTile,
+            tsumo_tile: recognizedTsumoTile, 
             dora_indicators: detectedResult.dora_indicators ?? [], 
             player_discards: {
                 self: getDiscardsForPlayer('self', detectedResult.discard_tiles), 
@@ -584,17 +622,30 @@ const MainScreen = () => {
   // レコーディング処理全体の制御関数
   // データのループ送信、保存等の制御は全てここで行っている
   const recordingFunction = () => {
-    if (recordingStatus.current === 0 && window.confirm('記録を開始しますか？')){
-      console.log('記録を開始しました。')
-      recordingStatus.current = 1;
-      setRendering(true);
-      // ループ処理で記録し続ける
-      sendRecordingData();
-    } else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
+    // 記録開始のフロー
+    if (recordingStatus.current === 0) {
+      // ★★★ 追加: カメラ起動チェック ★★★
+      if (!isCameraActive) {
+        alert("カメラが起動していないため、記録に失敗しました。");
+        return; // 処理中止
+      }
+
+      if (window.confirm('記録を開始しますか？')){
+        console.log('記録を開始しました。')
+        recordingStatus.current = 1;
+        setRendering(true);
+        // ループ処理で記録し続ける
+        sendRecordingData();
+      }
+    } 
+    // 記録終了のフロー
+    else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
       recordingStatus.current = 2;
       setRendering(false);
       setIsModalOpen(true);
-    } else if (recordingStatus.current === 2) {
+    } 
+    // 保存キャンセルのフロー
+    else if (recordingStatus.current === 2) {
       console.log('保存をキャンセルしました。');
       recordingStatus.current = 0;
       setIsModalOpen(false);
@@ -604,18 +655,27 @@ const MainScreen = () => {
   // /tiles_save/ への記録データ送信関数
   const tilesSaveEndpointConnecting = async (formData) => {
     console.log("バックエンド通信：", recordingStatus.current);
+    
+    // ★★★ 追加: 保存処理（recordingStatus=2）の場合、ローディング表示を開始 ★★★
+    const isSaveAction = recordingStatus.current === 2 && isModalOpen;
+    if (isSaveAction) {
+      setIsSaving(true);
+    }
+
     if (!formData.has('hand_tiles_image')) {
-      const { images } = sidePanelRef.current.getSidePanelData();
-      const handImageBlob = dataURLtoBlob(images.handImage);
-      const boardImageBlob = dataURLtoBlob(images.boardImage);
-      // 画像データが必須
-      if (!handImageBlob || handImageBlob.size === 0) {
-        console.error("手牌カメラの映像が取得できませんでした。");
-        // 記録中ならアラートは出さずにコンソールエラーに留める
+      if (sidePanelRef.current) {
+        const { images } = sidePanelRef.current.getSidePanelData();
+        const handImageBlob = dataURLtoBlob(images.handImage);
+        const boardImageBlob = dataURLtoBlob(images.boardImage);
+        // 画像データが必須
+        if (!handImageBlob || handImageBlob.size === 0) {
+          console.error("手牌カメラの映像が取得できませんでした。");
+          // 記録中ならアラートは出さずにコンソールエラーに留める
+        }
+    
+        formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+        if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       }
-   
-      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
-      if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
     }
     try {
       const response = await fetch('/app/tiles_save/', {
@@ -645,6 +705,12 @@ const MainScreen = () => {
       }
     } catch (err) {
       console.error('記録APIとの通信に失敗しました:', err);
+      if (recordingStatus.current !== 1) alert('通信エラーが発生しました。');
+    } finally {
+      // ★★★ 追加: 保存処理が終わったら（成功・失敗問わず）ローディング表示を終了 ★★★
+      if (isSaveAction) {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -809,6 +875,9 @@ const MainScreen = () => {
 
   return (
     <div style={appContainerStyle}>
+      {/* ★★★ 追加: isSavingがtrueの時にオーバーレイを表示 ★★★ */}
+      {isSaving && <SavingOverlay />}
+
       <Header onMenuClick={handleMenuClick} />
       <div style={styles.mainContent}>
         <div style={styles.gameStatusWrapper}>
@@ -827,7 +896,12 @@ const MainScreen = () => {
             onSendRecordingData={sendRecordingData}
             // ★★★ 追加7: 牌譜用の状態と関数を子に渡す ★★★
             selectedKifuData={selectedKifuData}
-            onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す                        
+            onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す
+            
+            // ★★★ 追加: 保存中フラグを渡す ★★★
+            isSaving={isSaving}
+            // ★★★ 追加: calculationErrorを渡す ★★★
+            calculationError={calculationError}
           />
         </div>
         

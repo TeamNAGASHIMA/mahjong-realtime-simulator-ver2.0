@@ -27,7 +27,9 @@ const RecordButton = ({
   onRecordingFunction,
   recordingStatus,
   isModalOpen,
-  onSendRecordingData
+  onSendRecordingData,
+  // ★★★ 追加: isSavingを受け取る
+  isSaving
 }) => {
   const [isRecordingStyle, setIsRecordingStyle] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -35,6 +37,8 @@ const RecordButton = ({
   
   const handleConfirmSave = (fileName) => {
     console.log(`ファイル名「${fileName}」で保存処理を実行します。`);
+    // ここではまだスタイルを戻さない（保存処理完了後に戻る、またはOverlayが出るため）
+    // setIsRecordingStyle(false); // コメントアウト、またはオーバーレイが出るので即時実行でも可
     setIsRecordingStyle(false);
     onSendRecordingData(fileName);
   };
@@ -69,16 +73,20 @@ const RecordButton = ({
         onMouseOut={() => { setIsHovered(false); setIsActive(false); }}
         onMouseDown={() => setIsActive(true)}
         onMouseUp={() => setIsActive(false)}
+        // ★★★ 追加: 保存中はボタンを押せなくする
+        disabled={isSaving}
       >
         {recordingStatus === 0 ? '記録開始' : '記録終了'}
       </button>
       
       <ConfirmModal
         show={isModalOpen}
-        title="記録を保存しますか？" // タイトルを少し変更
+        title="記録を保存しますか？" 
         defaultFileName={`recording_${getFormattedDateTime()}`}
         onConfirm={handleConfirmSave}
         onCancel={handleCancelSave}
+        // ★★★ 追加: ConfirmModalがisLoadingプロップに対応している場合ここで渡す
+        isLoading={isSaving}
       />
     </>
   );
