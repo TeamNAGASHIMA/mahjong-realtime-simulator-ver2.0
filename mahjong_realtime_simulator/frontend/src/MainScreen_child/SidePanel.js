@@ -1,4 +1,4 @@
-// SidePanel.js (構文エラー修正版)
+// SidePanel.js
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import CameraPreview from './SidePanel_child/CameraPreview';
@@ -10,7 +10,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
-    width: '260px',
+    // ★★★ 変更: 固定幅(390px)を廃止し、親要素に合わせて広げる ★★★
+    width: '100%', 
     height: '100%',
   },
   topSection: {
@@ -50,14 +51,13 @@ const SidePanel = forwardRef((props, ref) => {
           <CameraPreview ref={cameraRef} {...props} />
         ) : (
           <KifuSelector 
-          kifuFileList={props.kifuFileList}
+            kifuFileList={props.kifuFileList}
+            onKifuSelect={props.onKifuSelect}
           />
         )}
       </div>
       
-      {/* ★★★ 修正点: 自己完結タグ "/>" で正しく閉じる ★★★ */}
       <SettingsPanel ref={settingsRef} {...props} />
-
     </div>
   );
 });
