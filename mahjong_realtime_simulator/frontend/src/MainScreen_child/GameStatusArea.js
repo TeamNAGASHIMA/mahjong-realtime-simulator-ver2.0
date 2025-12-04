@@ -26,7 +26,10 @@ const GameStatusArea = ({
   use3D,
   isSimulatorMode,  
   onModeChange,
-  isRecording, onRecordStart, onRecordStop 
+  recordingStatus, 
+  isModalOpen,
+  onRecordingFunction,
+  onSendRecordingData
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
@@ -37,7 +40,10 @@ const GameStatusArea = ({
         settings={settings}
         use3D={use3D}
         isSimulatorMode={isSimulatorMode}        
-        onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
+        onModeChange={onModeChange}
+        calculationError={calculationError} // ★★★ 追加4: TileDisplayAreaに渡す
+        selectedKifuData={selectedKifuData} // ★★★ 追加5: TileDisplayAreaに渡す
+        onKifuTurnChange={onKifuTurnChange} // ★★★ 追加6: TileDisplayAreaに渡す
       />
 
       <ButtonContainer
@@ -45,9 +51,10 @@ const GameStatusArea = ({
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
         isSimulatorMode={isSimulatorMode}
-        isRecording={isRecording}
-        onRecordStart={onRecordStart}
-        onRecordStop={onRecordStop}    
+        recordingStatus={recordingStatus}
+        isModalOpen={isModalOpen}
+        onRecordingFunction={onRecordingFunction}
+        onSendRecordingData={onSendRecordingData}
       />
 
       <CalculationResults

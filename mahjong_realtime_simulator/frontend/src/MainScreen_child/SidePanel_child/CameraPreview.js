@@ -1,13 +1,13 @@
-// CameraPreview.js (表示用videoから直接キャプチャする最終解決策)
+// CameraPreview.js
 
+// ★★★ 修正点: useState をインポートに追加しました ★★★
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 
 // スタイル定義
 const styles = {
   cameraPreviewScreen: { width: '100%', backgroundColor: '#D9D9D9', padding: '10px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', borderRadius: '8px', height: '100%', minHeight: 0, },
   contentWrapper: { flex: '1 1 0', minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '12px', color: '#333', flexShrink: 0 },
-  toggleButton: { fontFamily: "'Inter', sans-serif", fontSize: '12px', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #eda040', transition: 'background-color 0.2s, color 0.2s', color: '#000000', backgroundColor: '#E39C40', whiteSpace: 'nowrap', },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '12px', color: '#333', flexShrink: 0, fontWeight: 'bold' },
   previewSection: { marginBottom: '15px', },
   previewHeader: { fontSize: '12px', color: '#555', marginBottom: '5px', },
   previewBox: { width: '100%', height: 'auto', aspectRatio: '16 / 9', backgroundColor: '#000000', border: '1px solid #333', borderRadius: '4px', display: 'block', },
@@ -21,16 +21,16 @@ const styles = {
 const CameraPreview = forwardRef((props, ref) => {
   const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor } = props;
 
-  // ★★★ 変更点1: refを表示用に一本化 ★★★
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
-
-  const [isSupportMode, setIsSupportMode] = useState(false);
+  
+  // ★★★ 修正点: サポートモード削除に伴い、ボタンのホバー状態管理のみ残します ★★★
   const [hoveredButton, setHoveredButton] = useState(null);
+
   const guideFrameStyle = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', height: '100%', aspectRatio: '1 / 1', border: `3px solid ${guideFrameColor}`, boxSizing: 'border-box', pointerEvents: 'none' };
+  
   const handleFlip = (cameraType, axis) => { const setter = cameraType === 'board' ? setBoardFlip : setHandFlip; setter(prev => ({ ...prev, [axis]: !prev[axis] })); };
   const getTransform = (flipState) => `scale(${flipState?.horizontal ? -1 : 1}, ${flipState?.vertical ? -1 : 1})`;
-  const handleToggle = () => setIsSupportMode(prev => !prev);
 
   // カメラ映像取得のロジック
   useEffect(() => {
@@ -39,21 +39,21 @@ const CameraPreview = forwardRef((props, ref) => {
       const constraints = {
         video: {
           deviceId: { exact: selectedBoardCamera },
-          width: { ideal: 1920 }, // idealを使い、対応できないカメラでもエラーにならないようにする
+          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値) 
+          width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
       };
       navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
           activeStream = stream;
-          // ★★★ 変更点2: 表示用のvideo要素にだけストリームを流す ★★★
           if (boardVideoRef.current) {
             boardVideoRef.current.srcObject = stream;
           }
         })
         .catch(err => console.error(`盤面カメラ起動失敗:`, err));
     }
-    return () => { // クリーンアップ処理
+    return () => {
       if (activeStream) activeStream.getTracks().forEach(track => track.stop());
       if (boardVideoRef.current) boardVideoRef.current.srcObject = null;
     };
@@ -65,6 +65,7 @@ const CameraPreview = forwardRef((props, ref) => {
       const constraints = {
         video: {
           deviceId: { exact: selectedHandCamera },
+          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値)          
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
@@ -94,8 +95,6 @@ const CameraPreview = forwardRef((props, ref) => {
         canvas.width = videoElement.videoWidth;
         canvas.height = videoElement.videoHeight;
         
-        console.log(`[送信直前] キャプチャ画像の解像度: ${canvas.width}x${canvas.height}`);
-
         const ctx = canvas.getContext('2d');
         const scaleX = flipState.horizontal ? -1 : 1; const scaleY = flipState.vertical ? -1 : 1;
         const translateX = flipState.horizontal ? canvas.width : 0; const translateY = flipState.vertical ? canvas.height : 0;
@@ -104,7 +103,6 @@ const CameraPreview = forwardRef((props, ref) => {
         return canvas.toDataURL('image/jpeg', 1.0);
       };
       
-      // ★★★ 変更点3: 表示用のvideo要素から直接キャプチャする ★★★
       const boardImage = captureFrame(boardVideoRef.current, boardFlip);
       const handImage = captureFrame(handVideoRef.current, handFlip);
 
@@ -114,22 +112,14 @@ const CameraPreview = forwardRef((props, ref) => {
 
   return (
     <div style={styles.cameraPreviewScreen}>
-      {/* ★★★ 変更点4: 非表示のvideo要素は不要なので削除 ★★★ */}
-      
       <div style={styles.header}>
-        <span>{isSupportMode ? 'サポート' : 'カメラプレビュー'}</span>
-        <button style={styles.toggleButton} onClick={handleToggle}> {isSupportMode ? 'カメラプレビュー' : 'サポート'} </button>
+        <span>カメラプレビュー</span>
       </div>
 
-      <div style={{ display: isSupportMode ? 'flex' : 'none', flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <p>サポート情報はこちらに表示されます。</p>
-      </div>
-
-      <div style={{ ...styles.contentWrapper, display: isSupportMode ? 'none' : 'flex' }}>
+      <div style={styles.contentWrapper}>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>盤面</div>
           <div style={{ position: 'relative', width: '100%' }}>
-            {/* ★★★ 変更点5: refの名前を元に戻す ★★★ */}
             <video ref={boardVideoRef} style={{ ...styles.previewBox, transform: getTransform(boardFlip) }} autoPlay playsInline muted></video>
             {guideFrameColor !== 'none' && <div style={guideFrameStyle}></div>}
           </div>

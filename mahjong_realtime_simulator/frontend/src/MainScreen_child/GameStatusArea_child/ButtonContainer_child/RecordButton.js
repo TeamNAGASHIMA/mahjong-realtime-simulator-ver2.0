@@ -23,46 +23,32 @@ const getFormattedDateTime = () => {
   return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
 };
 
-const RecordButton = () => {
-  const [isRecording, setIsRecording] = useState(false);
+const RecordButton = ({
+  onRecordingFunction,
+  recordingStatus,
+  isModalOpen,
+  onSendRecordingData
+}) => {
+  const [isRecordingStyle, setIsRecordingStyle] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isActive, setIsActive] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleRecordStart = () => {
-    if (window.confirm('記録を開始しますか？')) {
-      setIsRecording(true);
-      console.log('記録を開始しました。');
-    }
-  };
-
-  // ★★★ 変更点: モーダルを開く前に、まず終了確認を行う ★★★
-  const handleRecordEnd = () => {
-    if (window.confirm('記録を終了しますか？')) {
-      // 「OK」が押された場合のみ、保存モーダルを開く
-      setIsModalOpen(true);
-    }
-    // 「キャンセル」が押された場合は何もしない
-  };
   
   const handleConfirmSave = (fileName) => {
     console.log(`ファイル名「${fileName}」で保存処理を実行します。`);
-    setIsModalOpen(false);
-    setIsRecording(false);
-    console.log('記録を終了しました。');
+    setIsRecordingStyle(false);
+    onSendRecordingData(fileName);
   };
 
   const handleCancelSave = () => {
     console.log('保存はキャンセルされました。記録を終了します。');
-    setIsModalOpen(false);
-    setIsRecording(false);
+    setIsRecordingStyle(false);
+    onRecordingFunction();
     console.log('記録を終了しました。');
   };
 
-
   // スタイル決定ロジック（変更なし）
   let currentStyle = { ...baseButtonStyles };
-  if (isRecording) {
+  if (isRecordingStyle) {
     currentStyle = { ...currentStyle, ...recordEndStyles };
     if (isActive) { currentStyle = { ...currentStyle, ...recordEndActiveStyles }; } 
     else if (isHovered) { currentStyle = { ...currentStyle, ...recordEndHoverStyles }; }
@@ -76,19 +62,21 @@ const RecordButton = () => {
     <>
       <button
         style={currentStyle}
-        onClick={isRecording ? handleRecordEnd : handleRecordStart}
+        onClick={
+          () => onRecordingFunction()
+        }
         onMouseOver={() => setIsHovered(true)}
         onMouseOut={() => { setIsHovered(false); setIsActive(false); }}
         onMouseDown={() => setIsActive(true)}
         onMouseUp={() => setIsActive(false)}
       >
-        {isRecording ? '記録終了' : '記録開始'}
+        {recordingStatus === 0 ? '記録開始' : '記録終了'}
       </button>
       
       <ConfirmModal
         show={isModalOpen}
         title="記録を保存しますか？" // タイトルを少し変更
-        defaultFileName={`recording_${getFormattedDateTime()}.txt`}
+        defaultFileName={`recording_${getFormattedDateTime()}`}
         onConfirm={handleConfirmSave}
         onCancel={handleCancelSave}
       />
