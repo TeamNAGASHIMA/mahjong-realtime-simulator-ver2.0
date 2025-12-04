@@ -11,9 +11,12 @@ import torch
 from .meld_sep import melded_tiles_sep # meld_sep.pyからインポート
 from .result_check import result_check_main # result_check.pyからインポート
 
+# import detect_debug # デバッグ用モジュール
+
 
 # ローカルモデルのパスを指定
 LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
+# LOCAL_YOLO_MODEL_PATH = os.path.join("yolov8-best-ver2.onnx")
 
 # 検出閾値（YOLOv8の推論時に指定）
 DETECTION_CONFIDENCE_THRESHOLD = 0.5
@@ -567,6 +570,12 @@ def hand_detection(hand_image_np: np.ndarray) -> list:
     # ID順にソート
     detection_results = sorted(detection_results, key=lambda r: r["x"])
 
+    # 牌の枚数が15枚以上の場合は確信度の低い順に削除し、14枚にする
+    if len(detection_results) > 14:
+        # 確信度順にソートしてから切り取る
+        sorted_results = sorted(detection_results, key=lambda r: r["confidence"], reverse=True)
+        detection_results = sorted_results[:14]
+
     # IDと信頼度を分離
     return extract_ids_and_confs(detection_results)
 
@@ -739,8 +748,8 @@ def analyze_mahjong_board(
 if __name__ == '__main__':
 
     # テスト用画像パス
-    BOARD_IMAGE_PATH_TEST = "board_tiles_image.jpg"
-    HAND_IMAGE_PATH_TEST = "hand_tiles_image.jpg"
+    BOARD_IMAGE_PATH_TEST = "test.jpg"
+    HAND_IMAGE_PATH_TEST = "test_h2.jpg"
 
     # 画像を読み込む
     # cv2.imread が None を返した場合、警告を表示して空のNumPy配列にする
@@ -754,5 +763,8 @@ if __name__ == '__main__':
 
     # analyze_mahjong_board 関数を実行して結果を表示する
     analysis_result = analyze_mahjong_board(board_image_np, hand_image_np)
-    
     print(analysis_result)
+
+    # # デバッグ用
+    # detect_debug.print_detection_details(analysis_result)
+    # detect_debug.analyze_anomalies_by_prefix(analysis_result)
