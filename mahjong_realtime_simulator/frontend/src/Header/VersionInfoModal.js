@@ -1,8 +1,8 @@
 // Header/VersionInfoModal.js
-import React from 'react';
+import React, {useEffect} from 'react';
 import { styles } from './styles';
 
-export const VersionInfoModal = ({ onClose }) => {
+export const VersionInfoModal = ({ onClose }) => { 
   const localStyles = {
     infoRow: {
       display: 'flex',
@@ -12,6 +12,24 @@ export const VersionInfoModal = ({ onClose }) => {
       borderBottom: '1px solid #3a3a3a'
     }
   };
+
+  // ★ここから追加: Escapeキーでモーダルを閉じるための処理
+  useEffect(() => {
+    // キーが押されたときに実行される関数         
+    const handleKeyDown = (event) => {        
+      if (event.key === 'Escape') {         
+        onClose(); // Escapeキーが押されたらonClose関数を呼び出す     
+      }   
+    }       
+    // グローバルなkeydownイベントリスナーを追加      
+    window.addEventListener('keydown', handleKeyDown);  
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };   
+  }, [onClose]); // 依存配列にonCloseを含め、onCloseが変更された場合に再設定する
+  // ★ここまで追加   
+
+    // クリーンアップ関数: コンポーネントがアンマウントされるときにイベントリスナーを削除
 
   return (
     <div style={styles.modalOverlay} onClick={onClose}>

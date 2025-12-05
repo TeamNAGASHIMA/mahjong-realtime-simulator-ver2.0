@@ -261,6 +261,7 @@ const styles = `
   .modal-content {
     padding: 20px; border-radius: 8px;
     width: 640px; max-width: 90%;
+    background-color: #f0f0f0; border: 2px solid #000000ff;
   }
   .modal-header {
     font-size: 1.2em; font-weight: bold;
