@@ -40,12 +40,56 @@ import Z5 from '../../img/Z5.png';
 import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
+// EM1, EM2... のインポートは削除しても動作しますが、可読性のために残してもOKです。
+import EM1 from '../../img/EM1.png';
+import EM2 from '../../img/EM2.png';
+import EM3 from '../../img/EM3.png';
+import EM4 from '../../img/EM4.png';
+import EM5 from '../../img/EM5.png';
+import EM6 from '../../img/EM6.png';
+import EM7 from '../../img/EM7.png';
+import EM8 from '../../img/EM8.png';
+import EM9 from '../../img/EM9.png';
+import ERM5 from '../../img/ERM5.png';
+import EP1 from '../../img/EP1.png';
+import EP2 from '../../img/EP2.png';
+import EP3 from '../../img/EP3.png';
+import EP4 from '../../img/EP4.png';
+import EP5 from '../../img/EP5.png';
+import EP6 from '../../img/EP6.png';
+import EP7 from '../../img/EP7.png';
+import EP8 from '../../img/EP8.png';
+import EP9 from '../../img/EP9.png';
+import ERP5 from '../../img/ERP5.png';
+import ES1 from '../../img/ES1.png';
+import ES2 from '../../img/ES2.png';
+import ES3 from '../../img/ES3.png';
+import ES4 from '../../img/ES4.png';
+import ES5 from '../../img/ES5.png';
+import ERS5 from '../../img/ERS5.png';
+import ES6 from '../../img/ES6.png';
+import ES7 from '../../img/ES7.png';
+import ES8 from '../../img/ES8.png';
+import ES9 from '../../img/ES9.png';
+import EZ1 from '../../img/EZ1.png';
+import EZ2 from '../../img/EZ2.png';
+import EZ3 from '../../img/EZ3.png';
+import EZ4 from '../../img/EZ4.png';
+import EZ5 from '../../img/EZ5.png';
+import EZ6 from '../../img/EZ6.png';
+import EZ7 from '../../img/EZ7.png';
+
+
 // --- データマッピング ---
-const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7 };
-const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5' };
-const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5' };
+const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, EM1, EM2, EM3, EM4, EM5, ERM5, EM6, EM7, EM8, EM9, EP1, EP2, EP3, EP4, EP5, ERP5, EP6, EP7, EP8, EP9, ES1, ES2, ES3, ES4, ES5, ERS5, ES6, ES7, ES8, ES9, EZ1, EZ2, EZ3, EZ4, EZ5, EZ6, EZ7 };
+const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5', 1000: 'EM1', 1001: 'EM2', 1002: 'EM3', 1003: 'EM4', 1004: 'EM5', 1005: 'EM6', 1006: 'EM7', 1007: 'EM8', 1008: 'EM9', 1009: 'EP1', 1010: 'EP2', 1011: 'EP3', 1012: 'EP4', 1013: 'EP5', 1014: 'EP6', 1015: 'EP7', 1016: 'EP8', 1017: 'EP9', 1018: 'ES1', 1019: 'ES2', 1020: 'ES3', 1021: 'ES4', 1022: 'ES5', 1023: 'ES6', 1024: 'ES7', 1025: 'ES8', 1026: 'ES9', 1027: 'EZ1', 1028: 'EZ2', 1029: 'EZ3', 1030: 'EZ4', 1031: 'EZ5', 1032: 'EZ6', 1033: 'EZ7', 1034: 'ERM5', 1035: 'ERP5', 1036: 'ERS5' };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
-const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
+
+// ▼▼▼ ここから修正 ▼▼▼
+// 1. TILE_NUM_TO_IMAGE_KEY を削除
+// 2. ALL_TILES_IN_POOL を基本的な牌(0-36)のみを生成するように修正
+const ALL_TILES_IN_POOL = Array.from({ length: 37 }, (_, i) => i);
+// ▲▲▲ ここまで修正 ▲▲▲
 
 // --- CSS定義 ---
 const styles = `
@@ -134,7 +178,6 @@ const styles = `
   }
   .discard-slot .tile-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
   
-  /* ▼▼▼ ここを修正 ▼▼▼ */
   .discard-slot .tile-wrapper:not(.rotated) .tile-img {
     width: 100%;
     height: auto;
@@ -143,7 +186,6 @@ const styles = `
     width: auto;
     height: 100%;
   }
-  /* ▲▲▲ ここまで修正 ▲▲▲ */
 
   .dora-indicator-area { 
     margin: 15px ; display: flex; justify-content: start;
@@ -219,6 +261,7 @@ const styles = `
   .modal-content {
     padding: 20px; border-radius: 8px;
     width: 640px; max-width: 90%;
+    background-color: #f0f0f0; border: 2px solid #000000ff;
   }
   .modal-header {
     font-size: 1.2em; font-weight: bold;
@@ -295,6 +338,7 @@ const styles = `
   .theme-light .kan-type-label { color: #333; }
 `;
 
+
 // --- 子コンポーネント定義 ---
 const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) => {
   const dynamicButtonText = isSimulatorMode ? '牌譜' : 'リアルタイムシミュレーター';  
@@ -317,11 +361,13 @@ const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) =>
   );
 };
 
+// ▼▼▼ ここから修正 ▼▼▼
 const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical' }) => {
-  const isRotated = (tileNum !== null && tileNum >= 100) || orientation === 'horizontal';
-  const baseTileNum = (tileNum !== null && tileNum !== 'b') ? tileNum % 100 : tileNum;
+  // 回転判定を修正: 100番台は回転、1000番台は回転しない
+  const isRotated = (tileNum !== null && tileNum >= 100 && tileNum < 200) || orientation === 'horizontal';
 
-  if (baseTileNum === 'b') {
+  // 裏向きの牌('b')の処理
+  if (tileNum === 'b') {
     const sizeStyles = {
         hand: { width: '45px', height: '65px' },
         meld: { width: '45px', height: '65px' },
@@ -334,14 +380,13 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation
     );
   }
 
-  const imageKey = TILE_NUM_TO_IMAGE_KEY[baseTileNum] || null;
+  // 画像キーの取得ロジックを TILE_NUM_TO_NAME を使うように変更
+  const imageKey = TILE_NUM_TO_NAME[tileNum] || null;
   const src = imageKey ? TILE_IMAGES[imageKey] : null;
-  const alt = TILE_NUM_TO_NAME[baseTileNum] || '不明'; 
+  const alt = imageKey || '不明'; 
   
   if (!src) return null;
 
-  // ▼▼▼ ここを修正 ▼▼▼
-  // discard のスタイル定義を削除し、CSSに任せる
   const sizeStyles = {
     hand: { width: '45px', height: '65px' },
     tsumo: { width: '45px', height: '65px' },
@@ -351,9 +396,7 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation
     other_meld: { width: '26px', height: '38px' }
   };
   
-  // sizeが 'discard' の場合は空のオブジェクトを渡し、インラインスタイルを適用しない
   const finalSizeStyle = sizeStyles[size] || {};
-  // ▲▲▲ ここまで修正 ▲▲▲
 
   return (
     <div className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''}`} onClick={onClick}>
@@ -361,6 +404,7 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation
     </div>
   );
 };
+// ▲▲▲ ここまで修正 ▲▲▲
 
 const EmptyPoolTile = ({ onClick }) => (
   <div className="empty-pool-tile" onClick={onClick} title="牌を削除">
@@ -553,13 +597,18 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange, calculationError }) => { // ★★★ 変更1: propsにcalculationErrorを追加 ★★★
+const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange, calculationError }) => {
 
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
   const RED_TO_NORMAL_MAP = { 34: 4, 35: 13, 36: 22 };
   
-  const normalize = (n) => n === null ? null : (n % 100 in RED_TO_NORMAL_MAP ? RED_TO_NORMAL_MAP[n % 100] : n % 100);
+  const normalize = (n) => {
+      if (n === null || n === undefined) return null;
+      if (n >= 1000) return normalize(n - 1000); // 1000番台を通常牌に変換
+      if (n >= 100) return normalize(n - 100);   // 100番台を通常牌に変換
+      return (n in RED_TO_NORMAL_MAP) ? RED_TO_NORMAL_MAP[n] : n;
+  };
 
   const getCombinations = (array, size) => {
     const result = [];
@@ -974,7 +1023,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   const MAX_HAND_SLOTS = 13;
   const numMelds = boardState.melds.self.length;
 
-  // ★★★ 変更2: エラーメッセージ用のスタイルを定義 ★★★
   const errorStyle = {
     color: '#ff4d4d',
     backgroundColor: 'rgba(255, 255, 255, 1)',
@@ -1076,7 +1124,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
               </div>
             </div>
             
-            {/* ★★★ 変更3: エラーメッセージ表示エリアを追加 ★★★ */}
             {calculationError && (
               <div style={errorStyle}>
                 {calculationError}
