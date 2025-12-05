@@ -1,5 +1,5 @@
 // Header/SettingsModal.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // useEffect をインポート
 import { styles } from './styles';
 
 export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
@@ -18,6 +18,25 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
     appBg: 'default', 
     appBgImage: null 
   };
+
+  // ★ここから追加: Escapeキーでモーダルを閉じるための処理
+  useEffect(() => {
+    // キーが押されたときに実行される関数
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose(); // Escapeキーが押されたらonClose関数を呼び出す
+      }
+    };
+
+    // グローバルなkeydownイベントリスナーを追加
+    window.addEventListener('keydown', handleKeyDown);
+
+    // クリーンアップ関数: コンポーネントがアンマウントされるときにイベントリスナーを削除
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]); // 依存配列にonCloseを含め、onCloseが変更された場合に再設定する
+  // ★ここまで追加
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -44,7 +63,9 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
   };
 
   return (
+    // このonClick={onClose}が枠外クリックで閉じる機能を担当しています
     <div style={styles.modalOverlay} onClick={onClose}>
+      {/* このstopPropagationがモーダル内部のクリックイベントの伝播を防ぎます */}
       <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
           <h3 style={styles.modalHeaderTitle}>設定</h3>
