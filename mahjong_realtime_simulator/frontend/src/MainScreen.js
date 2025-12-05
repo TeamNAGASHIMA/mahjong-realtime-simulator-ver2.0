@@ -28,6 +28,15 @@ const INITIAL_GAME_STATE = {
   counts: [] // 牌の数
 };
 
+// ★★★ 追加: 表示設定の初期値 ★★★
+const INITIAL_DISPLAY_SETTINGS = {
+  resultCount: 5,        // シミュレーション結果の表示件数
+  showStatus: true,      // 状況（手牌・盤面情報）
+  showSimulation: true,  // シミュレーション結果
+  showCamera: true,      // カメラプレビュー
+  showSettings: true     // 設定UI
+};
+
 // ★★★ 追加1: 牌譜データをboardState形式に変換するヘルパー関数 ★★★
 const convertKifuDataToBoardState = (kifuTurnData) => {
   if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
@@ -280,6 +289,17 @@ const MainScreen = () => {
   const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
   const [guideFrameColor, setGuideFrameColor] = useState('black');
+
+  // ★★★ 追加: 表示設定の状態管理 ★★★
+  const [displaySettings, setDisplaySettings] = useState(INITIAL_DISPLAY_SETTINGS);
+
+  // ★★★ 追加: 表示設定更新ハンドラ ★★★
+  const handleDisplaySettingsChange = (key, value) => {
+    setDisplaySettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
   // --- 関数定義 ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
@@ -606,8 +626,14 @@ const MainScreen = () => {
             setGuideFrameColor={setGuideFrameColor}          
         />
       );
-      
-    case 'display': return <DisplayModal onClose={closeModal} />;
+    case 'display': 
+      return (
+        <DisplayModal 
+          onClose={closeModal} 
+          settings={displaySettings} // 設定値を渡す
+          onSettingsChange={handleDisplaySettingsChange} // 更新関数を渡す
+        />
+      );
     case 'help': return <HelpModal onClose={closeModal} />;
     case 'contact': return <ContactModal onClose={closeModal} />;
     case 'version': return <VersionInfoModal onClose={closeModal} />;
@@ -902,6 +928,7 @@ const MainScreen = () => {
             isSaving={isSaving}
             // ★★★ 追加: calculationErrorを渡す ★★★
             calculationError={calculationError}
+            displaySettings={displaySettings}            
           />
         </div>
         
@@ -932,7 +959,8 @@ const MainScreen = () => {
             guideFrameColor={guideFrameColor}
             isSimulatorMode={isSimulatorMode}
             kifuFileList={kifuFileList}
-            onKifuSelect={handleKifuSelect}            
+            onKifuSelect={handleKifuSelect}
+            displaySettings={displaySettings}
           />
         </div>
       </div>
