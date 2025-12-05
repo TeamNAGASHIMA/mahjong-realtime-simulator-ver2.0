@@ -660,8 +660,7 @@ const MainScreen = () => {
         console.log('記録を開始しました。')
         recordingStatus.current = 1;
         setRendering(true);
-        // ループ処理で記録し続ける
-        sendRecordingData();
+        // 記録保存ボタンをアクティブ化させる
       }
     } 
     // 記録終了のフロー
@@ -716,7 +715,6 @@ const MainScreen = () => {
         if (recordingStatus.current === 1) {
           console.log("記録データを送信しました:", data.message);
           // 成功時、detection_resultで盤面を更新することも可能
-          sendRecordingData();
         } else if (recordingStatus.current === 2 && isModalOpen) {
           alert(`記録を保存しました: ${data.file_name}`);
           console.log("記録を保存しました:", data);
@@ -740,7 +738,7 @@ const MainScreen = () => {
     }
   };
 
-  // 記録ループ用の共通関数
+  // 記録保存ボタンが押されたときの処理
   const sendRecordingData = async (save_name) => {
     console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
     if (!sidePanelRef.current) {
