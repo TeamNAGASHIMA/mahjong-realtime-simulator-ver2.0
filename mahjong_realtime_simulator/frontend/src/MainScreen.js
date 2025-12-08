@@ -28,6 +28,15 @@ const INITIAL_GAME_STATE = {
   counts: [] // 牌の数
 };
 
+// ★★★ 追加: 表示設定の初期値 ★★★
+const INITIAL_DISPLAY_SETTINGS = {
+  resultCount: 5,        // シミュレーション結果の表示件数
+  showStatus: true,      // 状況（手牌・盤面情報）
+  showSimulation: true,  // シミュレーション結果
+  showCamera: true,      // カメラプレビュー
+  showSettings: true     // 設定UI
+};
+
 // ★★★ 追加1: 牌譜データをboardState形式に変換するヘルパー関数 ★★★
 const convertKifuDataToBoardState = (kifuTurnData) => {
   if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
@@ -280,6 +289,17 @@ const MainScreen = () => {
   const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
   const [guideFrameColor, setGuideFrameColor] = useState('black');
+
+  // ★★★ 追加: 表示設定の状態管理 ★★★
+  const [displaySettings, setDisplaySettings] = useState(INITIAL_DISPLAY_SETTINGS);
+
+  // ★★★ 追加: 表示設定更新ハンドラ ★★★
+  const handleDisplaySettingsChange = (key, value) => {
+    setDisplaySettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
   // --- 関数定義 ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
@@ -606,8 +626,14 @@ const MainScreen = () => {
             setGuideFrameColor={setGuideFrameColor}          
         />
       );
-      
-    case 'display': return <DisplayModal onClose={closeModal} />;
+    case 'display': 
+      return (
+        <DisplayModal 
+          onClose={closeModal} 
+          settings={displaySettings} // 設定値を渡す
+          onSettingsChange={handleDisplaySettingsChange} // 更新関数を渡す
+        />
+      );
     case 'help': return <HelpModal onClose={closeModal} />;
     case 'contact': return <ContactModal onClose={closeModal} />;
     case 'version': return <VersionInfoModal onClose={closeModal} />;
@@ -634,8 +660,7 @@ const MainScreen = () => {
         console.log('記録を開始しました。')
         recordingStatus.current = 1;
         setRendering(true);
-        // ループ処理で記録し続ける
-        sendRecordingData();
+        // 記録保存ボタンをアクティブ化させる
       }
     } 
     // 記録終了のフロー
@@ -690,7 +715,6 @@ const MainScreen = () => {
         if (recordingStatus.current === 1) {
           console.log("記録データを送信しました:", data.message);
           // 成功時、detection_resultで盤面を更新することも可能
-          sendRecordingData();
         } else if (recordingStatus.current === 2 && isModalOpen) {
           alert(`記録を保存しました: ${data.file_name}`);
           console.log("記録を保存しました:", data);
@@ -714,7 +738,7 @@ const MainScreen = () => {
     }
   };
 
-  // 記録ループ用の共通関数
+  // 記録保存ボタンが押されたときの処理
   const sendRecordingData = async (save_name) => {
     console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
     if (!sidePanelRef.current) {
@@ -902,6 +926,7 @@ const MainScreen = () => {
             isSaving={isSaving}
             // ★★★ 追加: calculationErrorを渡す ★★★
             calculationError={calculationError}
+            displaySettings={displaySettings}            
           />
         </div>
         
@@ -932,7 +957,8 @@ const MainScreen = () => {
             guideFrameColor={guideFrameColor}
             isSimulatorMode={isSimulatorMode}
             kifuFileList={kifuFileList}
-            onKifuSelect={handleKifuSelect}            
+            onKifuSelect={handleKifuSelect}
+            displaySettings={displaySettings}
           />
         </div>
       </div>
