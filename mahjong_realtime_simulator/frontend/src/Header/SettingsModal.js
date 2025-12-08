@@ -16,7 +16,8 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
     tableBg: 'default', 
     tableBgImage: null, 
     appBg: 'default', 
-    appBgImage: null 
+    appBgImage: null,
+    showTooltips: true
   };
 
   // ★ここから追加: Escapeキーでモーダルを閉じるための処理
@@ -100,6 +101,15 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
               <option value="16px">大</option>
               <option value="18px">特大</option>
             </select>
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>ツールチップ表示</label>
+            <div>
+              <input type="radio" id="tooltipsOn" name="tooltips_radio" checked={settings.showTooltips === true} onChange={() => handleRadioChange('showTooltips', true)} />
+              <label htmlFor="tooltipsOn" style={styles.radioLabel}>表示</label>
+              <input type="radio" id="tooltipsOff" name="tooltips_radio" checked={settings.showTooltips === false} onChange={() => handleRadioChange('showTooltips', false)} />
+              <label htmlFor="tooltipsOff" style={styles.radioLabel}>非表示</label>
+            </div>
           </div>
           <div style={styles.formGroup}>
             <label style={styles.formLabel}>効果音</label>
