@@ -1,7 +1,9 @@
+// SidePanel_child/SettingsPanel.js
+
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 
 // ==============================================================================
-// ▼▼▼ スタイル定義 (変更箇所) ▼▼▼
+// ▼▼▼ スタイル定義 (変更なし) ▼▼▼
 // ==============================================================================
 const styles = {
   settingsPanel: {
@@ -34,7 +36,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
   },
-  // ボタンの基本スタイル
   baseButton: {
     color: '#333',
     backgroundColor: '#FFFFFF',
@@ -45,16 +46,14 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'background-color 0.15s ease, border-color 0.15s ease',
-    outline: 'none', // ★★★ この行を追加してフォーカス時の枠を非表示にします ★★★
+    outline: 'none',
   },
   shantenButton: {
     fontSize: '11px',
     width: '70px',
     height: '30px',
   },
-  considerationSection: {
-    // スタイル変更なし
-  },
+  considerationSection: {},
   considerationButtons: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
@@ -67,14 +66,12 @@ const styles = {
     boxSizing: 'border-box',
     textAlign: 'center',
   },
-  // 選択時のスタイル
   selected: {
     backgroundColor: '#d1fecf',
     borderColor: '#7CFC00',
     fontWeight: 'bold',
     color: '#00695C',
   },
-  // ホバー時のスタイル
   buttonHover: {
     backgroundColor: '#e9ecef',
     borderColor: '#adb5bd',
@@ -84,26 +81,36 @@ const styles = {
 // ▲▲▲ スタイル定義 (ここまで) ▲▲▲
 // ==============================================================================
 
+
 // データ定義 (変更なし)
 const ShantenType = {
   IPPAN: '一般手',
   CHITOI: '七対子',
   KOKUSHI: '国士無双',
 };
-
 const ConsiderationItemsList = [
   '向聴落とし考慮', '手変わり考慮',
   'ダブル立直考慮', '一発考慮',
   '海底撈月考慮', '裏ドラ考慮',
   '和了確率最大化'
 ];
-
+const TOOLTIP_DESCRIPTIONS = {
+  '一般手': 'イッパンテ:4面子1雀頭の形を目指す、最も基本的な手の計算方法です。',
+  '七対子': 'チートイツ:7つの異なる対子(トイツ)で構成される特殊な役です。',
+  '国士無双': 'コクシムソウ:13種類の么九牌(ヤオチュウハイ)を1枚ずつ集める特殊な役です。',
+  '向聴落とし考慮': 'シャンテン落とし考慮:一時的に向聴数が増えても、将来的に良い形になる打牌を考慮します。',
+  '手変わり考慮': '手変わり考慮:打点や待ちの広さが向上するような手の変化を考慮します。',
+  'ダブル立直考慮': 'ダブルリーチ考慮:配牌からの第一ツモで聴牌した場合のダブル立直を考慮します。',
+  '一発考慮': 'イッパツ考慮:立直後、一巡以内に和了した場合の一発を考慮します。',
+  '海底撈月考慮': 'ハイテイラオユエ考慮:局の最後のツモ牌での和了（海底撈月）を考慮します。',
+  '裏ドラ考慮': 'ウラドラ考慮:立直して和了した場合にめくられる裏ドラを考慮します。',
+  '和了確率最大化': 'ホーラカクリツ最大化:打点よりも和了できる確率が最も高くなる選択を優先します。',
+};
 const ShantenTypeValues = {
   [ShantenType.IPPAN]: 1,
   [ShantenType.CHITOI]: 2,
   [ShantenType.KOKUSHI]: 4,
 };
-
 const ConsiderationFlags = {
   '向聴落とし考慮': 1,
   '手変わり考慮': 2,
@@ -114,8 +121,9 @@ const ConsiderationFlags = {
   '和了確率最大化': 64,
 };
 
-// コンポーネント本体 (ロジックの変更なし)
-const SettingsPanel = forwardRef((props, ref) => {
+
+// ▼▼▼ 修正1: propsから settings を受け取るように変更 ▼▼▼
+const SettingsPanel = forwardRef(({ settings }, ref) => {
   const [selectedShanten, setSelectedShanten] = useState(ShantenType.IPPAN);
   const [toggledItems, setToggledItems] = useState(
     ConsiderationItemsList.reduce((acc, item) => ({ ...acc, [item]: false }), {})
@@ -150,6 +158,8 @@ const SettingsPanel = forwardRef((props, ref) => {
             return (
               <button
                 key={type}
+                // ▼▼▼ 修正2: settings.showTooltipsに応じてtitle属性を制御 ▼▼▼
+                title={settings?.showTooltips ? TOOLTIP_DESCRIPTIONS[type] : undefined}
                 style={{
                   ...styles.baseButton,
                   ...styles.shantenButton,
@@ -175,6 +185,8 @@ const SettingsPanel = forwardRef((props, ref) => {
             return (
               <button
                 key={item}
+                // ▼▼▼ 修正3: settings.showTooltipsに応じてtitle属性を制御 ▼▼▼
+                title={settings?.showTooltips ? TOOLTIP_DESCRIPTIONS[item] : undefined}
                 style={{
                   ...styles.baseButton,
                   ...styles.considerationButton,

@@ -10,7 +10,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
-    // ★★★ 変更: 固定幅(390px)を廃止し、親要素に合わせて広げる ★★★
     width: '100%', 
     height: '100%',
   },
@@ -18,11 +17,16 @@ const styles = {
     flex: '1 1 0',
     minHeight: 0,
     display: 'flex',
+    flexDirection: 'column',
   },
+  fullHeightSection: {
+    flex: '1 1 auto', 
+    height: '100%',
+  }
 };
 
 const SidePanel = forwardRef((props, ref) => {
-  const { isSimulatorMode } = props;
+  const { displaySettings, isSimulatorMode, settings } = props; // ▼▼▼ 修正1: propsからsettingsを分割代入で受け取る ▼▼▼
 
   const cameraRef = useRef(null);
   const settingsRef = useRef(null);
@@ -30,34 +34,44 @@ const SidePanel = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     getSidePanelData: () => {
       const panelSettings = settingsRef.current?.getSettings();
+      const images = cameraRef.current?.getPreviewImages();
+
       if (!isSimulatorMode) {
         return {
           images: { boardImage: null, handImage: null },
-          settings: panelSettings || { syanten_type: 1, flag: 0 },
+          settings: panelSettings || { syanten_type: props.settings?.syanten_type ?? 1, flag: 0 },
         };
       }
-      const images = cameraRef.current?.getPreviewImages();
+      
       return {
         images: images || { boardImage: null, handImage: null },
-        settings: panelSettings || { syanten_type: 1, flag: 1 },
+        settings: panelSettings || { syanten_type: props.settings?.syanten_type ?? 1, flag: 1 },
       };
     }
   }));
 
+  const showCamera = displaySettings ? displaySettings.showCamera : true;
+  const showSettingsUI = displaySettings ? displaySettings.showSettings : true;
+
   return (
     <div style={styles.sidePanelContainer}>
-      <div style={styles.topSection}>
-        {isSimulatorMode ? (
-          <CameraPreview ref={cameraRef} {...props} />
-        ) : (
-          <KifuSelector 
-            kifuFileList={props.kifuFileList}
-            onKifuSelect={props.onKifuSelect}
-          />
-        )}
-      </div>
+      {showCamera && (
+        <div style={styles.topSection}>
+          {isSimulatorMode ? (
+            <CameraPreview ref={cameraRef} {...props} />
+          ) : (
+            <KifuSelector 
+              kifuFileList={props.kifuFileList}
+              onKifuSelect={props.onKifuSelect}
+            />
+          )}
+        </div>
+      )}
       
-      <SettingsPanel ref={settingsRef} {...props} />
+      {showSettingsUI && (
+        // ▼▼▼ 修正2: SettingsPanelにsettings propを明示的に渡す ▼▼▼
+        <SettingsPanel ref={settingsRef} settings={settings} />
+      )}
     </div>
   );
 });
