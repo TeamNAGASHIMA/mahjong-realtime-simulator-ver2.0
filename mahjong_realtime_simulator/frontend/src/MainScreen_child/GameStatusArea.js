@@ -31,7 +31,6 @@ const GameStatusArea = ({
   onRecordingFunction,
   onSendRecordingData,
   displaySettings,  
-  // ★★★ 追加: MainScreenから渡されるPropsを受け取る
   isSaving,
   calculationError,
   selectedKifuData,
@@ -39,7 +38,6 @@ const GameStatusArea = ({
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
-      {/* ★★★ 修正: showStatusがtrueの場合のみ表示 ★★★ */}
       {displaySettings && displaySettings.showStatus && (
         <TileDisplayArea
           boardState={boardState}
@@ -55,7 +53,7 @@ const GameStatusArea = ({
         />
       )}
 
-      {/* ボタンエリアは常に表示（または別の設定にする場合はここも条件分岐） */}
+      {/* ボタンエリア */}
       <ButtonContainer
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
@@ -68,14 +66,13 @@ const GameStatusArea = ({
         isSaving={isSaving}
       />
 
-      {/* ★★★ 修正: showSimulationがtrueの場合のみ表示 ★★★ */}
       {displaySettings && displaySettings.showSimulation && (
         <CalculationResults
           results={calculationResults}
           isLoading={isLoadingCalculation}
           currentTurn={boardState ? boardState.turn : 1}
           settings={settings}
-          displaySettings={displaySettings} // ★★★ 表示件数設定のためここにも渡す
+          displaySettings={displaySettings}
         />
       )}
     </div>
