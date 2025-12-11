@@ -147,30 +147,37 @@ def file_name_check(folder_path, file_name=""):
 
 # 差分チェックとJSON作成の関数
 def difference_check(save_data, record_flg, file_name="game_data"):
-
-    # 手牌の差分フラグ
     
-    # 手牌が変化したかどうかをチェック
     change_flg = False
-
+    
+    # # 手牌が変化したかどうかをチェック
+    # if save_data != "":
+    #     hand_tiles = save_data[1]
+    #     if difference_in_hands(hand_tiles):
+    #         print("前回の手牌データ（更新後）:", load_prev_hand())
+    #         # タプルを辞書に変換
+    #         step_data = {
+    #             "dora_indicators": save_data[0],
+    #             "hand_tiles": save_data[1],
+    #             "melded_blocks": save_data[2],
+    #             "river_tiles": save_data[3],
+    #             "turn": save_data[4]
+    #         }
+    #         # 一時的にresultを保存
+    #         save_temp_result(step_data)
+    #         change_flg = True
+    
+    # 差分チェックをせず、データがあれば常に保存する
     if save_data != "":
-
-        hand_tiles = save_data[1]
-        if difference_in_hands(hand_tiles):
-            print("前回の手牌データ（更新後）:", load_prev_hand())
-
-            # タプルを辞書に変換
-            step_data = {
-                "dora_indicators": save_data[0],
-                "hand_tiles": save_data[1],
-                "melded_blocks": save_data[2],
-                "river_tiles": save_data[3],
-                "turn": save_data[4]
-            }
-
-            # 一時的にresultを保存
-            save_temp_result(step_data)
-            change_flg = True
+        step_data = {
+            "dora_indicators": save_data[0],
+            "hand_tiles": save_data[1],
+            "melded_blocks": save_data[2],
+            "river_tiles": save_data[3],
+            "turn": save_data[4]
+        }
+        save_temp_result(step_data)
+        change_flg = True
     
     # 記録終了ボタンが押された場合
     if record_flg == 2:

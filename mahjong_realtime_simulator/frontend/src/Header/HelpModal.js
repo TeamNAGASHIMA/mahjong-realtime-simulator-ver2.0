@@ -1,5 +1,5 @@
 // Header/HelpModal.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { styles } from './styles';
 import { HelpContentPage } from './HelpContentPage';
 import { ReferenceLinks } from './ReferenceLinks';
@@ -14,6 +14,25 @@ export const HelpModal = ({ onClose }) => {
   };
 
   const modalWidth = view === 'reference' || view === 'mahjongRules' ? '800px' : '400px';
+
+   // ★ここから追加: Escapeキーでモーダルを閉じるための処理
+    useEffect(() => {
+      // キーが押されたときに実行される関数
+      const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          onClose(); // Escapeキーが押されたらonClose関数を呼び出す
+        }
+      };
+  
+      // グローバルなkeydownイベントリスナーを追加
+      window.addEventListener('keydown', handleKeyDown);
+  
+      // クリーンアップ関数: コンポーネントがアンマウントされるときにイベントリスナーを削除
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [onClose]); // 依存配列にonCloseを含め、onCloseが変更された場合に再設定する
+    // ★ここまで追加
 
   const menuButtons = [
     { label: '操作の流れ', view: 'workflow' },
@@ -76,6 +95,9 @@ export const HelpModal = ({ onClose }) => {
   };
 
   return (
+    // このonClick={onClose}が枠外クリックで閉じる機能を担当しています
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}></div>
     <div style={styles.modalOverlay} onClick={onClose}>
       <div style={{ ...styles.modalContent, width: modalWidth, transition: 'width 0.3s ease' }} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
@@ -84,6 +106,7 @@ export const HelpModal = ({ onClose }) => {
         </div>
         <div style={styles.modalBody}>{renderContent()}</div>
       </div>
+    </div>
     </div>
   );
 };

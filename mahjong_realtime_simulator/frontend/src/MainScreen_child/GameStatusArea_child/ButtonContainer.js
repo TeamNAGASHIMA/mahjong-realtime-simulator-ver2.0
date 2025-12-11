@@ -31,7 +31,8 @@ const ButtonContainer = ({
   recordingStatus,
   isModalOpen,
   onRecordingFunction,
-  onSendRecordingData
+  onSendRecordingData,
+  isSaving
 }) => {
   return (
     <div style={containerStyles}>
@@ -42,6 +43,7 @@ const ButtonContainer = ({
             isModalOpen={isModalOpen}
             onRecordingFunction={onRecordingFunction}
             onSendRecordingData={onSendRecordingData}
+            isSaving={isSaving}
           />
         ) : <TurnSelector />}
       </div>

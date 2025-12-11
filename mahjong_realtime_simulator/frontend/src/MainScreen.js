@@ -28,44 +28,13 @@ const INITIAL_GAME_STATE = {
   counts: [] // 牌の数
 };
 
-// ★★★ 追加1: 牌譜データをboardState形式に変換するヘルパー関数 ★★★
-const convertKifuDataToBoardState = (kifuTurnData) => {
-  if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
-
-  // melded_blocksの形式を変換
-  const melds = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.melded_blocks) {
-    melds.self = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_bottom || [], 'self');
-    melds.shimocha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_right || [], 'shimocha');
-    melds.toimen = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_top || [], 'toimen');
-    melds.kamicha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_left || [], 'kamicha');
-  }
-
-  // river_tilesをplayer_discardsに変換
-  const player_discards = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.river_tiles) {
-    player_discards.self = kifuTurnData.river_tiles.discard_tiles_bottom || [];
-    player_discards.shimocha = kifuTurnData.river_tiles.discard_tiles_right || [];
-    player_discards.toimen = kifuTurnData.river_tiles.discard_tiles_top || [];
-    player_discards.kamicha = kifuTurnData.river_tiles.discard_tiles_left || [];
-  }
-
-  // 手牌とツモ牌を分離 (14枚あればツモ牌ありと判断)
-  let hand_tiles = [...(kifuTurnData.hand_tiles || [])];
-  let tsumo_tile = null;
-  if (hand_tiles.length === 14) {
-    tsumo_tile = hand_tiles.pop();
-  }
-
-  return {
-    ...INITIAL_GAME_STATE, // 不足しているキーは初期値で埋める
-    turn: kifuTurnData.turn || 1,
-    dora_indicators: kifuTurnData.dora_indicators || [],
-    hand_tiles: hand_tiles,
-    tsumo_tile: tsumo_tile,
-    melds: melds,
-    player_discards: player_discards,
-  };
+// 表示設定の初期値
+const INITIAL_DISPLAY_SETTINGS = {
+  resultCount: 5,        // シミュレーション結果の表示件数
+  showStatus: true,      // 状況（手牌・盤面情報）
+  showSimulation: true,  // シミュレーション結果
+  showCamera: true,      // カメラプレビュー
+  showSettings: true     // 設定UI
 };
 
 // スタイル定義
@@ -74,7 +43,7 @@ const styles = {
     display: 'flex',
     flexGrow: 1,
     padding: '15px',
-    gap: '0', // ★ gapを0にし、リサイズハンドルを含めて配置する
+    gap: '0', 
     overflow: 'hidden',
   },
   gameStatusWrapper: {
@@ -82,14 +51,12 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    paddingRight: '15px', // ★ リサイズハンドルとの余白
+    paddingRight: '15px',
   },
   sidePanelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    // widthはstateで制御するためここでは指定しない
   },
-  // ★ リサイズ用のつまみ（ハンドル）のスタイル
   resizeHandle: {
     width: '10px',
     cursor: 'col-resize',
@@ -108,7 +75,7 @@ const styles = {
   }
 };
 
-// ヘルパー関数 (省略)
+// ヘルパー関数
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
@@ -188,6 +155,78 @@ const createPayloadFromBoardState = (boardState, settings) => {
     return { fixes_pai_info, fixes_river_tiles: fixes_river_tiles_list };
 };
 
+// 牌譜データをboardState形式に変換するヘルパー関数
+const convertKifuDataToBoardState = (kifuTurnData) => {
+  if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
+
+  const melds = { self: [], shimocha: [], toimen: [], kamicha: [] };
+  if (kifuTurnData.melded_blocks) {
+    melds.self = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_bottom || [], 'self');
+    melds.shimocha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_right || [], 'shimocha');
+    melds.toimen = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_top || [], 'toimen');
+    melds.kamicha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_left || [], 'kamicha');
+  }
+
+  const player_discards = { self: [], shimocha: [], toimen: [], kamicha: [] };
+  if (kifuTurnData.river_tiles) {
+    player_discards.self = kifuTurnData.river_tiles.discard_tiles_bottom || [];
+    player_discards.shimocha = kifuTurnData.river_tiles.discard_tiles_right || [];
+    player_discards.toimen = kifuTurnData.river_tiles.discard_tiles_top || [];
+    player_discards.kamicha = kifuTurnData.river_tiles.discard_tiles_left || [];
+  }
+
+  let hand_tiles = [...(kifuTurnData.hand_tiles || [])];
+  let tsumo_tile = null;
+  if (hand_tiles.length === 14) {
+    tsumo_tile = hand_tiles.pop();
+  }
+
+  return {
+    ...INITIAL_GAME_STATE,
+    turn: kifuTurnData.turn || 1,
+    dora_indicators: kifuTurnData.dora_indicators || [],
+    hand_tiles: hand_tiles,
+    tsumo_tile: tsumo_tile,
+    melds: melds,
+    player_discards: player_discards,
+  };
+};
+
+// 保存中のオーバーレイコンポーネント
+const SavingOverlay = () => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 99999, // 最前面
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontSize: '24px',
+    userSelect: 'none',
+  }}>
+    <div style={{
+      border: '6px solid #f3f3f3',
+      borderTop: '6px solid #3498db',
+      borderRadius: '50%',
+      width: '50px',
+      height: '50px',
+      animation: 'spin 1s linear infinite',
+      marginBottom: '20px'
+    }} />
+    <style>
+      {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+    </style>
+    <div>保存中...</div>
+    <div style={{ fontSize: '16px', marginTop: '10px', opacity: 0.8 }}>しばらくお待ちください</div>
+  </div>
+);
+
 
 // メインコンポーネント
 const MainScreen = () => {
@@ -217,15 +256,13 @@ const MainScreen = () => {
   const [boardState, setBoardState] = useState(INITIAL_GAME_STATE);
   const [activeModal, setActiveModal] = useState(null);
   const [calculationError, setCalculationError] = useState(null);
-
-  // ★★★ 追加: サイドパネルの幅を管理するState (初期値390px) ★★★
+  const [isSaving, setIsSaving] = useState(false);
   const [sidePanelWidth, setSidePanelWidth] = useState(390);
 
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
-    appBgImage: null, syanten_type: 1, 
-    flag: 1
+    appBgImage: null, syanten_type: 1, flag: 1, showTooltips: true
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
@@ -242,18 +279,31 @@ const MainScreen = () => {
   const [handFlip, setHandFlip] = useState({ horizontal: true, vertical: false });
 
   const [guideFrameColor, setGuideFrameColor] = useState('black');
+  const [displaySettings, setDisplaySettings] = useState(INITIAL_DISPLAY_SETTINGS);
 
-  // --- 関数定義 ---
+  // 牌譜モード用
+  const [kifuFileList, setKifuFileList] = useState([]); 
+  const [selectedKifuData, setSelectedKifuData] = useState([]); 
+  const [currentKifuTurn, setCurrentKifuTurn] = useState(1);
+
+  // --- ハンドラ ---
   const handleMenuClick = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
   const handleSettingsChange = (newSettings) => setSettings(prev => ({...prev, ...newSettings}));
 
-  // ★★★ 修正箇所2: モード切替用のハンドラを追加 ★★★
+  const handleDisplaySettingsChange = (key, value) => {
+    setDisplaySettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const handleModeChange = () => {
     const newFlag = settings.flag === 1 ? 0 : 1;
     handleSettingsChange({ flag: newFlag });
     console.log(`モードが ${newFlag === 1 ? 'リアルタイムシミュレーター' : '牌譜'} に切り替わりました。`);
   };
+
   const handleDisplayChange = (newDisplaySettings) => {
     if (newDisplaySettings.use3D !== undefined) {
       setUse3DDisplay(newDisplaySettings.use3D);
@@ -390,7 +440,7 @@ const MainScreen = () => {
             turn: detectedResult.turn ?? 1,
             round_wind: boardState.round_wind, 
             hand_tiles: recognizedHandTiles,
-            tsumo_tile: recognizedTsumoTile,
+            tsumo_tile: recognizedTsumoTile, 
             dora_indicators: detectedResult.dora_indicators ?? [], 
             player_discards: {
                 self: getDiscardsForPlayer('self', detectedResult.discard_tiles), 
@@ -435,21 +485,13 @@ const MainScreen = () => {
       } else {
           const errorMessage = data.message?.error || data.message || "Unknown error";
           if (response.status === 420) {
-            // --- ▼▼▼ ここから修正 ▼▼▼ ---
-            let displayMessage = errorMessage; // デフォルトはサーバーからのメッセージ
-
-            // サーバーからの特定のメッセージが含まれていたら、表示するメッセージを上書きする
+            let displayMessage = errorMessage; 
             if (String(errorMessage).includes("The number of tiles in your hand is invalid")) {
-                // 正規表現で数字を抽出
                 const tileCountMatch = String(errorMessage).match(/\((\d+)/);
                 const tileCount = tileCountMatch ? tileCountMatch[1] : '不明な';
-
                 displayMessage = `手牌の枚数が正しくありませんでした。（検出された枚数: ${tileCount}枚）手牌の認識がうまくいっているか確認してください。(errorMessage: ${data.message})`;
             }
-
             setCalculationError(`計算できませんでした: ${displayMessage}`);
-            // --- ▲▲▲ ここまで修正 ▲▲▲ ---
-              
           } else { 
               setCalculationError(`エラーが発生しました (Status: ${response.status}): ${errorMessage}`);
           }
@@ -568,8 +610,14 @@ const MainScreen = () => {
             setGuideFrameColor={setGuideFrameColor}          
         />
       );
-      
-    case 'display': return <DisplayModal onClose={closeModal} />;
+    case 'display': 
+      return (
+        <DisplayModal 
+          onClose={closeModal} 
+          settings={displaySettings}
+          onSettingsChange={handleDisplaySettingsChange}
+        />
+      );
     case 'help': return <HelpModal onClose={closeModal} />;
     case 'contact': return <ContactModal onClose={closeModal} />;
     case 'version': return <VersionInfoModal onClose={closeModal} />;
@@ -579,22 +627,31 @@ const MainScreen = () => {
 
   const recordingStatus = useRef(0); // 0: 非記録中, 1: 記録中, 2: 保存待ち
   const [rendering, setRendering] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // モーダル表示制御用フラグ
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // レコーディング処理全体の制御関数
-  // データのループ送信、保存等の制御は全てここで行っている
   const recordingFunction = () => {
-    if (recordingStatus.current === 0 && window.confirm('記録を開始しますか？')){
-      console.log('記録を開始しました。')
-      recordingStatus.current = 1;
-      setRendering(true);
-      // ループ処理で記録し続ける
-      sendRecordingData();
-    } else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
+    // 記録開始のフロー
+    if (recordingStatus.current === 0) {
+      if (!isCameraActive) {
+        alert("カメラが起動していないため、記録に失敗しました。");
+        return; 
+      }
+
+      if (window.confirm('記録を開始しますか？')){
+        console.log('記録を開始しました。')
+        recordingStatus.current = 1;
+        setRendering(true);
+      }
+    } 
+    // 記録終了のフロー
+    else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
       recordingStatus.current = 2;
       setRendering(false);
       setIsModalOpen(true);
-    } else if (recordingStatus.current === 2) {
+    } 
+    // 保存キャンセルのフロー
+    else if (recordingStatus.current === 2) {
       console.log('保存をキャンセルしました。');
       recordingStatus.current = 0;
       setIsModalOpen(false);
@@ -602,20 +659,27 @@ const MainScreen = () => {
   };
 
   // /tiles_save/ への記録データ送信関数
-  const tilesSaveEndpointConnecting = async (formData) => {
+  // isQuickSave 引数を追加
+  const tilesSaveEndpointConnecting = async (formData, isQuickSave = false) => {
     console.log("バックエンド通信：", recordingStatus.current);
+    
+    // 保存処理（終了時の保存、またはクイック保存）の場合、ローディング表示を開始
+    const isSaveAction = (recordingStatus.current === 2 && isModalOpen) || isQuickSave;
+    if (isSaveAction) {
+      setIsSaving(true);
+    }
+
     if (!formData.has('hand_tiles_image')) {
-      const { images } = sidePanelRef.current.getSidePanelData();
-      const handImageBlob = dataURLtoBlob(images.handImage);
-      const boardImageBlob = dataURLtoBlob(images.boardImage);
-      // 画像データが必須
-      if (!handImageBlob || handImageBlob.size === 0) {
-        console.error("手牌カメラの映像が取得できませんでした。");
-        // 記録中ならアラートは出さずにコンソールエラーに留める
+      if (sidePanelRef.current) {
+        const { images } = sidePanelRef.current.getSidePanelData();
+        const handImageBlob = dataURLtoBlob(images.handImage);
+        const boardImageBlob = dataURLtoBlob(images.boardImage);
+        if (!handImageBlob || handImageBlob.size === 0) {
+          console.error("手牌カメラの映像が取得できませんでした。");
+        }
+        formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+        if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       }
-   
-      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
-      if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
     }
     try {
       const response = await fetch('/app/tiles_save/', {
@@ -627,10 +691,10 @@ const MainScreen = () => {
       const data = await response.json();
   
       if (response.status === 200) {
-        if (recordingStatus.current === 1) {
+        if (isQuickSave) {
+          console.log("クイック保存しました:", data.file_name);
+        } else if (recordingStatus.current === 1) {
           console.log("記録データを送信しました:", data.message);
-          // 成功時、detection_resultで盤面を更新することも可能
-          sendRecordingData();
         } else if (recordingStatus.current === 2 && isModalOpen) {
           alert(`記録を保存しました: ${data.file_name}`);
           console.log("記録を保存しました:", data);
@@ -638,35 +702,40 @@ const MainScreen = () => {
           setIsModalOpen(false);
         }
       } else {
-        // 記録中ならアラートは出さずにコンソールエラーに留める
         const errorMessage = data.message || "記録データの送信に失敗しました。";
         console.error(errorMessage);
-        if (recordingStatus.current !== 1) alert(errorMessage);
+        if (recordingStatus.current !== 1 && !isQuickSave) alert(errorMessage);
+        if (isQuickSave) alert("クイック保存に失敗しました: " + errorMessage);
       }
     } catch (err) {
       console.error('記録APIとの通信に失敗しました:', err);
+      if (recordingStatus.current !== 1 && !isQuickSave) alert('通信エラーが発生しました。');
+      if (isQuickSave) alert('クイック保存中に通信エラーが発生しました。');
+    } finally {
+      // 保存処理が終わったらローディング表示を終了
+      if (isSaveAction) {
+        setIsSaving(false);
+      }
     }
   };
 
-  // 記録ループ用の共通関数
-  const sendRecordingData = async (save_name) => {
+  // 記録保存ボタンが押されたときの処理
+  // isQuickSave 引数を追加
+  const sendRecordingData = async (save_name, isQuickSave = false) => {
     console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
     if (!sidePanelRef.current) {
       console.error("sidePanelRef is not available.");
       return;
     }
 
-    // handleCalculateからデータ取得部分を流用
     const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
     const finalSettings = {...settings, ...sidePanelSettings};
     const formData = new FormData();
     const handImageBlob = dataURLtoBlob(images.handImage);
     const boardImageBlob = dataURLtoBlob(images.boardImage);
   
-    // 画像データが必須
     if (!handImageBlob || handImageBlob.size === 0) {
       console.error("手牌カメラの映像が取得できませんでした。");
-      // 記録中ならアラートは出さずにコンソールエラーに留める
     }
   
     formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
@@ -675,20 +744,17 @@ const MainScreen = () => {
     formData.append('syanten_Type', finalSettings.syanten_type); 
     formData.append('flag', finalSettings.flag);
     
-    // 物体検知用データ
     const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
     const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
     formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
   
-    // 記録用フラグと保存名を追加
     formData.append('record_flag', recordingStatus.current);
 
     if (save_name) {
       formData.append('save_name', save_name);
     }
   
-    // エンドポイント「/tiles_save」へのコネクト関数
-    tilesSaveEndpointConnecting(formData);
+    tilesSaveEndpointConnecting(formData, isQuickSave);
   };
 
   const handleResetBoardState = () => {
@@ -699,36 +765,23 @@ const MainScreen = () => {
     setCalculationError(null);
   };
 
-  const isSimulatorMode = settings.flag === 1;
-
-   // ★★★ 追加2: 牌譜モード用の状態管理 ★★★
-  const [kifuFileList, setKifuFileList] = useState([]);      // 牌譜ファイルの一覧
-  const [selectedKifuData, setSelectedKifuData] = useState([]); // 選択された牌譜の中身 (temp_result)
-  const [currentKifuTurn, setCurrentKifuTurn] = useState(1);  // 選択中の巡目
-  // ★★★ 追加3: モード切替時に牌譜リストを取得するuseEffect ★★★
   useEffect(() => {
-    // 牌譜モード (flag: 0) に切り替わったときに実行
     if (settings.flag === 0) {
       fetchKifuList();
     } else {
-      // シミュレーターモードに戻ったら牌譜データをクリア
       setKifuFileList([]);
       setSelectedKifuData([]);
     }
   }, [settings.flag]);
 
-  // ★★★ 追加4: 牌譜データや巡目が変わった時に盤面を更新するuseEffect ★★★
   useEffect(() => {
     if (selectedKifuData.length > 0 && currentKifuTurn >= 1 && currentKifuTurn <= selectedKifuData.length) {
-      // 牌譜データの中から現在の巡目に相当するデータを取得
       const currentTurnData = selectedKifuData[currentKifuTurn - 1];
-      // boardStateを更新して画面に反映
       setBoardState(convertKifuDataToBoardState(currentTurnData));
     }
   }, [selectedKifuData, currentKifuTurn]);
 
 
-  // ★★★ 追加5: 牌譜ファイル一覧を取得するAPI通信関数 ★★★
   const fetchKifuList = async () => {
     try {
       const response = await fetch('/app/tiles_json_req/', {
@@ -752,7 +805,6 @@ const MainScreen = () => {
     }
   };
 
-  // ★★★ 追加6: 特定の牌譜ファイルの中身を取得するAPI通信関数 ★★★
   const handleKifuSelect = async (fileName) => {
     try {
       const formData = new FormData();
@@ -777,7 +829,6 @@ const MainScreen = () => {
     }
   };
 
-  // ★★★ 追加: リサイズ開始処理 ★★★
   const startResizing = useCallback((mouseDownEvent) => {
     mouseDownEvent.preventDefault();
     
@@ -785,11 +836,9 @@ const MainScreen = () => {
     const startWidth = sidePanelWidth;
 
     const onMouseMove = (mouseMoveEvent) => {
-      // マウスが左に動くと幅が増え、右に動くと幅が減る（パネルが右側にあるため）
       const moveX = startX - mouseMoveEvent.clientX;
       const newWidth = startWidth + moveX;
 
-      // 最小幅と最大幅の制限 (例: 最小260px, 最大800px)
       if (newWidth >= 260 && newWidth <= 800) {
         setSidePanelWidth(newWidth);
       }
@@ -798,17 +847,20 @@ const MainScreen = () => {
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = 'default'; // カーソルを戻す
+      document.body.style.cursor = 'default';
     };
 
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
-    document.body.style.cursor = 'col-resize'; // ドラッグ中はカーソルを固定
+    document.body.style.cursor = 'col-resize';
   }, [sidePanelWidth]);
 
 
   return (
     <div style={appContainerStyle}>
+      {/* 保存処理中のオーバーレイ */}
+      {isSaving && <SavingOverlay />}
+
       <Header onMenuClick={handleMenuClick} />
       <div style={styles.mainContent}>
         <div style={styles.gameStatusWrapper}>
@@ -819,19 +871,20 @@ const MainScreen = () => {
             onResetBoardState={handleResetBoardState} 
             use3D={use3DDisplay}
             settings={settings}
-            isSimulatorMode={isSimulatorMode}            
-            onModeChange={handleModeChange} // ★★★ 修正箇所3: モード切替関数を渡す
-            recordingStatus={recordingStatus.current} // 0: 非記録中, 1: 記録中, 2: 保存待ち
+            isSimulatorMode={settings.flag === 1}            
+            onModeChange={handleModeChange} 
+            recordingStatus={recordingStatus.current} 
             isModalOpen={isModalOpen}
             onRecordingFunction={recordingFunction}
             onSendRecordingData={sendRecordingData}
-            // ★★★ 追加7: 牌譜用の状態と関数を子に渡す ★★★
             selectedKifuData={selectedKifuData}
-            onKifuTurnChange={setCurrentKifuTurn} // 巡目変更用のセッターを渡す                        
+            onKifuTurnChange={setCurrentKifuTurn} 
+            isSaving={isSaving}
+            calculationError={calculationError}
+            displaySettings={displaySettings}            
           />
         </div>
         
-        {/* ★★★ 追加: リサイズ用ハンドル ★★★ */}
         <div
           style={styles.resizeHandle}
           onMouseDown={startResizing}
@@ -841,7 +894,6 @@ const MainScreen = () => {
           <div style={styles.resizeLine} />
         </div>
 
-        {/* ★★★ 変更: 幅をstateで動的に指定 ★★★ */}
         <div style={{ ...styles.sidePanelWrapper, width: `${sidePanelWidth}px` }}>
           <SidePanel
             ref={sidePanelRef}
@@ -856,9 +908,10 @@ const MainScreen = () => {
             handFlip={handFlip}
             setHandFlip={setHandFlip}
             guideFrameColor={guideFrameColor}
-            isSimulatorMode={isSimulatorMode}
+            isSimulatorMode={settings.flag === 1}
             kifuFileList={kifuFileList}
-            onKifuSelect={handleKifuSelect}            
+            onKifuSelect={handleKifuSelect}
+            displaySettings={displaySettings}
           />
         </div>
       </div>
