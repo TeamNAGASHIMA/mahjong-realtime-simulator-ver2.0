@@ -445,7 +445,7 @@ const DoraIndicatorArea = ({ indicators, onSlotClick, selection, settings }) => 
   );
 };
 
-const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick, settings}) => {
+const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick }) => {
     const maxDiscards = 21; 
     const slots = Array(maxDiscards).fill(null);
     discards.forEach((tileNum, index) => {
@@ -475,7 +475,6 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                             tileNum={finalTileNum} 
                             size="other_meld" 
                             orientation={isExposed ? 'horizontal' : 'vertical'}
-                            showTooltips={settings.showTooltips}
                           />
                         </div>
                     );
@@ -491,7 +490,6 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                                 <Tile
                                     tileNum={tileNum} size="discard"
                                     isSelected={selection.type === 'discard' && selection.playerKey === playerKey && selection.index === i}
-                                    showTooltips={settings.showTooltips}
                                 />
                             </div>
                         ) : ( selection.type === 'add_discard' && selection.playerKey === playerKey && <div className="selection-highlight"></div>)}
@@ -502,7 +500,7 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
     );
 };
 
-const OwnMeldArea = ({ melds, onMeldTileClick, selection, settings }) => {
+const OwnMeldArea = ({ melds, onMeldTileClick, selection }) => {
   return (
     <div className="own-melds-area">
       {melds.map((meld, meldIndex) => (
@@ -520,7 +518,6 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection, settings }) => {
                   tileNum={finalTileNum} 
                   size="meld"
                   orientation={isExposed ? 'horizontal' : 'vertical'}
-                  showTooltips={settings.showTooltips}
                 />
               </div>
             );
@@ -531,7 +528,7 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection, settings }) => {
   );
 };
 
-const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose, settings }) => {
+const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
   const [selectedMeldType, setSelectedMeldType] = useState('pon');
   
   const ponCandidates = candidates.filter(c => c.type === 'pon');
@@ -595,7 +592,7 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose, settings })
             <div key={index} className="meld-candidate-item" onClick={() => onSelect(candidate)}>
               <div style={{display: 'flex'}}>
                 {getMeldDisplayTiles(candidate).sort((a,b) => a - b).map((tileNum, tileIndex) => (
-                      <Tile key={tileIndex} tileNum={tileNum} size="hand" showTooltips={settings.showTooltips}/>
+                      <Tile key={tileIndex} tileNum={tileNum} size="hand"/>
                 ))}
               </div>
               {selectedMeldType === 'kan' && <span className="kan-type-label">{KAN_TYPE_LABELS[candidate.type]}</span>}
