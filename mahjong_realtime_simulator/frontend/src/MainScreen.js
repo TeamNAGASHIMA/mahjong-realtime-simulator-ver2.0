@@ -262,7 +262,8 @@ const MainScreen = () => {
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
-    appBgImage: null, syanten_type: 1, flag: 1, showTooltips: true
+    appBgImage: null, syanten_type: 1, 
+    flag: 1
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
@@ -571,6 +572,136 @@ const MainScreen = () => {
     }
   };
 
+  // ★★★ 追加: 画像認識のみを行う関数 ★★★
+  const handleDetection = async () => {
+    if (!sidePanelRef.current) return;
+    
+    // 計算中フラグではなく、認識中フラグを立てる
+    setIsRecognizing(true);
+    setCalculationError(null);
+
+    try {
+      // SidePanelから画像データを取得
+      const { images } = sidePanelRef.current.getSidePanelData();
+      const formData = new FormData();
+      const handImageBlob = dataURLtoBlob(images.handImage);
+      const boardImageBlob = dataURLtoBlob(images.boardImage);
+
+      // 画像のチェックと格納
+      if (!handImageBlob || handImageBlob.size === 0) {
+        alert("手牌カメラの映像が取得できませんでした。");
+        setIsRecognizing(false);
+        return;
+      }
+      formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+      if (boardImageBlob) {
+        formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+      }
+
+      // 認識専用エンドポイントへ送信
+      const response = await fetch('/app/detection_tiles/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.status === 200) {
+        let detectedResult = data.detection_result;
+        
+        // 捨て牌データの整形
+        if (detectedResult && Array.isArray(detectedResult.discard_tiles)) {
+            const singleDiscardList = detectedResult.discard_tiles;
+            const reDistributedDiscards = {
+                discard_tiles_bottom: [], discard_tiles_right: [],
+                discard_tiles_top: [], discard_tiles_left: [],
+            };
+            let playerIndex = 0;
+            const playerKeys = ['discard_tiles_bottom', 'discard_tiles_right', 'discard_tiles_top', 'discard_tiles_left'];
+            for (let i = 0; i < singleDiscardList.length; i++) {
+                reDistributedDiscards[playerKeys[playerIndex]].push(singleDiscardList[i]);
+                playerIndex = (playerIndex + 1) % playerKeys.length;
+            }
+            detectedResult.discard_tiles = reDistributedDiscards; 
+        }
+
+        // 手牌・ツモ牌の処理
+        let recognizedHandTiles = detectedResult.hand_tiles ?? [];
+        let recognizedTsumoTile = null;
+        if (recognizedHandTiles.length === 14) {
+          recognizedTsumoTile = recognizedHandTiles.pop(); 
+        }
+
+        // 副露（鳴き）の整形ヘルパー
+        const getMeldsForPlayer = (playerData, playerKey) => {
+          let meldData = [];
+          if (Array.isArray(playerData)) { meldData = playerData; }
+          else if (typeof playerData === 'object' && playerData !== null) {
+            if (playerKey === 'self') meldData = playerData.melded_tiles_bottom || [];
+            else if (playerKey === 'shimocha') meldData = playerData.melded_tiles_right || [];
+            else if (playerKey === 'toimen') meldData = playerData.melded_tiles_top || [];
+            else if (playerKey === 'kamicha') meldData = playerData.melded_tiles_left || [];
+          }
+          return meldData;
+        };
+        // 捨て牌取得ヘルパー
+        const getDiscardsForPlayer = (playerKey, discardData) => {
+            if (playerKey === 'self') return discardData?.discard_tiles_bottom ?? [];
+            if (playerKey === 'shimocha') return discardData?.discard_tiles_right ?? [];
+            if (playerKey === 'toimen') return discardData?.discard_tiles_top ?? [];
+            if (playerKey === 'kamicha') return discardData?.discard_tiles_left ?? [];
+            return [];
+        };
+
+        const apiMeldsSource = detectedResult.melded_blocks || detectedResult.melded_tiles;
+        let selfMelds = [], shimochaMelds = [], toimenMelds = [], kamichaMelds = [];
+        
+        if (Array.isArray(apiMeldsSource)) {
+            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+        } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
+            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
+            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
+            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
+            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+        }
+
+        // 盤面状態を更新
+        const updatedBoardState = {
+            ...INITIAL_GAME_STATE, 
+            turn: detectedResult.turn ?? 1,
+            round_wind: boardState.round_wind, // 場風は既存維持
+            hand_tiles: recognizedHandTiles,
+            tsumo_tile: recognizedTsumoTile, 
+            dora_indicators: detectedResult.dora_indicators ?? [], 
+            player_discards: {
+                self: getDiscardsForPlayer('self', detectedResult.discard_tiles), 
+                shimocha: getDiscardsForPlayer('shimocha', detectedResult.discard_tiles),
+                toimen: getDiscardsForPlayer('toimen', detectedResult.discard_tiles),
+                kamicha: getDiscardsForPlayer('kamicha', detectedResult.discard_tiles)
+            },
+            melds: { self: selfMelds, shimocha: shimochaMelds, toimen: toimenMelds, kamicha: kamichaMelds },
+            player_winds: boardState.player_winds, 
+            last_discard: { tile: null, from: null, index: null }, 
+            bakaze: boardState.round_wind, 
+            counts: [] 
+        };
+        setBoardState(updatedBoardState); 
+        console.log("画像認識による盤面更新完了");
+
+      } else {
+        const errorMessage = data.message?.error || data.message || "Unknown error";
+        setCalculationError(`認識エラー (Status: ${response.status}): ${errorMessage}`);
+      }
+
+    } catch (err) {
+      console.error('通信に失敗しました:', err);
+      setCalculationError('通信に失敗しました。詳細はコンソールを確認してください。');
+    } finally {
+      setIsRecognizing(false);
+    }
+  };
+
   const appContainerStyle = {
     margin: 'auto', border: '1px solid #ccc', display: 'flex', flexDirection: 'column',
     boxShadow: '0 4px 8px rgba(0,0,0,0.1)', transition: 'all 0.3s',
@@ -587,43 +718,42 @@ const MainScreen = () => {
   };
 
   const renderModal = () => {
-  switch (activeModal) {
-    case 'settings': return <SettingsModal settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
-    
-    case 'camera':
-      return (
-        <CameraModal
-          onClose={closeModal}
-          isCameraActive={isCameraActive}
-          onConnectOrReconnect={handleConnectOrReconnect}
-          devices={devices}
-          selectedBoardCamera={selectedBoardCamera}
-          setSelectedBoardCamera={setSelectedBoardCamera}
-          selectedHandCamera={selectedHandCamera}
-          setSelectedHandCamera={setSelectedHandCamera}
-          errorMessage={cameraError}
-          boardFlip={boardFlip}
-          setBoardFlip={setBoardFlip}
-          handFlip={handFlip}
-          setHandFlip={setHandFlip}
-            guideFrameColor={guideFrameColor}
-            setGuideFrameColor={setGuideFrameColor}          
-        />
-      );
-    case 'display': 
-      return (
-        <DisplayModal 
-          onClose={closeModal} 
-          settings={displaySettings}
-          onSettingsChange={handleDisplaySettingsChange}
-        />
-      );
-    case 'help': return <HelpModal onClose={closeModal} />;
-    case 'contact': return <ContactModal onClose={closeModal} />;
-    case 'version': return <VersionInfoModal onClose={closeModal} />;
-    default: return null;
-  }
-};
+    switch (activeModal) {
+      case 'settings': return <SettingsModal settings={settings} onSettingsChange={handleSettingsChange} onClose={closeModal} />;
+      case 'camera':
+        return (
+          <CameraModal
+            onClose={closeModal}
+            isCameraActive={isCameraActive}
+            onConnectOrReconnect={handleConnectOrReconnect}
+            devices={devices}
+            selectedBoardCamera={selectedBoardCamera}
+            setSelectedBoardCamera={setSelectedBoardCamera}
+            selectedHandCamera={selectedHandCamera}
+            setSelectedHandCamera={setSelectedHandCamera}
+            errorMessage={cameraError}
+            boardFlip={boardFlip}
+            setBoardFlip={setBoardFlip}
+            handFlip={handFlip}
+            setHandFlip={setHandFlip}
+              guideFrameColor={guideFrameColor}
+              setGuideFrameColor={setGuideFrameColor}          
+          />
+        );
+      case 'display': 
+        return (
+          <DisplayModal 
+            onClose={closeModal} 
+            settings={displaySettings}
+            onSettingsChange={handleDisplaySettingsChange}
+          />
+        );
+      case 'help': return <HelpModal onClose={closeModal} />;
+      case 'contact': return <ContactModal onClose={closeModal} />;
+      case 'version': return <VersionInfoModal onClose={closeModal} />;
+      default: return null;
+    }
+  };
 
   const recordingStatus = useRef(0); // 0: 非記録中, 1: 記録中, 2: 保存待ち
   const [rendering, setRendering] = useState(false);
@@ -912,6 +1042,8 @@ const MainScreen = () => {
             kifuFileList={kifuFileList}
             onKifuSelect={handleKifuSelect}
             displaySettings={displaySettings}
+            // ★★★ 追加: 画像認識関数を渡す ★★★
+            onDetection={handleDetection}
           />
         </div>
       </div>

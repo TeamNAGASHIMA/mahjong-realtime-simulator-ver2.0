@@ -19,7 +19,8 @@ const styles = {
 };
 
 const CameraPreview = forwardRef((props, ref) => {
-  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor } = props;
+  // ★★★ 修正: onDetection を分割代入で受け取る ★★★
+  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor, onDetection } = props;
 
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
@@ -113,8 +114,9 @@ const CameraPreview = forwardRef((props, ref) => {
         <span>カメラプレビュー</span>
       </div>
 
-      {/* ★★★ 修正: 牌認識ボタン (テキスト変更 & ホバー処理追加) ★★★ */}
+      {/* ★★★ 修正: 牌認識ボタン (テキスト変更 & ホバー処理 & onClick追加) ★★★ */}
       <button 
+        onClick={onDetection} // ここで関数を呼び出し
         disabled={isRecognizing} 
         style={{
           ...styles.recognitionButton, 
