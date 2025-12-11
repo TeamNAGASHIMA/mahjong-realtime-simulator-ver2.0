@@ -210,11 +210,13 @@ const ThirteenTileView = ({ data }) => {
 /**
  * メインの計算結果表示コンポーネント
  */
-const CalculationResults = ({ results, isLoading }) => {
+const CalculationResults = ({ results, isLoading, displaySettings }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'exp_value', direction: 'descending' });
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const tableBodyRef = useRef(null);
 
+  // ★★★ 追加: 設定から表示件数を取得（デフォルト5件） ★★★
+  const maxRows = displaySettings ? displaySettings.resultCount : 5;
   useLayoutEffect(() => {
     if (tableBodyRef.current) {
       const width = tableBodyRef.current.offsetWidth - tableBodyRef.current.clientWidth;
@@ -266,11 +268,12 @@ const CalculationResults = ({ results, isLoading }) => {
   let displayData = [];
 
   if (isLoading) {
-    displayData = Array(minRowsToDisplay).fill({}).map((_, i) => ({
+    displayData = Array(maxRows).fill({}).map((_, i) => ({
       key: `loading-${i}`, dapai: '...', yukoHai: [], kitaiValue: '---', horaRate: '---', tenpaiRate: '---',
     }));
   } else if (sortedResults && sortedResults.length > 0) {
-    displayData = sortedResults.map((row, i) => ({
+    // ★★★ 修正: maxRows でスライスして表示件数を制限 ★★★
+    displayData = sortedResults.slice(0, maxRows).map((row, i) => ({
       key: `result-${i}`, dapai: row.tile, yukoHai: row.required_tiles || [],
       kitaiValue: row.exp_value !== undefined ? `${Math.round(row.exp_value)}点` : '-',
       horaRate: row.win_prob !== undefined ? `${(row.win_prob * 100).toFixed(2)}%` : '-',
@@ -278,7 +281,8 @@ const CalculationResults = ({ results, isLoading }) => {
     }));
   }
 
-  const emptyRowCount = minRowsToDisplay - displayData.length;
+  // 空行の埋め合わせ (設定件数に満たない場合)
+  const emptyRowCount = maxRows - displayData.length;
   if (emptyRowCount > 0) {
     for (let i = 0; i < emptyRowCount; i++) {
       displayData.push({
@@ -288,7 +292,7 @@ const CalculationResults = ({ results, isLoading }) => {
   }
   
   if (!isLoading && (!results || results.length === 0)) {
-    displayData = Array(minRowsToDisplay).fill(null).map((_, i) => ({
+    displayData = Array(maxRows).fill(null).map((_, i) => ({
         key: `initial-empty-${i}`, dapai: null, yukoHai: [], kitaiValue: '', horaRate: '', tenpaiRate: ''
     }));
     displayData[0] = { ...displayData[0], key: 'initial-message', dapai: "「計算」ボタンを押してください", isMessage: true };
