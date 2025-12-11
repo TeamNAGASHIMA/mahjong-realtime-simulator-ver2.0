@@ -32,7 +32,6 @@ const ButtonContainer = ({
   isModalOpen,
   onRecordingFunction,
   onSendRecordingData,
-  // ★★★ 追加: MainScreen -> GameStatusArea から渡ってくるプロップ
   isSaving
 }) => {
   return (
@@ -44,7 +43,6 @@ const ButtonContainer = ({
             isModalOpen={isModalOpen}
             onRecordingFunction={onRecordingFunction}
             onSendRecordingData={onSendRecordingData}
-            // ★★★ 追加: RecordButtonへ渡す
             isSaving={isSaving}
           />
         ) : <TurnSelector />}
