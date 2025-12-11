@@ -26,7 +26,7 @@ const styles = {
 };
 
 const SidePanel = forwardRef((props, ref) => {
-  const { displaySettings, isSimulatorMode, settings } = props; // ▼▼▼ 修正1: propsからsettingsを分割代入で受け取る ▼▼▼
+  const { displaySettings, isSimulatorMode, settings } = props;
 
   const cameraRef = useRef(null);
   const settingsRef = useRef(null);
@@ -58,7 +58,12 @@ const SidePanel = forwardRef((props, ref) => {
       {showCamera && (
         <div style={styles.topSection}>
           {isSimulatorMode ? (
-            <CameraPreview ref={cameraRef} {...props} />
+            <CameraPreview 
+              ref={cameraRef} 
+              {...props}
+              // ★★★ 追加: onDetectionを明示的に渡す
+              onDetection={props.onDetection} 
+            />
           ) : (
             <KifuSelector 
               kifuFileList={props.kifuFileList}
@@ -69,7 +74,6 @@ const SidePanel = forwardRef((props, ref) => {
       )}
       
       {showSettingsUI && (
-        // ▼▼▼ 修正2: SettingsPanelにsettings propを明示的に渡す ▼▼▼
         <SettingsPanel ref={settingsRef} settings={settings} />
       )}
     </div>
