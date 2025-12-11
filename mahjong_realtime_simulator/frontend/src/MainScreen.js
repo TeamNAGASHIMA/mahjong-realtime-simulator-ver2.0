@@ -262,8 +262,7 @@ const MainScreen = () => {
   const [settings, setSettings] = useState({
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
-    appBgImage: null, syanten_type: 1, 
-    flag: 1
+    appBgImage: null, syanten_type: 1, flag: 1, showTooltips: true
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
