@@ -415,7 +415,7 @@ def savedata(Req_BODY, Img_FILES):
                 )
 
             # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
-            detection_result = detectoin["result_simple"]
+            detection_result = detectoin["result"]
 
             # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
             doraList = detection_result["dora_indicators"]
