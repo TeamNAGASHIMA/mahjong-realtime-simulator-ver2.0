@@ -1,6 +1,5 @@
 // CameraPreview.js
 
-// ★★★ 修正点: useState をインポートに追加しました ★★★
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 
 // スタイル定義
@@ -11,7 +10,8 @@ const styles = {
   previewSection: { marginBottom: '15px', },
   previewHeader: { fontSize: '12px', color: '#555', marginBottom: '5px', },
   previewBox: { width: '100%', height: 'auto', aspectRatio: '16 / 9', backgroundColor: '#000000', border: '1px solid #333', borderRadius: '4px', display: 'block', },
-  recognitionButton: { width: '100%', padding: '8px', fontSize: '13px', marginTop: '10px', cursor: 'pointer', backgroundColor: '#f0f0f0', border: '1px solid #ccc', borderRadius: '4px', },
+  // ★★★ 修正: transitionを追加してホバー時の変化を滑らかに ★★★
+  recognitionButton: { width: '100%', padding: '8px', fontSize: '13px', marginBottom: '10px', cursor: 'pointer', backgroundColor: '#f0f0f0', border: '1px solid #ccc', borderRadius: '4px', transition: 'background-color 0.2s, border-color 0.2s', },
   flipButtonsContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '8px', },
   flipButton: { padding: '4px 8px', fontSize: '12px', marginLeft: 0, minWidth: '80px', border: '1px solid #aaa', borderRadius: '4px', backgroundColor: '#f0f0f0', cursor: 'pointer', transition: 'background-color 0.2s, border-color 0.2s', },
   flipButtonActive: { backgroundColor: '#77aaff', color: '#fff', fontWeight: 'bold', borderColor: '#5588dd', },
@@ -19,12 +19,12 @@ const styles = {
 };
 
 const CameraPreview = forwardRef((props, ref) => {
-  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor } = props;
+  // ★★★ 修正: onDetection を分割代入で受け取る ★★★
+  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor, onDetection } = props;
 
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
   
-  // ★★★ 修正点: サポートモード削除に伴い、ボタンのホバー状態管理のみ残します ★★★
   const [hoveredButton, setHoveredButton] = useState(null);
 
   const guideFrameStyle = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', height: '100%', aspectRatio: '1 / 1', border: `3px solid ${guideFrameColor}`, boxSizing: 'border-box', pointerEvents: 'none' };
@@ -39,7 +39,6 @@ const CameraPreview = forwardRef((props, ref) => {
       const constraints = {
         video: {
           deviceId: { exact: selectedBoardCamera },
-          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値) 
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
@@ -65,7 +64,6 @@ const CameraPreview = forwardRef((props, ref) => {
       const constraints = {
         video: {
           deviceId: { exact: selectedHandCamera },
-          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値)          
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
@@ -116,6 +114,21 @@ const CameraPreview = forwardRef((props, ref) => {
         <span>カメラプレビュー</span>
       </div>
 
+      {/* ★★★ 修正: 牌認識ボタン (テキスト変更 & ホバー処理 & onClick追加) ★★★ */}
+      <button 
+        onClick={onDetection} // ここで関数を呼び出し
+        disabled={isRecognizing} 
+        style={{
+          ...styles.recognitionButton, 
+          cursor: isRecognizing ? 'wait' : 'pointer',
+          ...(hoveredButton === 'recognition' && !isRecognizing ? styles.buttonHover : {})
+        }}
+        onMouseOver={() => setHoveredButton('recognition')}
+        onMouseOut={() => setHoveredButton(null)}
+      > 
+        {isRecognizing ? '認識中...' : '牌認識'} 
+      </button>
+
       <div style={styles.contentWrapper}>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>盤面</div>
@@ -127,8 +140,8 @@ const CameraPreview = forwardRef((props, ref) => {
             <button style={{ ...styles.flipButton, ...(boardFlip?.horizontal && styles.flipButtonActive), ...(!boardFlip?.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
             <button style={{ ...styles.flipButton, ...(boardFlip?.vertical && styles.flipButtonActive), ...(!boardFlip?.vertical && hoveredButton === 'board_v' && styles.buttonHover) }} onClick={() => handleFlip('board', 'vertical')} onMouseOver={() => setHoveredButton('board_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
           </div>
-          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}> {isRecognizing ? '認識中...' : '盤面全体を認識 (計算と同時実行)'} </button>
         </div>
+        
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>手牌</div>
           <video ref={handVideoRef} style={{ ...styles.previewBox, transform: getTransform(handFlip) }} autoPlay playsInline muted></video>
@@ -136,7 +149,6 @@ const CameraPreview = forwardRef((props, ref) => {
             <button style={{ ...styles.flipButton, ...(handFlip?.horizontal && styles.flipButtonActive), ...(!handFlip?.horizontal && hoveredButton === 'hand_h' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'horizontal')} onMouseOver={() => setHoveredButton('hand_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
             <button style={{ ...styles.flipButton, ...(handFlip?.vertical && styles.flipButtonActive), ...(!handFlip?.vertical && hoveredButton === 'hand_v' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'vertical')} onMouseOver={() => setHoveredButton('hand_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
           </div>
-          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}> {isRecognizing ? '認識中...' : '自分の手牌を認識 (計算と同時実行)'} </button>
         </div>
       </div>
     </div>
