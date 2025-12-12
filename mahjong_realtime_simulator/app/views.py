@@ -294,6 +294,60 @@ def tiles_req(request):
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+@csrf_exempt
+def detection_tiles(request):
+    '''
+    牌検知
+    引数: 
+        hand_tiles_image : 手牌画像
+        board_tiles_image : 盤面画像
+
+    戻り値:
+        message : 処理結果メッセージ
+        detection_result : 牌認識結果
+        status : ステータスコード
+    '''
+    if request.method == 'POST':
+        try:
+            Img_FILES = request.FILES
+            
+            # 手牌画像＆盤面画像が取得できていなければエラーを返す
+            if 'board_tiles_image' not in Img_FILES and 'hand_tiles_image' not in Img_FILES:
+                message = "No images of the board and hand cards included."
+                return JsonResponse({'message': message}, status=400)
+            else:
+                np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
+                np_board_tiles_image = imageChangeNp(Img_FILES['board_tiles_image'])
+                
+                detection = analyze_mahjong_board(np_board_tiles_image, np_hand_tiles_image)
+
+                # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+                if detection["status"] != 200:
+                    message = detection["message"]
+                    status = detection["status"]
+
+                    return JsonResponse(
+                        {
+                        'message': message,
+                        "detection_result": []
+                        }, 
+                        status=status
+                    )
+                
+                detection_result = detection["result"]
+
+                return JsonResponse(
+                    {
+                    'message': "successful",
+                    "detection_result": detection_result
+                    }, 
+                    status=200
+                    )
+            
+        except Exception as e:
+            message = "Exception error"
+            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            
 
 def imageChangeNp(request_image):
     # 保存先のフルパスを作成（例: media/uploads/filename.png）
