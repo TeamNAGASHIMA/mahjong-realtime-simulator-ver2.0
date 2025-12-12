@@ -347,7 +347,7 @@ def detection_tiles(request):
         except Exception as e:
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
-            
+
 
 def imageChangeNp(request_image):
     # 保存先のフルパスを作成（例: media/uploads/filename.png）
@@ -415,7 +415,7 @@ def savedata(Req_BODY, Img_FILES):
                 )
 
             # detection_result => フロントエンドの盤面状況コンポーネント上に表示させる用のデータ
-            detection_result = detectoin["result"]
+            detection_result = detectoin["result_simple"]
 
             # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
             doraList = detection_result["dora_indicators"]
