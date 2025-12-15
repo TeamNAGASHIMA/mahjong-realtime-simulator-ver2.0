@@ -90,7 +90,11 @@ const TILE_NAME_MAP = {
   M1: 'イーマン', M2: 'リャンマン', M3: 'サンマン', M4: 'スーマン', M5: 'ウーマン', M6: 'ローマン', M7: 'チーマン', M8: 'パーマン', M9: 'キュウマン', RM5: 'アカウーマン',
   P1: 'イーピン', P2: 'リャンピン', P3: 'サンピン', P4: 'スーピン', P5: 'ウーピン', P6: 'ローピン', P7: 'チーピン', P8: 'パーピン', P9: 'キュウピン', RP5: 'アカウーピン',
   S1: 'イーソウ', S2: 'リャンソウ', S3: 'サンソウ', S4: 'スーソウ', S5: 'ウーソウ', S6: 'ローソウ', S7: 'チーソウ', S8: 'パーソウ', S9: 'キュウソウ', RS5: 'アカウーソウ',
-  Z1: 'トン', Z2: 'ナン', Z3: 'シャー', Z4: 'ペー', Z5: 'ハク', Z6: 'ハツ', Z7: 'チュン',
+  Z1: 'トン', Z2: 'ナン', Z3: 'シャー', Z4: 'ペー', Z5: 'ハク', Z6: 'ハツ', Z7: 'チュン', 
+  EM1: 'イーマン 誤検知の可能性あり', EM2: 'リャンマン 誤検知の可能性あり', EM3: 'サンマン 誤検知の可能性あり', EM4: 'スーマン 誤検知の可能性あり', EM5: 'ウーマン 誤検知の可能性あり', EM6: 'ローマン 誤検知の可能性あり', EM7: 'チーマン 誤検知の可能性あり', EM8: 'パーマン 誤検知の可能性あり', EM9: 'キュウマン 誤検知の可能性あり', ERM5: 'アカウーマン 誤検知の可能性あり',
+  EP1: 'イーピン 誤検知の可能性あり', EP2: 'リャンピン 誤検知の可能性あり', EP3: 'サンピン 誤検知の可能性あり', EP4: 'スーピン 誤検知の可能性あり', EP5: 'ウーピン 誤検知の可能性あり', EP6: 'ローピン 誤検知の可能性あり', EP7: 'チーピン 誤検知の可能性あり', EP8: 'パーピン 誤検知の可能性あり', EP9: 'キュウピン 誤検知の可能性あり', ERP5: 'アカウーピン 誤検知の可能性あり',
+  ES1: 'イーソウ 誤検知の可能性あり', ES2: 'リャンソウ 誤検知の可能性あり', ES3: 'サンソウ 誤検知の可能性あり', ES4: 'スーソウ 誤検知の可能性あり', ES5: 'ウーソウ 誤検知の可能性あり', ES6: 'ローソウ 誤検知の可能性あり', ES7: 'チーソウ 誤検知の可能性あり', ES8: 'パーソウ 誤検知の可能性あり', ES9: 'キュウソウ 誤検知の可能性あり', ERS5: 'アカウーソウ 誤検知の可能性あり',
+  EZ1: 'トン 誤検知の可能性あり', EZ2: 'ナン 誤検知の可能性あり', EZ3: 'シャー 誤検知の可能性あり', EZ4: 'ペー 誤検知の可能性あり', EZ5: 'ハク 誤検知の可能性あり', EZ6: 'ハツ 誤検知の可能性あり', EZ7: 'チュン 誤検知の可能性あり',
 };
 // 2. ALL_TILES_IN_POOL を基本的な牌(0-36)のみを生成するように修正
 const ALL_TILES_IN_POOL = Array.from({ length: 37 }, (_, i) => i);
@@ -446,12 +450,13 @@ const DoraIndicatorArea = ({ indicators, onSlotClick, selection, settings }) => 
 };
 
 const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick, settings}) => {
-    const maxDiscards = 21; 
+  const maxDiscards = 21; 
     const slots = Array(maxDiscards).fill(null);
     discards.forEach((tileNum, index) => {
         if (index < maxDiscards) slots[index] = tileNum;
     });
-
+    
+    console.log("settings:", settings);
     return (
         <div className="player-display">
             <div className="player-label-container">
@@ -1057,6 +1062,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         candidates={meldCandidates}
         onSelect={handleSelectMeld}
         onClose={() => setIsMeldModalOpen(false)}
+        settings={settings}
       />
       <div 
         className={`tile-display-container theme-${settings.theme}`}
@@ -1086,12 +1092,12 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
               onModeChange={onModeChange}
             />
             
-            <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} />
+            <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} settings={settings}/>
             <div className="upper-game-area">
-              <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="shimocha" label="下家" subLabel={playerWindNames.shimocha} discards={boardState.player_discards.shimocha} melds={boardState.melds.shimocha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'shimocha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="toimen" label="対面" subLabel={playerWindNames.toimen} discards={boardState.player_discards.toimen} melds={boardState.melds.toimen} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'toimen'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="kamicha" label="上家" subLabel={playerWindNames.kamicha} discards={boardState.player_discards.kamicha} melds={boardState.melds.kamicha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'kamicha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
+              <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="shimocha" label="下家" subLabel={playerWindNames.shimocha} discards={boardState.player_discards.shimocha} melds={boardState.melds.shimocha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'shimocha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="toimen" label="対面" subLabel={playerWindNames.toimen} discards={boardState.player_discards.toimen} melds={boardState.melds.toimen} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'toimen'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="kamicha" label="上家" subLabel={playerWindNames.kamicha} discards={boardState.player_discards.kamicha} melds={boardState.melds.kamicha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'kamicha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
             </div>
             <div className="own-hand-area">
               <div className="hand-controls">
@@ -1135,7 +1141,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                     )}
                   </div>
                 </div>
-                <OwnMeldArea melds={boardState.melds.self} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} selection={selection}/>
+                <OwnMeldArea melds={boardState.melds.self} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} selection={selection} settings={settings}/>
               </div>
             </div>
             
