@@ -347,7 +347,7 @@ def detection_tiles(request):
         except Exception as e:
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
-            
+
 
 def imageChangeNp(request_image):
     # 保存先のフルパスを作成（例: media/uploads/filename.png）
@@ -418,11 +418,11 @@ def savedata(Req_BODY, Img_FILES):
             detection_result = detectoin["result"]
 
             # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-            doraList = detection_result["dora_indicators"]
-            hand_tiles = detection_result["hand_tiles"]
-            raw_melded_blocks = detection_result["melded_tiles"]
-            river_tiles = detection_result["discard_tiles"]
-            turn = detection_result["turn"]
+            # doraList = detection_result["dora_indicators"]
+            # hand_tiles = detection_result["hand_tiles"]
+            # raw_melded_blocks = detection_result["melded_tiles"]
+            # river_tiles = detection_result["discard_tiles"]
+            # turn = detection_result["turn"]
 
             if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) >= 15:
                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
@@ -438,11 +438,7 @@ def savedata(Req_BODY, Img_FILES):
 
             # 保存するデータをまとめる。
             save_data = (
-                    doraList,
-                    hand_tiles,
-                    raw_melded_blocks,
-                    river_tiles,
-                    turn
+                    detection_result
                 )
         else:
             # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する

@@ -170,11 +170,7 @@ def difference_check(save_data, record_flg, file_name="game_data"):
     # 差分チェックをせず、データがあれば常に保存する
     if save_data != "":
         step_data = {
-            "dora_indicators": save_data[0],
-            "hand_tiles": save_data[1],
-            "melded_blocks": save_data[2],
-            "river_tiles": save_data[3],
-            "turn": save_data[4]
+            save_data
         }
         save_temp_result(step_data)
         change_flg = True
