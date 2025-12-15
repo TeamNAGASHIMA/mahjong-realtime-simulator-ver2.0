@@ -695,6 +695,15 @@ def analyze_mahjong_board(
 
         result = result_check_main(result)
 
+        # resultからconfsを除いて再度resultを構築
+        result = {
+            "turn": result["turn"],
+            "dora_indicators": result["dora_indicators"],
+            "hand_tiles": result["hand_tiles"],
+            "melded_tiles": result["melded_tiles"],
+            "discard_tiles": result["discard_tiles"],
+        }
+
         melded_tiles_mine = melded_tiles_by_zone.get("melded_tiles_bottom", [])
         melded_tiles_other = melded_tiles_by_zone.get("melded_tiles_right", []) + \
                                 melded_tiles_by_zone.get("melded_tiles_top", []) + \
