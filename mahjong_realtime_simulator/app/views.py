@@ -172,7 +172,6 @@ def tiles_save(request):
                 if record_flag == 0:
                     return JsonResponse({'message': 'No saving requested.'}, status=420)
                 elif record_flag == 1:
-                        
                         save_data_return = savedata(Req_BODY, Img_FILES)
                         if isinstance(save_data_return, JsonResponse):
                             return save_data_return
@@ -472,5 +471,5 @@ def savedata(Req_BODY, Img_FILES):
                     fixes_river_tiles,
                     fixes_data["turn"]
                 )
-        print(save_data)
+        # print(save_data)
     return save_data,detection_result
