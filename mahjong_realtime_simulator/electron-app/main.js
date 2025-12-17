@@ -3,12 +3,15 @@ const path = require('path');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     webPreferences: {
       // (必要に応じて設定)
     },
   });
+
+  // ウィンドウのアスペクト比を固定 (16:9)
+  mainWindow.setAspectRatio(16 / 9);
 
   // DjangoアプリケーションのURLをロードします
   // mainWindow.loadURL('http://127.0.0.1:8010/admin'); // Djangoの開発サーバーのURLに合わせてください
