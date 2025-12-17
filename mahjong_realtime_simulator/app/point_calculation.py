@@ -31,8 +31,11 @@ def print_hand_result(hand_result):
         #役
         print(hand_result.yaku)
         #符数の詳細
-        for fu_item in hand_result.fu_details:
-            print(fu_item)
+        try:
+            for fu_item in hand_result.fu_details:
+                print(fu_item)
+        except:
+            print("この役に符は含まれていません。")
         print('')
 
 def id_change(change_card):
@@ -44,7 +47,7 @@ def id_change(change_card):
 
 # 点数計算メイン処理
 def point_calculate(
-        hand_tiles, # 手牌リスト、鳴き牌もすべて含めた形式にする。槓子がある場合は、3つに減らしておく
+        hand_tiles, # 手牌リスト、鳴き牌もすべて含めた形式にする。槓子がある場合でも、4つのまま追加する。
         win_tile,  # アガリ牌
         melds_list, # 鳴き牌、bottomのみの鳴き牌リスト
         dora_list, # ドラ牌リスト
@@ -58,7 +61,6 @@ def point_calculate(
         "h1","h2","h3","h4","h5","h6","h7",
         "m0","p0","s0"
         ]
-    
     # 物体検知の結果の手牌を麻雀点数計算の形式に変換
     manz = [] # 萬子配列
     pinz = [] # 筒子配列
@@ -102,23 +104,24 @@ def point_calculate(
     tiles = TilesConverter.string_to_136_array(
         man = manz_sort_join,
         pin = pinz_sort_join,
-        sou = souz_sort_join, 
+        sou = souz_sort_join,
         honors = honz_sort_join,
         has_aka_dora = options_dict["options"]["has_aka_dora"]
     )
 
+    win_tile_aka_dora = False
     win_tile = id_change(win_tile)
     if win_tile >= 34:
-        win_tile = (win_tile - 34) * 9 + 4
+        win_tile_aka_dora = True
     card_win_tile = list(majong_map[win_tile])
     if card_win_tile[0] == "m":
-        win_tile_convert = TilesConverter.string_to_136_array(man = card_win_tile[1])[0]
+        win_tile_convert = TilesConverter.string_to_136_array(man = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
     elif card_win_tile[0] == "p":
-        win_tile_convert = TilesConverter.string_to_136_array(pin = card_win_tile[1])[0]
+        win_tile_convert = TilesConverter.string_to_136_array(pin = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
     elif card_win_tile[0] == "s":
-        win_tile_convert = TilesConverter.string_to_136_array(sou = card_win_tile[1])[0]
+        win_tile_convert = TilesConverter.string_to_136_array(sou = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
     elif card_win_tile[0] == "h":
-        win_tile_convert = TilesConverter.string_to_136_array(honors = card_win_tile[1])[0]
+        win_tile_convert = TilesConverter.string_to_136_array(honors = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
 
     # 鳴き(ダイミンカン:true, アンカン:False)
     # 鳴き(チー:CHI, ポン:PON, カン:KAN(True:ミンカン,False:アンカン), カカン:CHANKAN, ヌキドラ:NUKI)
@@ -170,7 +173,6 @@ def point_calculate(
                     meld_hai = meld_hai - 100
                 card_meld_kan = list(majong_map[meld_hai])
                 kan_meld.append(card_meld_kan[1])
-            
             kan_hai_type = card_meld_kan[0]
             kan_meld_join = "".join(kan_meld)
 
@@ -297,199 +299,7 @@ def point_calculate(
 
     # 計算
     result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
-    # return result
 
     print_hand_result(result)
 
-# 点数計算処理のテスト実行
-# test : 1 (リーチ, ツモ, ドラ2)
-# point_calculate(
-#     hand_tiles = [3,4,5,9,9,9,12,13,14,19,20,21,28,128],
-#     win_tile = 5,
-#     melds_list = [[]],
-#     dora_list = [20,21],
-#     options_dict = {
-#         "is_tsumo": True,
-#         "is_riichi": True,
-#         "is_rinshan": False,
-#         "is_ippatsu": False,
-#         "is_chankan": False,
-#         "is_haitei": False,
-#         "is_houtei": False,
-#         "is_daburu_riichi": False,
-#         "is_nagashi_mangan": False,
-#         "is_tenhou": False,
-#         "is_renhou": False,
-#         "is_chiihou": False,
-#         "options": {
-#             "kazoe_limit": 0,
-#             "has_aka_dora": True,
-#             "has_open_tanyao": False,
-#             "has_double_yakuman": False,
-#             "kiriage": False,
-#             "fu_for_open_pinfu": False,
-#             "fu_for_pinfu_tsumo": False,
-#             "renhou_as_yakuman": False,
-#             "has_daisharin": False,
-#             "has_daisharin_other_suits": False
-#         }
-#     }
-# )
-
-# test : 2 (鳴きあり)
-# point_calculate(
-#     hand_tiles = [0,1,2,109,10,11,18,19,20,27,127,1027,1131,131],
-#     win_tile = 0,
-#     melds_list = [[27,127,1027], [109,10,11]],
-#     dora_list = [30,30,30],
-#     options_dict = {
-#         "is_tsumo": True,
-#         "is_riichi": False,
-#         "is_rinshan": False,
-#         "is_ippatsu": False,
-#         "is_chankan": False,
-#         "is_haitei": True,
-#         "is_houtei": False,
-#         "is_daburu_riichi": False,
-#         "is_nagashi_mangan": False,
-#         "is_tenhou": False,
-#         "is_renhou": False,
-#         "is_chiihou": False,
-#         "options": {
-#             "kazoe_limit": 0,
-#             "has_aka_dora": True,
-#             "has_open_tanyao": False,
-#             "has_double_yakuman": False,
-#             "kiriage": False,
-#             "fu_for_open_pinfu": False,
-#             "fu_for_pinfu_tsumo": False,
-#             "renhou_as_yakuman": False,
-#             "has_daisharin": False,
-#             "has_daisharin_other_suits": False
-#         }
-#     }
-# )
-
-# test : 3 (ダブル立直、ロン和了、赤ドラ和了)
-# point_calculate(
-#     hand_tiles = [0,0,0,1,1,1,10,10,10,13,13,1131,131,35],
-#     win_tile = 35,
-#     melds_list = [[]],
-#     dora_list = [12],
-#     options_dict = {
-#         "is_tsumo": False,
-#         "is_riichi": False,
-#         "is_rinshan": False,
-#         "is_ippatsu": True,
-#         "is_chankan": False,
-#         "is_haitei": False,
-#         "is_houtei": False,
-#         "is_daburu_riichi": True,
-#         "is_nagashi_mangan": False,
-#         "is_tenhou": False,
-#         "is_renhou": False,
-#         "is_chiihou": False,
-#         "options": {
-#             "kazoe_limit": 0,
-#             "has_aka_dora": True,
-#             "has_open_tanyao": False,
-#             "has_double_yakuman": False,
-#             "kiriage": False,
-#             "fu_for_open_pinfu": False,
-#             "fu_for_pinfu_tsumo": False,
-#             "renhou_as_yakuman": False,
-#             "has_daisharin": False,
-#             "has_daisharin_other_suits": False
-#         }
-#     }
-# )
-
-# test : 4 (槓子全種)
-# point_calculate(
-#     hand_tiles = [5,5,5,11,11,11,15,15,15,19,19,33,33,33],
-#     win_tile = 19,
-#     melds_list = [[5,5,5,1005], [11,111,111,1011], [15,115,1015,15]], 
-#     dora_list = [1,3,10,12],
-#     options_dict = {
-#         "is_tsumo": True,
-#         "is_riichi": True,
-#         "is_rinshan": False,
-#         "is_ippatsu": False,
-#         "is_chankan": False,
-#         "is_haitei": False,
-#         "is_houtei": False,
-#         "is_daburu_riichi": False,
-#         "is_nagashi_mangan": False,
-#         "is_tenhou": False,
-#         "is_renhou": False,
-#         "is_chiihou": False,
-#         "options": {
-#             "kazoe_limit": 0,
-#             "has_aka_dora": True,
-#             "has_open_tanyao": False,
-#             "has_double_yakuman": False,
-#             "kiriage": False,
-#             "fu_for_open_pinfu": False,
-#             "fu_for_pinfu_tsumo": False,
-#             "renhou_as_yakuman": False,
-#             "has_daisharin": False,
-#             "has_daisharin_other_suits": False
-#         }
-#     }
-# )
-
-# # テストコード
-# # 計算
-# from mahjong.hand_calculating.hand import HandCalculator
-# # 麻雀牌
-# from mahjong.tile import TilesConverter
-# # 役, オプションルール
-# from mahjong.hand_calculating.hand_config import HandConfig, OptionalRules
-# # 鳴き
-# from mahjong.meld import Meld
-# # 風(場&自)
-# from mahjong.constants import EAST, SOUTH, WEST, NORTH
-
-# # HandCalculator(計算用クラス)のインスタンスを生成
-# calculator = HandCalculator()
-
-# # 結果出力用
-# def print_hand_result(hand_result):
-#     #翻数, 符数
-#     print(hand_result.han, hand_result.fu)
-#     #点数(ツモアガリの場合[左：親失点, 右:子失点], ロンアガリの場合[左:放銃者失点, 右:0])
-#     print(hand_result.cost['main'], result.cost['additional'])
-#     #役
-#     print(hand_result.yaku)
-#     #符数の詳細
-#     for fu_item in hand_result.fu_details:
-#         print(fu_item)
-#     print('')
-
-# # アガリ形(牌が一種類しかない場合は、has_aka_doraは必要なし)
-# tiles = TilesConverter.string_to_136_array(man='22244455777999')
-
-# # アガリ牌(マンズの赤5, ですが普通のマンズの5と意味は一緒)
-# win_tile = TilesConverter.string_to_136_array(man='5')[0]
-
-# # 鳴き(ダイミンカン:true, アンカン:False)
-# melds = [
-#     Meld(Meld.KAN, TilesConverter.string_to_136_array(man='7777'), False),
-#     Meld(Meld.KAN, TilesConverter.string_to_136_array(man='2222'), False),
-#     Meld(Meld.KAN, TilesConverter.string_to_136_array(man='9999'), True)
-# ]
-
-# # ドラ(表示牌を枚数分だけ)
-# dora_indicators = [
-#     TilesConverter.string_to_136_array(man='1')[0],
-#     TilesConverter.string_to_136_array(man='1')[0],
-#     TilesConverter.string_to_136_array(man='6')[0],
-#     TilesConverter.string_to_136_array(man='8')[0],
-# ]
-
-# # オプション(OptionalRulesのkazoe_limitをKAZOE_NO_LIMITへ, 赤がある場合はここで設定)
-# config = HandConfig(is_tsumo=True,is_rinshan=True,options=OptionalRules(kazoe_limit=HandConfig.KAZOE_LIMITED, has_aka_dora=True))
-
-# # 計算
-# result = calculator.estimate_hand_value(tiles, win_tile,melds,dora_indicators, config)
-# print_hand_result(result)
+    return result
