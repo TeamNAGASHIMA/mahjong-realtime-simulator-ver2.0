@@ -1,4 +1,4 @@
-// CameraPreview.js (表示用videoから直接キャプチャする最終解決策)
+// CameraPreview.js
 
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 
@@ -6,12 +6,12 @@ import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } f
 const styles = {
   cameraPreviewScreen: { width: '100%', backgroundColor: '#D9D9D9', padding: '10px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', borderRadius: '8px', height: '100%', minHeight: 0, },
   contentWrapper: { flex: '1 1 0', minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '12px', color: '#333', flexShrink: 0 },
-  toggleButton: { fontFamily: "'Inter', sans-serif", fontSize: '12px', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #eda040', transition: 'background-color 0.2s, color 0.2s', color: '#000000', backgroundColor: '#E39C40', whiteSpace: 'nowrap', },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '12px', color: '#333', flexShrink: 0, fontWeight: 'bold' },
   previewSection: { marginBottom: '15px', },
   previewHeader: { fontSize: '12px', color: '#555', marginBottom: '5px', },
   previewBox: { width: '100%', height: 'auto', aspectRatio: '16 / 9', backgroundColor: '#000000', border: '1px solid #333', borderRadius: '4px', display: 'block', },
-  recognitionButton: { width: '100%', padding: '8px', fontSize: '13px', marginTop: '10px', cursor: 'pointer', backgroundColor: '#f0f0f0', border: '1px solid #ccc', borderRadius: '4px', },
+  // ★★★ 修正: transitionを追加してホバー時の変化を滑らかに ★★★
+  recognitionButton: { width: '100%', padding: '8px', fontSize: '13px', marginBottom: '10px', cursor: 'pointer', backgroundColor: '#f0f0f0', border: '1px solid #ccc', borderRadius: '4px', transition: 'background-color 0.2s, border-color 0.2s', },
   flipButtonsContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '8px', },
   flipButton: { padding: '4px 8px', fontSize: '12px', marginLeft: 0, minWidth: '80px', border: '1px solid #aaa', borderRadius: '4px', backgroundColor: '#f0f0f0', cursor: 'pointer', transition: 'background-color 0.2s, border-color 0.2s', },
   flipButtonActive: { backgroundColor: '#77aaff', color: '#fff', fontWeight: 'bold', borderColor: '#5588dd', },
@@ -19,18 +19,18 @@ const styles = {
 };
 
 const CameraPreview = forwardRef((props, ref) => {
-  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor } = props;
+  // ★★★ 修正: onDetection を分割代入で受け取る ★★★
+  const { isRecognizing, selectedBoardCamera, selectedHandCamera, boardFlip, setBoardFlip, handFlip, setHandFlip, guideFrameColor, onDetection } = props;
 
-  // ★★★ 変更点1: refを表示用に一本化 ★★★
   const boardVideoRef = useRef(null);
   const handVideoRef = useRef(null);
-
-  const [isSupportMode, setIsSupportMode] = useState(false);
+  
   const [hoveredButton, setHoveredButton] = useState(null);
+
   const guideFrameStyle = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', height: '100%', aspectRatio: '1 / 1', border: `3px solid ${guideFrameColor}`, boxSizing: 'border-box', pointerEvents: 'none' };
+  
   const handleFlip = (cameraType, axis) => { const setter = cameraType === 'board' ? setBoardFlip : setHandFlip; setter(prev => ({ ...prev, [axis]: !prev[axis] })); };
   const getTransform = (flipState) => `scale(${flipState?.horizontal ? -1 : 1}, ${flipState?.vertical ? -1 : 1})`;
-  const handleToggle = () => setIsSupportMode(prev => !prev);
 
   // カメラ映像取得のロジック
   useEffect(() => {
@@ -39,21 +39,20 @@ const CameraPreview = forwardRef((props, ref) => {
       const constraints = {
         video: {
           deviceId: { exact: selectedBoardCamera },
-          width: { ideal: 1920 }, // idealを使い、対応できないカメラでもエラーにならないようにする
+          width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
       };
       navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
           activeStream = stream;
-          // ★★★ 変更点2: 表示用のvideo要素にだけストリームを流す ★★★
           if (boardVideoRef.current) {
             boardVideoRef.current.srcObject = stream;
           }
         })
         .catch(err => console.error(`盤面カメラ起動失敗:`, err));
     }
-    return () => { // クリーンアップ処理
+    return () => {
       if (activeStream) activeStream.getTracks().forEach(track => track.stop());
       if (boardVideoRef.current) boardVideoRef.current.srcObject = null;
     };
@@ -94,8 +93,6 @@ const CameraPreview = forwardRef((props, ref) => {
         canvas.width = videoElement.videoWidth;
         canvas.height = videoElement.videoHeight;
         
-        console.log(`[送信直前] キャプチャ画像の解像度: ${canvas.width}x${canvas.height}`);
-
         const ctx = canvas.getContext('2d');
         const scaleX = flipState.horizontal ? -1 : 1; const scaleY = flipState.vertical ? -1 : 1;
         const translateX = flipState.horizontal ? canvas.width : 0; const translateY = flipState.vertical ? canvas.height : 0;
@@ -104,7 +101,6 @@ const CameraPreview = forwardRef((props, ref) => {
         return canvas.toDataURL('image/jpeg', 1.0);
       };
       
-      // ★★★ 変更点3: 表示用のvideo要素から直接キャプチャする ★★★
       const boardImage = captureFrame(boardVideoRef.current, boardFlip);
       const handImage = captureFrame(handVideoRef.current, handFlip);
 
@@ -114,22 +110,29 @@ const CameraPreview = forwardRef((props, ref) => {
 
   return (
     <div style={styles.cameraPreviewScreen}>
-      {/* ★★★ 変更点4: 非表示のvideo要素は不要なので削除 ★★★ */}
-      
       <div style={styles.header}>
-        <span>{isSupportMode ? 'サポート' : 'カメラプレビュー'}</span>
-        <button style={styles.toggleButton} onClick={handleToggle}> {isSupportMode ? 'カメラプレビュー' : 'サポート'} </button>
+        <span>カメラプレビュー</span>
       </div>
 
-      <div style={{ display: isSupportMode ? 'flex' : 'none', flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <p>サポート情報はこちらに表示されます。</p>
-      </div>
+      {/* ★★★ 修正: 牌認識ボタン (テキスト変更 & ホバー処理 & onClick追加) ★★★ */}
+      <button 
+        onClick={onDetection} // ここで関数を呼び出し
+        disabled={isRecognizing} 
+        style={{
+          ...styles.recognitionButton, 
+          cursor: isRecognizing ? 'wait' : 'pointer',
+          ...(hoveredButton === 'recognition' && !isRecognizing ? styles.buttonHover : {})
+        }}
+        onMouseOver={() => setHoveredButton('recognition')}
+        onMouseOut={() => setHoveredButton(null)}
+      > 
+        {isRecognizing ? '認識中...' : '牌認識'} 
+      </button>
 
-      <div style={{ ...styles.contentWrapper, display: isSupportMode ? 'none' : 'flex' }}>
+      <div style={styles.contentWrapper}>
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>盤面</div>
           <div style={{ position: 'relative', width: '100%' }}>
-            {/* ★★★ 変更点5: refの名前を元に戻す ★★★ */}
             <video ref={boardVideoRef} style={{ ...styles.previewBox, transform: getTransform(boardFlip) }} autoPlay playsInline muted></video>
             {guideFrameColor !== 'none' && <div style={guideFrameStyle}></div>}
           </div>
@@ -137,8 +140,8 @@ const CameraPreview = forwardRef((props, ref) => {
             <button style={{ ...styles.flipButton, ...(boardFlip?.horizontal && styles.flipButtonActive), ...(!boardFlip?.horizontal && hoveredButton === 'board_h' && styles.buttonHover) }} onClick={() => handleFlip('board', 'horizontal')} onMouseOver={() => setHoveredButton('board_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
             <button style={{ ...styles.flipButton, ...(boardFlip?.vertical && styles.flipButtonActive), ...(!boardFlip?.vertical && hoveredButton === 'board_v' && styles.buttonHover) }} onClick={() => handleFlip('board', 'vertical')} onMouseOver={() => setHoveredButton('board_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
           </div>
-          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}> {isRecognizing ? '認識中...' : '盤面全体を認識 (計算と同時実行)'} </button>
         </div>
+        
         <div style={styles.previewSection}>
           <div style={styles.previewHeader}>手牌</div>
           <video ref={handVideoRef} style={{ ...styles.previewBox, transform: getTransform(handFlip) }} autoPlay playsInline muted></video>
@@ -146,7 +149,6 @@ const CameraPreview = forwardRef((props, ref) => {
             <button style={{ ...styles.flipButton, ...(handFlip?.horizontal && styles.flipButtonActive), ...(!handFlip?.horizontal && hoveredButton === 'hand_h' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'horizontal')} onMouseOver={() => setHoveredButton('hand_h')} onMouseOut={() => setHoveredButton(null)}>左右反転</button>
             <button style={{ ...styles.flipButton, ...(handFlip?.vertical && styles.flipButtonActive), ...(!handFlip?.vertical && hoveredButton === 'hand_v' && styles.buttonHover) }} onClick={() => handleFlip('hand', 'vertical')} onMouseOver={() => setHoveredButton('hand_v')} onMouseOut={() => setHoveredButton(null)}>上下反転</button>
           </div>
-          <button disabled={isRecognizing} style={{...styles.recognitionButton, cursor: isRecognizing ? 'wait' : 'pointer'}}> {isRecognizing ? '認識中...' : '自分の手牌を認識 (計算と同時実行)'} </button>
         </div>
       </div>
     </div>

@@ -33,7 +33,7 @@ def save_temp_result(step_data={}):
     temp_resultの中身をリストとして扱い、時系列で追加する。
     """
     FILE_NAME = 'temp_result.json'
-    
+
     current_steps = []
     if os.path.exists(FILE_NAME) and os.path.getsize(FILE_NAME) > 0:
         try:
@@ -48,7 +48,6 @@ def save_temp_result(step_data={}):
         except json.JSONDecodeError:
             return {"message": "Failed to read existing temp_result.json.", "status": "503"}
 
-    
     # 2. リストの末尾に新しいステップデータを追加 (追記)
     current_steps.append(step_data)
     print(f"一時結果に新しいステップを追加しました (合計ステップ数: {len(current_steps)})")
@@ -147,7 +146,6 @@ def file_name_check(folder_path, file_name=""):
 
 # 差分チェックとJSON作成の関数
 def difference_check(save_data, record_flg, file_name="game_data"):
-    
     change_flg = False
     
     # # 手牌が変化したかどうかをチェック
@@ -169,12 +167,9 @@ def difference_check(save_data, record_flg, file_name="game_data"):
     
     # 差分チェックをせず、データがあれば常に保存する
     if save_data != "":
-        step_data = {
-            save_data
-        }
-        save_temp_result(step_data)
+        save_temp_result(save_data)
         change_flg = True
-    
+
     # 記録終了ボタンが押された場合
     if record_flg == 2:
         haihu_dir = settings.HAIHU_ROOT
@@ -207,7 +202,7 @@ if __name__ == "__main__":
     record_flag = 1  # 記録終了をシミュレート
 
     result = difference_check(test_save_data, record_flag, file_name="大三元")
-    print(result)
+    # print(result)
 
     # 記録終了で保存した場合にファイル名を返す
     # 何もない場合は空文字を返す""

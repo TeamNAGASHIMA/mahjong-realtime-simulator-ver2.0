@@ -26,36 +26,55 @@ const GameStatusArea = ({
   use3D,
   isSimulatorMode,  
   onModeChange,
-  isRecording, onRecordStart, onRecordStop 
+  recordingStatus, 
+  isModalOpen,
+  onRecordingFunction,
+  onSendRecordingData,
+  displaySettings,  
+  isSaving,
+  calculationError,
+  selectedKifuData,
+  onKifuTurnChange
 }) => {
   return (
     <div style={styles.gameStatusContainer}>
-      <TileDisplayArea
-        boardState={boardState}
-        onBoardStateChange={onBoardStateChange}
-        onResetBoardState={onResetBoardState} 
-        settings={settings}
-        use3D={use3D}
-        isSimulatorMode={isSimulatorMode}        
-        onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
-      />
+      {displaySettings && displaySettings.showStatus && (
+        <TileDisplayArea
+          boardState={boardState}
+          onBoardStateChange={onBoardStateChange}
+          onResetBoardState={onResetBoardState} 
+          settings={settings}
+          use3D={use3D}
+          isSimulatorMode={isSimulatorMode}        
+          onModeChange={onModeChange}
+          calculationError={calculationError}
+          selectedKifuData={selectedKifuData}
+          onKifuTurnChange={onKifuTurnChange}
+        />
+      )}
 
+      {/* ボタンエリア */}
       <ButtonContainer
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
         isSimulatorMode={isSimulatorMode}
-        isRecording={isRecording}
-        onRecordStart={onRecordStart}
-        onRecordStop={onRecordStop}    
+        recordingStatus={recordingStatus}
+        isModalOpen={isModalOpen}
+        onRecordingFunction={onRecordingFunction}
+        onSendRecordingData={onSendRecordingData}
+        isSaving={isSaving}
       />
 
-      <CalculationResults
-        results={calculationResults}
-        isLoading={isLoadingCalculation}
-        currentTurn={boardState ? boardState.turn : 1}
-        settings={settings}
-      />
+      {displaySettings && displaySettings.showSimulation && (
+        <CalculationResults
+          results={calculationResults}
+          isLoading={isLoadingCalculation}
+          currentTurn={boardState ? boardState.turn : 1}
+          settings={settings}
+          displaySettings={displaySettings}
+        />
+      )}
     </div>
   );
 };
