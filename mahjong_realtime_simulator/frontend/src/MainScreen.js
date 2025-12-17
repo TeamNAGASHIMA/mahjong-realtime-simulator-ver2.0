@@ -101,32 +101,58 @@ function dataURLtoBlob(dataurl) {
     while(n--){ u8arr[n] = bstr.charCodeAt(n); }
     return new Blob([u8arr], {type:mime});
 }
+
+// 牌IDの正規化・フィルタリング用ヘルパー関数
+const normalizeTile = (tileId) => {
+  if (tileId == null) return null;
+  const id = Number(tileId);
+  if (isNaN(id)) return null;
+
+  if (id >= 1000) {
+    return null; // 誤検知は除外
+  }
+  if (id >= 100) {
+    return id - 100; // リーチ牌(横向き)は正規IDに戻す
+  }
+  return id; // 通常牌
+};
+
+// 配列に対して正規化とフィルタリングを一括で行う
+const normalizeAndFilterTiles = (tiles) => {
+  if (!Array.isArray(tiles)) return [];
+  return tiles.map(normalizeTile).filter(t => t !== null);
+};
+
 const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
   if (!Array.isArray(meldArray)) return [];
   return meldArray.map(tiles => {
-    tiles.sort((a,b) => a - b); 
+    // tiles自体が配列であることを確認し、正規化を行う
+    const safeTiles = normalizeAndFilterTiles(tiles);
+    safeTiles.sort((a,b) => a - b); 
+    
     let type = 'unknown';
     let exposed_index = null;
-    if (tiles.length === 3) {
-      if (tiles[0] === tiles[1] && tiles[1] === tiles[2]) {
+    if (safeTiles.length === 3) {
+      if (safeTiles[0] === safeTiles[1] && safeTiles[1] === safeTiles[2]) {
         type = 'pon';
         exposed_index = 1;
-      } else if (tiles[0] + 1 === tiles[1] && tiles[1] + 1 === tiles[2] && 
-                  Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) &&
-                  Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
+      } else if (safeTiles[0] + 1 === safeTiles[1] && safeTiles[1] + 1 === safeTiles[2] && 
+                  Math.floor(safeTiles[0] / 9) === Math.floor(safeTiles[1] / 9) &&
+                  Math.floor(safeTiles[1] / 9) === Math.floor(safeTiles[2] / 9)) {
         type = 'chi';
         exposed_index = 1;
       }
-    } else if (tiles.length === 4) {
-      if (tiles[0] === tiles[1] && tiles[1] === tiles[2] && tiles[2] === tiles[3]) {
+    } else if (safeTiles.length === 4) {
+      if (safeTiles[0] === safeTiles[1] && safeTiles[1] === safeTiles[2] && safeTiles[2] === safeTiles[3]) {
         type = 'ankan';
         exposed_index = null;
       }
     }
     const from = playerKey === 'self' ? 'self' : null;
-    return { type, tiles, from, exposed_index };
+    return { type, tiles: safeTiles, from, exposed_index };
   });
 };
+
 const createPayloadFromBoardState = (boardState, settings) => {
     const allHandTiles = [...(boardState.hand_tiles?.map(tile => tile) ?? [])];
     if (boardState.tsumo_tile !== null && boardState.tsumo_tile !== undefined) {
@@ -160,31 +186,53 @@ const convertKifuDataToBoardState = (kifuTurnData) => {
   if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
 
   const melds = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.melded_blocks) {
-    melds.self = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_bottom || [], 'self');
-    melds.shimocha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_right || [], 'shimocha');
-    melds.toimen = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_top || [], 'toimen');
-    melds.kamicha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_left || [], 'kamicha');
+
+  // 副露（鳴き）データの処理
+  // melded_blocks (旧) or melded_tiles (新)
+  const meldSource = kifuTurnData.melded_blocks || kifuTurnData.melded_tiles;
+  
+  if (meldSource) {
+    if (Array.isArray(meldSource)) {
+      // 配列形式 ( [[1121, 1023, 1023]] など )
+      melds.self = convertMeldsToBoardStateFormat(meldSource, 'self');
+    } else if (typeof meldSource === 'object') {
+      // オブジェクト形式 ( { melded_tiles_bottom: ... } )
+      melds.self = convertMeldsToBoardStateFormat(meldSource.melded_tiles_bottom || [], 'self');
+      melds.shimocha = convertMeldsToBoardStateFormat(meldSource.melded_tiles_right || [], 'shimocha');
+      melds.toimen = convertMeldsToBoardStateFormat(meldSource.melded_tiles_top || [], 'toimen');
+      melds.kamicha = convertMeldsToBoardStateFormat(meldSource.melded_tiles_left || [], 'kamicha');
+    }
   }
 
   const player_discards = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.river_tiles) {
-    player_discards.self = kifuTurnData.river_tiles.discard_tiles_bottom || [];
-    player_discards.shimocha = kifuTurnData.river_tiles.discard_tiles_right || [];
-    player_discards.toimen = kifuTurnData.river_tiles.discard_tiles_top || [];
-    player_discards.kamicha = kifuTurnData.river_tiles.discard_tiles_left || [];
+
+  // 捨て牌データの処理
+  // river_tiles (旧) or discard_tiles (新)
+  const discardSource = kifuTurnData.river_tiles || kifuTurnData.discard_tiles;
+
+  if (discardSource) {
+    if (Array.isArray(discardSource)) {
+        player_discards.self = normalizeAndFilterTiles(discardSource);
+    } else {
+        player_discards.self = normalizeAndFilterTiles(discardSource.discard_tiles_bottom || []);
+        player_discards.shimocha = normalizeAndFilterTiles(discardSource.discard_tiles_right || []);
+        player_discards.toimen = normalizeAndFilterTiles(discardSource.discard_tiles_top || []);
+        player_discards.kamicha = normalizeAndFilterTiles(discardSource.discard_tiles_left || []);
+    }
   }
 
-  let hand_tiles = [...(kifuTurnData.hand_tiles || [])];
+  let hand_tiles = normalizeAndFilterTiles(kifuTurnData.hand_tiles || []);
   let tsumo_tile = null;
-  if (hand_tiles.length === 14) {
+  
+  // 正規化後の枚数で判定 (3n+2 の枚数ならツモ牌あり)
+  if (hand_tiles.length % 3 === 2) {
     tsumo_tile = hand_tiles.pop();
   }
 
   return {
     ...INITIAL_GAME_STATE,
     turn: kifuTurnData.turn || 1,
-    dora_indicators: kifuTurnData.dora_indicators || [],
+    dora_indicators: normalizeAndFilterTiles(kifuTurnData.dora_indicators || []),
     hand_tiles: hand_tiles,
     tsumo_tile: tsumo_tile,
     melds: melds,
@@ -904,13 +952,21 @@ const MainScreen = () => {
     }
   }, [settings.flag]);
 
+  // ★★★ 牌譜読み込み時に自動更新するためのuseEffect ★★★
   useEffect(() => {
-    if (selectedKifuData.length > 0 && currentKifuTurn >= 1 && currentKifuTurn <= selectedKifuData.length) {
-      const currentTurnData = selectedKifuData[currentKifuTurn - 1];
-      setBoardState(convertKifuDataToBoardState(currentTurnData));
+    if (selectedKifuData.length > 0) {
+      // インデックス範囲チェック
+      let safeTurn = currentKifuTurn;
+      if (safeTurn < 1) safeTurn = 1;
+      if (safeTurn > selectedKifuData.length) safeTurn = selectedKifuData.length;
+
+      // 0始まりの配列にアクセスするため -1 する
+      const currentTurnData = selectedKifuData[safeTurn - 1];
+      if (currentTurnData) {
+        setBoardState(convertKifuDataToBoardState(currentTurnData));
+      }
     }
   }, [selectedKifuData, currentKifuTurn]);
-
 
   const fetchKifuList = async () => {
     try {
@@ -946,12 +1002,15 @@ const MainScreen = () => {
         body: formData
       });
       const data = await response.json();
-      if (data.status === 200 && data.temp_result) {
+      
+      // JSON内にtemp_resultがあるかで判断 (statusチェックは削除)
+      if (data && data.temp_result) {
         setSelectedKifuData(data.temp_result);
-        setCurrentKifuTurn(1); // 最初の巡目にリセット
-        console.log(`牌譜「${fileName}」を読み込みました。`);
+        // ★★★ 読み込み成功時に強制的に1手目にリセット ★★★
+        setCurrentKifuTurn(1); 
+        console.log(`牌譜「${fileName}」を読み込みました。データ数: ${data.temp_result.length}`);
       } else {
-        alert(data.message || `牌譜「${fileName}」の読み込みに失敗しました。`);
+        alert(data.message || `牌譜「${fileName}」のデータ形式が不正です(temp_resultなし)。`);
       }
     } catch (err) {
       console.error("牌譜データ取得APIとの通信に失敗:", err);
@@ -1007,8 +1066,11 @@ const MainScreen = () => {
             isModalOpen={isModalOpen}
             onRecordingFunction={recordingFunction}
             onSendRecordingData={sendRecordingData}
+            // ★★★ 追加: TurnSelector用のProps ★★★
             selectedKifuData={selectedKifuData}
+            currentKifuTurn={currentKifuTurn}
             onKifuTurnChange={setCurrentKifuTurn} 
+            
             isSaving={isSaving}
             calculationError={calculationError}
             displaySettings={displaySettings}            
