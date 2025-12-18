@@ -239,7 +239,7 @@ point_calculate(
     }
 )
 
-print("test : 8 (国士無双)")
+print("test : 8 (国士無双十三面待ち)")
 point_calculate(
     hand_tiles = [0,8,9,17,18,26,27,28,29,30,31,32,33,33],
     win_tile = 33,
@@ -296,7 +296,7 @@ point_calculate(
             "kazoe_limit": 0,
             "has_aka_dora": True,
             "has_open_tanyao": False,
-            "has_double_yakuman": False,
+            "has_double_yakuman": True,
             "kiriage": False,
             "fu_for_open_pinfu": False,
             "fu_for_pinfu_tsumo": False,
@@ -330,7 +330,7 @@ point_calculate(
             "kazoe_limit": 0,
             "has_aka_dora": True,
             "has_open_tanyao": False,
-            "has_double_yakuman": False,
+            "has_double_yakuman": True,
             "kiriage": False,
             "fu_for_open_pinfu": False,
             "fu_for_pinfu_tsumo": False,
@@ -364,7 +364,7 @@ point_calculate(
             "kazoe_limit": 0,
             "has_aka_dora": True,
             "has_open_tanyao": False,
-            "has_double_yakuman": False,
+            "has_double_yakuman": True,
             "kiriage": False,
             "fu_for_open_pinfu": False,
             "fu_for_pinfu_tsumo": False,
@@ -467,6 +467,40 @@ point_calculate(
             "has_aka_dora": True,
             "has_open_tanyao": False,
             "has_double_yakuman": False,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
+
+print("test : 15 (海底撈月のみ)")
+point_calculate(
+    hand_tiles = [0,1,2,4,5,6,10,11,12,15,16,17,30,30],
+    win_tile = 16,
+    melds_list = [[100,1,2],[4,5,106]],
+    dora_list = [0,9,10,11,12,20,21,25],
+    options_dict = {
+        "is_tsumo": True,
+        "is_riichi": False,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": True,
+        "is_houtei": False,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 2,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
             "kiriage": False,
             "fu_for_open_pinfu": False,
             "fu_for_pinfu_tsumo": False,
