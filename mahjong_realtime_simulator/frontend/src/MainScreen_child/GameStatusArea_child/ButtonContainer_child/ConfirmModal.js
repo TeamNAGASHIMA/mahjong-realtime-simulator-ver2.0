@@ -23,6 +23,7 @@ const styles = {
     width: '400px',
     boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
     border: '1px solid #444',
+    WebkitAppRegion: 'no-drag'
   },
   modalHeader: {
     fontSize: '18px',
@@ -41,6 +42,7 @@ const styles = {
     backgroundColor: '#34495e',
     color: '#ecf0f1',
     boxSizing: 'border-box', // paddingを含めてwidth 100%にする
+    WebkitUserSelect: 'text',
   },
   modalFooter: {
     display: 'flex',
@@ -80,7 +82,35 @@ const ConfirmModal = ({
     if (show) {
       setFileName(defaultFileName);
       // 少し遅延させてからフォーカスを当てる
-      setTimeout(() => inputRef.current?.focus(), 100);
+      // 【重要】ブラウザの描画タイミングに合わせてフォーカスを強制する
+      requestAnimationFrame(() => {
+        // 1. 現在フォーカスされている要素（モーダルを開いたボタンなど）からフォーカスを外す
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+
+        // 2. 入力欄にフォーカスを当てる
+        if (inputRef.current) {
+          inputRef.current.focus();
+          // 必要であれば全選択
+          // inputRef.current.select(); 
+        }
+      })
+      // 【追加】ウィンドウ自体を強制的にアクティブにする
+      if (window.electronAPI && window.electronAPI.focusWindow) {
+        window.electronAPI.focusWindow();
+      }
+
+      // その後にinputへフォーカス
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          // 必要なら全選択
+          // inputRef.current.select(); 
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [show, defaultFileName]);
 
@@ -101,6 +131,7 @@ const ConfirmModal = ({
           <input
             ref={inputRef}
             type="text"
+            autoFocus
             style={styles.formInput}
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}

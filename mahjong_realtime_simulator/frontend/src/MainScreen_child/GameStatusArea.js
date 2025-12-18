@@ -1,4 +1,5 @@
 // GameStatusArea.js
+
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
 import ButtonContainer from './GameStatusArea_child/ButtonContainer';
@@ -31,15 +32,17 @@ const GameStatusArea = ({
   onRecordingFunction,
   onSendRecordingData,
   displaySettings,  
-  // ★★★ 追加: MainScreenから渡されるPropsを受け取る
   isSaving,
   calculationError,
+  // MainScreenから受け取るプロパティ
   selectedKifuData,
+  currentKifuTurn,
   onKifuTurnChange
 }) => {
+
   return (
     <div style={styles.gameStatusContainer}>
-      {/* ★★★ 修正: showStatusがtrueの場合のみ表示 ★★★ */}
+      
       {displaySettings && displaySettings.showStatus && (
         <TileDisplayArea
           boardState={boardState}
@@ -55,27 +58,34 @@ const GameStatusArea = ({
         />
       )}
 
-      {/* ボタンエリアは常に表示（または別の設定にする場合はここも条件分岐） */}
+      {/* ButtonContainerに必要なデータを全て渡す */}
       <ButtonContainer
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
+        // 計算ボタンのテキスト制御
+        calculationText={isLoadingCalculation ? "計算中..." : "計算開始"}
+        
         isSimulatorMode={isSimulatorMode}
         recordingStatus={recordingStatus}
         isModalOpen={isModalOpen}
         onRecordingFunction={onRecordingFunction}
         onSendRecordingData={onSendRecordingData}
         isSaving={isSaving}
+        
+        // ★★★ TurnSelector用データ ★★★
+        selectedKifuData={selectedKifuData}
+        currentKifuTurn={currentKifuTurn}
+        onKifuTurnChange={onKifuTurnChange}
       />
 
-      {/* ★★★ 修正: showSimulationがtrueの場合のみ表示 ★★★ */}
       {displaySettings && displaySettings.showSimulation && (
         <CalculationResults
           results={calculationResults}
           isLoading={isLoadingCalculation}
           currentTurn={boardState ? boardState.turn : 1}
           settings={settings}
-          displaySettings={displaySettings} // ★★★ 表示件数設定のためここにも渡す
+          displaySettings={displaySettings}
         />
       )}
     </div>

@@ -7,6 +7,7 @@ import json
 from .calc import main_score_calc, score_calc
 from .detect import analyze_mahjong_board
 from .create_json import difference_check
+from .point_calculation import point_calculate
 from django.conf import settings
 import os
 
@@ -17,7 +18,7 @@ def mahjong_render(request):
     # debug
     # return render(request, 'app/test.html')
 
-
+# 期待値計算エンドポイント
 @csrf_exempt
 def main(request):
     if request.method == 'POST':
@@ -148,7 +149,7 @@ def main(request):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
-
+# 牌譜作成、牌譜保存エンドポイント
 @csrf_exempt
 def tiles_save(request):
     '''
@@ -172,7 +173,6 @@ def tiles_save(request):
                 if record_flag == 0:
                     return JsonResponse({'message': 'No saving requested.'}, status=420)
                 elif record_flag == 1:
-                        
                         save_data_return = savedata(Req_BODY, Img_FILES)
                         if isinstance(save_data_return, JsonResponse):
                             return save_data_return
@@ -235,7 +235,7 @@ def tiles_save(request):
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
 
-
+# 詳細牌譜データの参照エンドポイント
 @csrf_exempt
 def tiles_req(request):
     if request.method == 'POST':
@@ -288,6 +288,123 @@ def tiles_req(request):
                 else:
                     return JsonResponse({'message': f"File '{req_file_name}' not found."}, status=404)
 
+        except Exception as e:
+            message = "Exception error"
+            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+    else:
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+# 物体検知エンドポイント
+@csrf_exempt
+def detection_tiles(request):
+    '''
+    牌検知
+    引数: 
+        hand_tiles_image : 手牌画像
+        board_tiles_image : 盤面画像
+
+    戻り値:
+        message : 処理結果メッセージ
+        detection_result : 牌認識結果
+        status : ステータスコード
+    '''
+    if request.method == 'POST':
+        try:
+            Img_FILES = request.FILES
+            
+            # 手牌画像＆盤面画像が取得できていなければエラーを返す
+            if 'board_tiles_image' not in Img_FILES and 'hand_tiles_image' not in Img_FILES:
+                message = "No images of the board and hand cards included."
+                return JsonResponse({'message': message}, status=400)
+            else:
+                np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
+                np_board_tiles_image = imageChangeNp(Img_FILES['board_tiles_image'])
+                
+                detection = analyze_mahjong_board(np_board_tiles_image, np_hand_tiles_image)
+
+                # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+                if detection["status"] != 200:
+                    message = detection["message"]
+                    status = detection["status"]
+
+                    return JsonResponse(
+                        {
+                        'message': message,
+                        "detection_result": []
+                        }, 
+                        status=status
+                    )
+                
+                detection_result = detection["result"]
+
+                return JsonResponse(
+                    {
+                    'message': "successful",
+                    "detection_result": detection_result
+                    }, 
+                    status=200
+                    )
+            
+        except Exception as e:
+            message = "Exception error"
+            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+    else:
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+# 点数計算エンドポイント
+@csrf_exempt
+def hand_tiles_point_calculate(request):
+    '''
+    牌検知
+    引数: 
+        hand_tiles_info : 手牌、鳴き牌、ドラ牌、ツモorロン牌
+            hand_tiles : 手牌
+            meld_tiles : 鳴き牌
+            dora_indicators : ドラ牌
+            win_tile : ツモorロン牌
+        options : ユーザ任意設定オプション
+
+    戻り値:
+        message : 処理結果メッセージ
+        point_result : 点数計算結果
+        status : ステータスコード
+    '''
+    if request.method == 'POST':
+        try:
+            Req_BODY = request.POST
+
+            hand_tiles_info = Req_BODY["hand_tiles_info"]
+            options = Req_BODY["options"]
+
+            point_result = point_calculate(
+                hand_tiles_info["hand_tiles"],
+                hand_tiles_info["win_tile"],
+                hand_tiles_info["meld_tiles"],
+                hand_tiles_info["dora_indicators"],
+                options
+            )
+
+            # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+            if point_result["status"] != 200:
+                message = point_result["message"]
+                status = point_result["status"]
+
+                return JsonResponse(
+                    {
+                    'message': message,
+                    "point_result": []
+                    }, 
+                    status=status
+                )
+
+            return JsonResponse(
+                {
+                'message': message,
+                "detection_result": point_result["result"]
+                }, 
+                status=point_result["status"]
+                )
+            
         except Exception as e:
             message = "Exception error"
             return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
@@ -364,11 +481,11 @@ def savedata(Req_BODY, Img_FILES):
             detection_result = detectoin["result"]
 
             # 物体検知から得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-            doraList = detection_result["dora_indicators"]
-            hand_tiles = detection_result["hand_tiles"]
-            raw_melded_blocks = detection_result["melded_tiles"]
-            river_tiles = detection_result["discard_tiles"]
-            turn = detection_result["turn"]
+            # doraList = detection_result["dora_indicators"]
+            # hand_tiles = detection_result["hand_tiles"]
+            # raw_melded_blocks = detection_result["melded_tiles"]
+            # river_tiles = detection_result["discard_tiles"]
+            # turn = detection_result["turn"]
 
             if len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) <= 12 or len(detection_result["hand_tiles"]) + (len(detection_result["melded_tiles"]["melded_tiles_bottom"]) * 3) >= 15:
                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(detection_result["hand_tiles"]))
@@ -384,11 +501,7 @@ def savedata(Req_BODY, Img_FILES):
 
             # 保存するデータをまとめる。
             save_data = (
-                    doraList,
-                    hand_tiles,
-                    raw_melded_blocks,
-                    river_tiles,
-                    turn
+                    detection_result
                 )
         else:
             # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
@@ -422,5 +535,5 @@ def savedata(Req_BODY, Img_FILES):
                     fixes_river_tiles,
                     fixes_data["turn"]
                 )
-        print(save_data)
+        # print(save_data)
     return save_data,detection_result
