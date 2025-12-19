@@ -13,11 +13,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import sys
 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# PyInstaller対応のBASE_DIR設定
+if hasattr(sys, '_MEIPASS'):
+    # exe実行時：一時展開先のパスを参照
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    # 通常のPython実行時
+    BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -67,7 +75,10 @@ ROOT_URLCONF = 'mahjong_realtime_simulator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'frontend/build')],
+        # 'DIRS': [os.path.join(BASE_DIR, 'frontend/build')],
+        
+        'DIRS': [BASE_DIR / 'templates'],
+
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,10 +96,16 @@ WSGI_APPLICATION = 'mahjong_realtime_simulator.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# ユーザーディレクトリ下の "mahjong_realtime_simulator_data" 
+USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "mahjong_realtime_simulator_data")
+os.makedirs(USER_DATA_DIR, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        # 例: C:\Users\<ユーザー名>\my_app_data\db.sqlite3
+        'NAME': os.path.join(USER_DATA_DIR, 'db.sqlite3'),
     }
 }
 
@@ -127,7 +144,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -138,8 +155,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend/build/static'),
     Path.joinpath(BASE_DIR, 'static')
 ]
-
-STATIC_URL = '/static/'
 
 WEBPACK_LOADER = {
     'DEFAULT': {
@@ -156,7 +171,8 @@ WEBPACK_LOADER = {
 MEDIA_URL = '/media/'
 
 # アップロードされたファイルを保存するサーバー上のディレクトリ
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(USER_DATA_DIR, 'media')
 
 # アップロードされたメディアファイルのURLパス
 PT_URL = '/pt/'
@@ -165,4 +181,5 @@ PT_URL = '/pt/'
 PT_ROOT = os.path.join(BASE_DIR, 'pt')
 
 # 牌譜JSONファイル保存用ディレクトリ
-HAIHU_ROOT = os.path.join(BASE_DIR, 'game_data_json_files')
+# HAIHU_ROOT = os.path.join(BASE_DIR, 'game_data_json_files')
+HAIHU_ROOT = os.path.join(USER_DATA_DIR, 'game_data_json_files')
