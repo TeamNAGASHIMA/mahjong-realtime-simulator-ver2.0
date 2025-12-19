@@ -353,7 +353,7 @@ def detection_tiles(request):
 
 # 点数計算エンドポイント
 @csrf_exempt
-def hand_tiles_point_calclate(request):
+def hand_tiles_point_calculate(request):
     '''
     牌検知
     引数: 
