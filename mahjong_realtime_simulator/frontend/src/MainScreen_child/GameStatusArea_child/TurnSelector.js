@@ -1,8 +1,7 @@
-// TurnSelector.js (import文とuseStateを修正した完全版)
+// GameStatusArea_child/TurnSelector.js
 
-import React, { useState, useEffect } from 'react'; // ★★★ 修正点1: useStateとuseEffectをインポート ★★★
+import React, { useState } from 'react';
 
-// スタイル定義
 const styles = {
   container: {
     width: '100%',
@@ -12,21 +11,22 @@ const styles = {
     justifyContent: 'space-between',
     backgroundColor: '#8e44ad',
     borderRadius: '25px',
-    padding: '0 10px',
+    padding: '0 5px',
     boxSizing: 'border-box',
     color: 'white',
     fontFamily: "'Inter', sans-serif",
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: 'bold',
+    overflow: 'hidden',
   },
   arrowButton: {
     backgroundColor: '#9b59b6',
     color: 'white',
     border: 'none',
     borderRadius: '50%',
-    width: '28px',
-    height: '28px',
-    fontSize: '18px',
+    width: '30px', 
+    height: '30px',
+    fontSize: '14px',
     fontWeight: 'bold',
     cursor: 'pointer',
     outline: 'none',
@@ -34,8 +34,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     lineHeight: '1',
-    paddingBottom: '2px',
-    boxSizing: 'border-box',
+    flexShrink: 0, 
     transition: 'background-color 0.2s',
   },
   arrowButtonDisabled: {
@@ -48,78 +47,67 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
-  },
-  label: {
-    marginRight: '10px',
+    minWidth: 0, 
+    margin: '0 5px',
+    position: 'relative',
   },
   select: {
-    backgroundColor: '#9b59b6',
+    backgroundColor: 'transparent',
     color: 'white',
-    border: '1px solid #8e44ad',
-    borderRadius: '5px',
-    padding: '5px 8px',
-    fontSize: '16px',
+    border: 'none',
+    fontSize: '14px',
     fontWeight: 'bold',
     cursor: 'pointer',
     outline: 'none',
+    width: '100%',
+    textAlign: 'center',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    textOverflow: 'ellipsis',
   },
 };
 
-const TurnSelector = ({ selectedKifuData, onTurnChange }) => {
-  const [selectedTurn, setSelectedTurn] = useState(1);
-  // ★★★ 修正点2: isHoveredのuseState定義を復活 ★★★
+// ★★★ 修正: Props名を currentTurn, kifuData に変更 ★★★
+const TurnSelector = ({ currentTurn, kifuData, onTurnChange }) => {
   const [isHovered, setIsHovered] = useState({ left: false, right: false });
 
-  const MAX_TURN = selectedKifuData?.length || 1;
-  const MIN_TURN = 1;
-  const isDisabled = !selectedKifuData || selectedKifuData.length === 0;
+  const isDisabled = !kifuData || kifuData.length === 0;
 
-  useEffect(() => {
-    // 牌譜データが変更されたら、巡目を1に戻す
-    if (selectedKifuData && selectedKifuData.length > 0) {
-      updateTurn(1);
-    }
-  }, [selectedKifuData]);
-
-  const updateTurn = (newTurn) => {
-    setSelectedTurn(newTurn);
-    if(onTurnChange) { // onTurnChangeが存在するか確認
-      onTurnChange(newTurn);
-    }
-    console.log(`巡目が ${newTurn} に変更されました。`);
-  };
-
-  const handleTurnChange = (e) => {
-    updateTurn(Number(e.target.value));
-  };
+  // ★★★ 修正: 現在の巡目に対応するkifuDataのインデックスを探す ★★★
+  const currentIndex = isDisabled ? -1 : kifuData.findIndex(item => item.turn === currentTurn);
 
   const handleDecrement = () => {
-    if (selectedTurn > MIN_TURN) {
-      updateTurn(selectedTurn - 1);
+    // ★★★ 修正: 一つ前の巡目に変更する ★★★
+    if (currentIndex > 0) {
+      onTurnChange(kifuData[currentIndex - 1].turn);
     }
   };
 
   const handleIncrement = () => {
-    if (selectedTurn < MAX_TURN) {
-      updateTurn(selectedTurn + 1);
+    // ★★★ 修正: 一つ先の巡目に変更する ★★★
+    if (currentIndex < kifuData.length - 1) {
+      onTurnChange(kifuData[currentIndex + 1].turn);
     }
   };
-  
-  // ★★★ 修正点3: マウスホバー処理を復活 ★★★
+
+  const handleSelectChange = (e) => {
+    onTurnChange(Number(e.target.value));
+  };
+
   const handleMouseOver = (button) => setIsHovered(prev => ({ ...prev, [button]: true }));
   const handleMouseOut = (button) => setIsHovered(prev => ({ ...prev, [button]: false }));
-
 
   return (
     <div style={styles.container}>
       <button
         style={{
           ...styles.arrowButton,
-          ...(isDisabled || selectedTurn <= MIN_TURN ? styles.arrowButtonDisabled : {}),
-          ...(isHovered.left && !isDisabled && selectedTurn > MIN_TURN && { backgroundColor: '#a569bd' })
+          // ★★★ 修正: インデックスで判定 ★★★
+          ...(isDisabled || currentIndex <= 0 ? styles.arrowButtonDisabled : {}),
+          ...(isHovered.left && !isDisabled && currentIndex > 0 && { backgroundColor: '#a569bd' })
         }}
         onClick={handleDecrement}
-        disabled={isDisabled || selectedTurn <= MIN_TURN}
+        disabled={isDisabled || currentIndex <= 0}
         onMouseOver={() => handleMouseOver('left')}
         onMouseOut={() => handleMouseOut('left')}
       >
@@ -127,17 +115,18 @@ const TurnSelector = ({ selectedKifuData, onTurnChange }) => {
       </button>
 
       <div style={styles.selectContainer}>
-        <label htmlFor="turn-select" style={styles.label}>巡目:</label>
         <select
           id="turn-select"
           style={styles.select}
-          value={selectedTurn}
-          onChange={handleTurnChange}
+          // ★★★ 修正: valueには現在の巡目(turn)を直接入れる ★★★
+          value={currentTurn}
+          onChange={handleSelectChange}
           disabled={isDisabled}
         >
-          {[...Array(MAX_TURN > 0 ? MAX_TURN : 1)].map((_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {i + 1}
+          {kifuData && kifuData.map((item, index) => (
+            // ★★★ 修正: valueには巡目(turn)を入れる ★★★
+            <option key={index} value={item.turn} style={{color: 'black'}}>
+              {`${index + 1}手目 (${item.turn}巡)`}
             </option>
           ))}
         </select>
@@ -146,11 +135,12 @@ const TurnSelector = ({ selectedKifuData, onTurnChange }) => {
       <button
         style={{
           ...styles.arrowButton,
-          ...(isDisabled || selectedTurn >= MAX_TURN ? styles.arrowButtonDisabled : {}),
-          ...(isHovered.right && !isDisabled && selectedTurn < MAX_TURN && { backgroundColor: '#a569bd' })
+          // ★★★ 修正: インデックスで判定 ★★★
+          ...(isDisabled || currentIndex >= kifuData.length - 1 ? styles.arrowButtonDisabled : {}),
+          ...(isHovered.right && !isDisabled && currentIndex < kifuData.length - 1 && { backgroundColor: '#a569bd' })
         }}
         onClick={handleIncrement}
-        disabled={isDisabled || selectedTurn >= MAX_TURN}
+        disabled={isDisabled || currentIndex >= kifuData.length - 1}
         onMouseOver={() => handleMouseOver('right')}
         onMouseOut={() => handleMouseOut('right')}
       >
