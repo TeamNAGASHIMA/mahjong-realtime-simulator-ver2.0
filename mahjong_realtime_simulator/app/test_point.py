@@ -8,6 +8,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [20,21],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": True,
         "is_rinshan": False,
@@ -42,6 +44,8 @@ point_calculate(
     melds_list = [[27,127,1027], [109,10,11]],
     dora_list = [30,30,30],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -76,6 +80,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [12],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -110,6 +116,8 @@ point_calculate(
     melds_list = [[5,5,5,1005], [11,111,111,1011], [15,115,1015,15]],
     dora_list = [1,3,10,12],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -144,6 +152,8 @@ point_calculate(
     melds_list = [[5,5,5,1005], [11,111,1011,1011], [15,115,1015,15], [1033,1033,1133,1033]],
     dora_list = [1,3,10,12],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": True,
@@ -178,6 +188,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [1],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -212,6 +224,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": True,
         "is_rinshan": False,
@@ -246,6 +260,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -280,6 +296,8 @@ point_calculate(
     melds_list = [[27,27,27,27],[28,28,28,28],[29,29,29,29],[30,30,30,30]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -314,6 +332,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -348,6 +368,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -382,6 +404,8 @@ point_calculate(
     melds_list = [[1,1,1,1],[6,6,1006,6],[1108,8,8,8]],
     dora_list = [0,0,5,7],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": True,
@@ -416,6 +440,8 @@ point_calculate(
     melds_list = [[1,1,1,1],[6,6,1006,6],[1108,8,8,8]],
     dora_list = [0,0,5,7],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": True,
@@ -450,6 +476,8 @@ point_calculate(
     melds_list = [[1,1,1,1],[6,6,1006,6],[1108,8,8,8]],
     dora_list = [0,0,5,7],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": True,
@@ -484,6 +512,8 @@ point_calculate(
     melds_list = [[100,1,2],[4,5,106]],
     dora_list = [0,9,10,11,12,20,21,25],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": True,
         "is_riichi": False,
         "is_rinshan": False,
@@ -518,6 +548,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [8],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": True,
         "is_rinshan": False,
@@ -552,6 +584,8 @@ point_calculate(
     melds_list = [[31,31,131]],
     dora_list = [33],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -586,6 +620,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -620,6 +656,8 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
@@ -654,7 +692,7 @@ point_calculate(
     melds_list = [[]],
     dora_list = [10],
     options_dict = {
-        "player_wind": 27,
+        "player_wind": 28,
         "round_wind": 27,
         "is_tsumo": False,
         "is_riichi": False,
