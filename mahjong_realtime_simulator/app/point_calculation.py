@@ -316,12 +316,12 @@ def point_calculate(
 
         # 計算結果のエラー判定
         if result.error:
-            message = "【計算エラー】・原因 : {}".format(result.error)
+            message = "【point calculation error】- cause: {}".format(result.error)
             status = 430
         else:
             if result.fu == None or result.han == None:
                 message = "hu or han is None"
-                status = 430
+                status = 440
             else:
                 if len(result.fu_details) <= 0:
                     fu_details = "この役に符は含まれていません。"
