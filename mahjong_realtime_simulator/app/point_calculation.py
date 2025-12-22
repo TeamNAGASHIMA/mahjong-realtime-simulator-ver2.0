@@ -13,7 +13,7 @@ from mahjong.constants import EAST, SOUTH, WEST, NORTH
 calculator = HandCalculator()
 
 # 結果出力用
-def print_hand_result(hand_result):
+def print_hand_result(hand_result, yaku_map):
     # エラー判定をここに追加
     if hand_result.error:
         print("【計算エラー】")
@@ -29,7 +29,19 @@ def print_hand_result(hand_result):
         print(hand_result.cost['additional'], "点")
 
         #役
-        print(hand_result.yaku)
+        yaku_list = []
+        for yaku in hand_result.yaku:
+            yaku_str = str(yaku)
+            if yaku_str[0:4] == "Dora":
+                dora_num = yaku_str.split()
+                yaku_list.append("{} {}枚".format(yaku_map[dora_num[0]], dora_num[1]))
+            elif yaku_str[0:3] == "Aka":
+                aka_num = yaku_str.split()
+                yaku_list.append("{} {}枚".format(yaku_map[aka_num[0]], aka_num[2]))
+            else:
+                yaku_list.append(yaku_map[yaku_str])
+
+        print(yaku_list)
         #符数の詳細
         try:
             for fu_item in hand_result.fu_details:
@@ -62,6 +74,65 @@ def point_calculate(
             "h1","h2","h3","h4","h5","h6","h7",
             "m0","p0","s0"
             ]
+        # 役MAP
+        yaku_map = {
+            "Dora" : "ドラ",
+            "Aka" : "赤ドラ",
+            "Riichi" : "立直",
+            "Double Riichi" : "ダブル立直",
+            "Ippatsu" : "一発",
+            "Menzen Tsumo" : "門前清自摸和",
+            "Rinshan Kaihou" : "嶺上開花",
+            "Chankan" : "槍槓",
+            "Tanyao" : "断幺九",
+            "Pinfu" : "平和",
+            "Iipeiko" :  "一盃口",
+            "Yakuhai (wind of place)" : "自風牌",
+            "Yakuhai (wind of round)" : "場風牌",
+            "Chiitoitsu" : "七対子",
+            "Yakuhai (haku)" : "白",
+            "Yakuhai (hatsu)" : "發",
+            "Yakuhai (chun)" : "中",
+            "Haitei Raoyue" : "海底撈月",
+            "Hoitei Raoyue" : "河底撈月",
+            "Sanshoku Doujun" : "三色同順",
+            "Sanshoku Doukou" : "三色同刻",
+            "San Ankou" : "三暗刻",
+            "San Kantsu" : "三槓子",
+            "Toitoi" : "対々和",
+            "Shou Sangen" : "小三元",
+            "Chantai" : "混全帯幺九",
+            "Junchan" : "純全帯幺九",
+            "Ryanpeikou" : "二盃口",
+            "Honroutou" : "混老頭",
+            "Honitsu" : "混一色",
+            "Chinitsu" : "清一色",
+            "Tsuu Iisou" : "字一色",
+            "Ryuuiisou" : "緑一色",
+            "Chinroutou" : "清老頭",
+            "Suu Ankou" :  "四暗刻",
+            "Suu Ankou Tanki" :  "四暗刻単騎",
+            "Daisangen" :  "大三元",
+            "Suu Kantsu" :  "四槓子",
+            "Shou Suushii" :  "小四喜",
+            "Dai Suushii" :  "大四喜",
+            "Chuuren Poutou" : "九蓮宝燈",
+            "Daburu Chuuren Poutou" : "純正九蓮宝燈",
+            "Kokushi Musou" : "国士無双",
+            "Kokushi Musou Juusanmen Matchi" : "国士無双十三面待ち",
+            "Tenhou" :  "天和",
+            "Chihou" :  "地和",
+            "Nagashi Mangan" : "流し満貫"
+        }
+
+        # 自風、場風MAP
+        wind_map = {
+            27 : EAST,
+            28 : SOUTH,
+            29 : WEST,
+            30 : NORTH
+        }
+
         # エラーメッセージ出力用
         message = "Error in hand_tiles"
 
@@ -244,6 +315,8 @@ def point_calculate(
         # config=HandConfig(is_tsumo=True)
 
         ####configの設定一覧 ####
+        # ・自風  　　　　　　　→　is_tsumo == wind_map[27 or 28 or 29 or 30]
+        # ・場風  　　　　　　　→　is_riichi == wind_map[27 or 28 or 29 or 30]
         # ・ツモ  　　　　　　　→　is_tsumo == True or False
         # ・リーチ　　　　　　　→　is_riichi == True or False
         # ・イッパツ　　　　　　→　is_ippatsu == True or False
@@ -280,6 +353,8 @@ def point_calculate(
         # オプション設定
         kazoe_limit_map = [HandConfig.KAZOE_LIMITED, HandConfig.KAZOE_SANBAIMAN, HandConfig.KAZOE_NO_LIMIT]
         config = HandConfig(
+            player_wind = wind_map[options_dict["player_wind"]],
+            round_wind = wind_map[options_dict["round_wind"]],
             is_tsumo = options_dict["is_tsumo"],
             is_riichi = options_dict["is_riichi"],
             is_rinshan = options_dict["is_rinshan"],
@@ -312,27 +387,41 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        # print_hand_result(result)
+        # print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:
-            message = "【計算エラー】・原因 : {}".format(result.error)
+            message = "【point calculation error】- cause: {}".format(result.error)
             status = 430
         else:
             if result.fu == None or result.han == None:
                 message = "hu or han is None"
-                status = 430
+                status = 440
             else:
                 if len(result.fu_details) <= 0:
                     fu_details = "この役に符は含まれていません。"
                 else:
                     fu_details = result.fu_details
+
+                #役
+                yaku_list = []
+                for yaku in result.yaku:
+                    yaku_str = str(yaku)
+                    if yaku_str[0:4] == "Dora":
+                        dora_num = yaku_str.split()
+                        yaku_list.append("{} {}枚".format(yaku_map[dora_num[0]], dora_num[1]))
+                    elif yaku_str[0:3] == "Aka":
+                        aka_num = yaku_str.split()
+                        yaku_list.append("{} {}枚".format(yaku_map[aka_num[0]], aka_num[2]))
+                    else:
+                        yaku_list.append(yaku_map[yaku_str])
+
                 result_calc = {
                     "hu" : result.fu,
                     "han" : result.han,
                     "main" : result.cost['main'],
                     "additional" : result.cost['additional'],
-                    "yaku" : result.yaku,
+                    "yaku" : yaku_list,
                     "fu_details" : fu_details
                 }
                 message = "successful calculation"
