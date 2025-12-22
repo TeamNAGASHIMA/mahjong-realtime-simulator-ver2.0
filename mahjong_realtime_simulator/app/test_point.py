@@ -510,3 +510,175 @@ point_calculate(
         }
     }
 )
+
+print("test : 16 (純全帯幺九)")
+point_calculate(
+    hand_tiles = [0,1,2,9,9,9,17,17,17,18,19,20,26,26],
+    win_tile = 26,
+    melds_list = [[]],
+    dora_list = [8],
+    options_dict = {
+        "is_tsumo": False,
+        "is_riichi": True,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": False,
+        "is_houtei": True,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 2,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
+
+print("test : 17 (小三元)")
+point_calculate(
+    hand_tiles = [0,1,2,9,9,9,31,31,31,32,32,32,33,33],
+    win_tile = 33,
+    melds_list = [[31,31,131]],
+    dora_list = [33],
+    options_dict = {
+        "is_tsumo": False,
+        "is_riichi": False,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": False,
+        "is_houtei": False,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 0,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
+
+print("test : 18 (二盃口)")
+point_calculate(
+    hand_tiles = [0,1,2,0,1,2,10,11,12,10,11,12,33,33],
+    win_tile = 33,
+    melds_list = [[]],
+    dora_list = [10],
+    options_dict = {
+        "is_tsumo": False,
+        "is_riichi": False,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": False,
+        "is_houtei": False,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 0,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
+
+print("test : 19 (一盃口)")
+point_calculate(
+    hand_tiles = [0,1,2,1,2,3,10,11,12,10,11,12,33,33],
+    win_tile = 33,
+    melds_list = [[]],
+    dora_list = [10],
+    options_dict = {
+        "is_tsumo": False,
+        "is_riichi": False,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": False,
+        "is_houtei": False,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 0,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
+
+print("test : 20 (東)")
+point_calculate(
+    hand_tiles = [0,1,2,1,2,3,10,11,12,27,27,27,33,33],
+    win_tile = 33,
+    melds_list = [[]],
+    dora_list = [10],
+    options_dict = {
+        "player_wind": 27,
+        "round_wind": 27,
+        "is_tsumo": False,
+        "is_riichi": False,
+        "is_rinshan": False,
+        "is_ippatsu": False,
+        "is_chankan": False,
+        "is_haitei": False,
+        "is_houtei": False,
+        "is_daburu_riichi": False,
+        "is_nagashi_mangan": False,
+        "is_tenhou": False,
+        "is_renhou": False,
+        "is_chiihou": False,
+        "options": {
+            "kazoe_limit": 0,
+            "has_aka_dora": True,
+            "has_open_tanyao": False,
+            "has_double_yakuman": True,
+            "kiriage": False,
+            "fu_for_open_pinfu": False,
+            "fu_for_pinfu_tsumo": False,
+            "renhou_as_yakuman": False,
+            "has_daisharin": False,
+            "has_daisharin_other_suits": False
+        }
+    }
+)
