@@ -1,14 +1,30 @@
 {
-  "name": "electron-app",
+  "name": "mahjong-realtime-simulator",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "36.2.0" 
+    "electron": "36.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      {
+        "from": "backend/run_Django",
+        "to": "backend"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
   }
 }

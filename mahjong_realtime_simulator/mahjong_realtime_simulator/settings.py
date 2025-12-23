@@ -15,18 +15,27 @@ from dotenv import load_dotenv
 import os
 import sys
 
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent
+
 # PyInstaller対応のBASE_DIR設定
-if hasattr(sys, '_MEIPASS'):
-    # exe実行時：一時展開先のパスを参照
-    BASE_DIR = Path(sys._MEIPASS)
+if getattr(sys, 'frozen', False):
+    exe_dir = Path(sys.executable).parent
+    internal_dir = exe_dir / '_internal'
+    
+    if internal_dir.exists():
+        BASE_DIR = internal_dir
+    else:
+        BASE_DIR = exe_dir
 else:
-    # 通常のPython実行時
     BASE_DIR = Path(__file__).resolve().parent.parent
 
+# デバッグ用：探しているパスを表示
+env_path = BASE_DIR / '.env'
+print(f"Loading .env from: {env_path}")
+
+# 明示的にパスを指定して読み込む
+load_dotenv(dotenv_path=env_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -37,7 +46,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -152,14 +161,13 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend/build/static'),
-    Path.joinpath(BASE_DIR, 'static')
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 WEBPACK_LOADER = {
     'DEFAULT': {
         'CACHE': not DEBUG,
-        'STATS_FILE': os.path.join(BASE_DIR, 'frontend', 'build', 'webpack-stats.json'), # ★このパスを確認
+        'STATS_FILE': os.path.join(BASE_DIR, 'frontend', 'build', 'webpack-stats.json'), 
         # または 'STATS_FILE': BASE_DIR / 'frontend' / 'build' / 'webpack-stats.json', # Django 4+
         'POLL_INTERVAL': 0.1,
         'TIMEOUT': None,

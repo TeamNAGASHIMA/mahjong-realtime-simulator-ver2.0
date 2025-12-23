@@ -186,3 +186,5 @@ mahjong_realtime_simulator/mahjong-cpp/
 
 # log.txt
 mahjong_realtime_simulator/log.txt
+
+!run_Django.spec

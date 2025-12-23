@@ -1,36 +1,66 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { spawn } = require('child_process');
+const http = require('http');
+
+let djangoProcess = null;
+let mainWindow = null;
+
+app.setPath('userData', path.join(app.getPath('appData'), 'mahjong-simulator-data'));
+
+function startDjango() {
+  const exePath = app.isPackaged
+    ? path.join(process.resourcesPath, 'backend', 'run_Django.exe')
+    : path.join(__dirname, 'backend', 'run_Django.exe');
+
+  const args = ['runserver', '127.0.0.1:8010', '--noreload'];
+
+  djangoProcess = spawn(exePath, args, { 
+    shell: false ,
+    cwd: path.dirname(exePath)
+  });
+
+  djangoProcess.stdout.on('data', (data) => console.log(`Django: ${data}`));
+  djangoProcess.stderr.on('data', (data) => console.error(`Django Error: ${data}`));
+}
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
+    show: false, 
     webPreferences: {
-      // (必要に応じて設定)
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
-  // ウィンドウのアスペクト比を固定 (16:9)
   mainWindow.setAspectRatio(16 / 9);
 
-  // DjangoアプリケーションのURLをロードします
-  // mainWindow.loadURL('http://127.0.0.1:8010/admin'); // Djangoの開発サーバーのURLに合わせてください
-  mainWindow.loadURL('http://127.0.0.1:8010/app/mahjong_render/');
+  const djangoUrl = 'http://127.0.0.1:8010/app/mahjong_render/';
 
-  // デベロッパーツールを開く (開発時のみ)
-  // mainWindow.webContents.openDevTools();
+  const waitForDjango = () => {
+    http.get(djangoUrl, (res) => {
+      console.log('Django is ready!');
+      mainWindow.loadURL(djangoUrl);
+      mainWindow.once('ready-to-show', () => {
+        mainWindow.show(); // ウィンドウを表示
+      });
+    }).on('error', () => {
+      console.log('Waiting for Django...');
+      setTimeout(waitForDjango, 1000);
+    });
+  };
+
+  waitForDjango();
 }
 
-app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+app.whenReady().then(() => {
+  startDjango();
+  createWindow();
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+app.on('window-all-closed', () => {
+  if (djangoProcess) djangoProcess.kill();
+  if (process.platform !== 'darwin') app.quit();
 });
