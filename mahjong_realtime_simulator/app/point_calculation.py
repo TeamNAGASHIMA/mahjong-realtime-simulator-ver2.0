@@ -363,21 +363,13 @@ def point_calculate(
             is_haitei = options_dict["is_haitei"],
             is_houtei = options_dict["is_houtei"],
             is_daburu_riichi = options_dict["is_daburu_riichi"],
-            is_nagashi_mangan = options_dict["is_nagashi_mangan"],
-            is_tenhou = options_dict["is_tenhou"],
-            is_renhou = options_dict["is_renhou"],
-            is_chiihou = options_dict["is_chiihou"],
             options = OptionalRules(
                 kazoe_limit = kazoe_limit_map[options_dict["options"]["kazoe_limit"]],
                 has_aka_dora = options_dict["options"]["has_aka_dora"],
                 has_open_tanyao = options_dict["options"]["has_open_tanyao"],
-                has_double_yakuman = options_dict["options"]["has_double_yakuman"],
+                has_double_yakuman = True,
                 kiriage = options_dict["options"]["kiriage"],
-                fu_for_open_pinfu = options_dict["options"]["fu_for_open_pinfu"],
-                fu_for_pinfu_tsumo = options_dict["options"]["fu_for_pinfu_tsumo"],
-                renhou_as_yakuman = options_dict["options"]["renhou_as_yakuman"],
-                has_daisharin = options_dict["options"]["has_daisharin"],
-                has_daisharin_other_suits = options_dict["options"]["has_daisharin_other_suits"]
+                fu_for_pinfu_tsumo = True,
             )
         )
 
