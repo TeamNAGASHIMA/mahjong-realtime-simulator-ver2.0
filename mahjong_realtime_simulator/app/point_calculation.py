@@ -181,7 +181,7 @@ def point_calculate(
             pin = pinz_sort_join,
             sou = souz_sort_join,
             honors = honz_sort_join,
-            has_aka_dora = options_dict["options"]["has_aka_dora"]
+            has_aka_dora = True
         )
 
         message_err = "Error in win_tile"
@@ -304,51 +304,6 @@ def point_calculate(
         if dora_indicators == []:
             dora_indicators = None
 
-        #### caluculator.estimate_hand_value()の引数 ####
-        #・tiles(麻雀牌のアガリ形)
-        #・win_tile(アガリ牌)
-        #・melds(鳴き)
-        #・dora_indicators(ドラ)
-        #・config(オプション)設定
-
-        # configの設定例
-        # config=HandConfig(is_tsumo=True)
-
-        ####configの設定一覧 ####
-        # ・自風  　　　　　　　→　is_tsumo == wind_map[27 or 28 or 29 or 30]
-        # ・場風  　　　　　　　→　is_riichi == wind_map[27 or 28 or 29 or 30]
-        # ・ツモ  　　　　　　　→　is_tsumo == True or False
-        # ・リーチ　　　　　　　→　is_riichi == True or False
-        # ・イッパツ　　　　　　→　is_ippatsu == True or False
-        # ・リンシャンカイホウ　→　is_rinshan == True or False
-        # ・チャンカン　　　　　→　is_chankan == True or False
-        # ・ハイテイ　　　　　　→　is_haitei == True or False
-        # ・ホウテイ　　　　　　→　is_houtei == True or False
-        # ・ダブルリーチ　　　　→　is_daburu_riichi == True or False
-        # ・流しマンガン　　　　→　is_nagashi_mangan == True or False
-        # ・テンホー　　　　　　→　is_tenhou == True or False
-        # ・レンホー　　　　　　→　is_renhou == True or False
-        # ・チーホー　　　　　　→　is_chiihou == True or False
-        # ・その他オプション　　→　options == ディクショナリ型(OptionalRulesクラス)
-
-        #### その他オプション(OptionalRulesクラス)一覧 ####
-        # ・数えヤクマン　　　　　　　　→　kazoe_limit == 1 or 2 or 3
-        #   ------ 1 : HandConfig.KAZOE_LIMITED(13翻以上をヤクマンとする場合(通常の数えヤクマン))
-        #   ------ 2 : HandConfig.KAZOE_SANBAIMAN(13翻以上をサンバイマンとする場合)
-        #   ------ 3 : HandConfig.KAZOE_NO_LIMIT(13翻以上をヤクマン,26翻以上をダブルヤクマンとする場合))
-        # ・赤ドラあり　　　　　　　　　→　has_aka_dora == True or False
-        # ・喰いタン　　　　　　       →　has_open_tanyao == True or False
-        # ・ダブルヤクマン　　　　　　　→　has_double_yakuman == True or False
-        # ・切り上げマンガン　　　　　　→　kiriage == True or False
-        # ・ピンフ　　　　　　　　　　　→　fu_for_open_pinfu == True or False
-        # ・ピンフツモ　　　　　　　　　→　fu_for_pinfu_tsumo == True or False
-        # ・レンホー　　　　　　　　　　→　renhou_as_yakuman == True or False
-        # ・ダイシャリン　　　　　　　　→　has_daisharin == True or False
-        # ・ダイチクリン&ダイスウリン　 →　has_daisharin_other_suits == True or False
-
-        # その他オプション設定例
-        #options=OptionalRules(has_open_tanyao=True, has_aka_dora=True)
-
         message_err = "Error in options"
         # オプション設定
         kazoe_limit_map = [HandConfig.KAZOE_LIMITED, HandConfig.KAZOE_SANBAIMAN, HandConfig.KAZOE_NO_LIMIT]
@@ -363,21 +318,13 @@ def point_calculate(
             is_haitei = options_dict["is_haitei"],
             is_houtei = options_dict["is_houtei"],
             is_daburu_riichi = options_dict["is_daburu_riichi"],
-            is_nagashi_mangan = options_dict["is_nagashi_mangan"],
-            is_tenhou = options_dict["is_tenhou"],
-            is_renhou = options_dict["is_renhou"],
-            is_chiihou = options_dict["is_chiihou"],
             options = OptionalRules(
                 kazoe_limit = kazoe_limit_map[options_dict["options"]["kazoe_limit"]],
-                has_aka_dora = options_dict["options"]["has_aka_dora"],
+                has_aka_dora = True,
                 has_open_tanyao = options_dict["options"]["has_open_tanyao"],
-                has_double_yakuman = options_dict["options"]["has_double_yakuman"],
+                has_double_yakuman = True,
                 kiriage = options_dict["options"]["kiriage"],
-                fu_for_open_pinfu = options_dict["options"]["fu_for_open_pinfu"],
-                fu_for_pinfu_tsumo = options_dict["options"]["fu_for_pinfu_tsumo"],
-                renhou_as_yakuman = options_dict["options"]["renhou_as_yakuman"],
-                has_daisharin = options_dict["options"]["has_daisharin"],
-                has_daisharin_other_suits = options_dict["options"]["has_daisharin_other_suits"]
+                fu_for_pinfu_tsumo = True,
             )
         )
 
