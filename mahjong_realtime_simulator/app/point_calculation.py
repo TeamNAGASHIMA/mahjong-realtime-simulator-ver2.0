@@ -134,7 +134,7 @@ def point_calculate(
         }
 
         # エラーメッセージ出力用
-        message = "Error in hand_tiles"
+        message_err = "Error in hand_tiles"
 
         # 物体検知の結果の手牌を麻雀点数計算の形式に変換
         manz = [] # 萬子配列
@@ -338,10 +338,12 @@ def point_calculate(
 
         # 計算結果のエラー判定
         if result.error:
+            result_calc = None
             message = "【point calculation error】- cause: {}".format(result.error)
             status = 430
         else:
             if result.fu == None or result.han == None:
+                result_calc = None
                 message = "hu or han is None"
                 status = 440
             else:
@@ -377,4 +379,4 @@ def point_calculate(
         return {"message" : message, "result" : result_calc, "status" : status}
     except Exception as e:
         message = message_err
-        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e)}
+        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e), "status": 400}

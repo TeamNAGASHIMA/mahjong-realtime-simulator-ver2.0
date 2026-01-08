@@ -144,8 +144,7 @@ def main(request):
                     )
 
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
@@ -232,8 +231,7 @@ def tiles_save(request):
                                 status=save_result["status"]
                             )
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
 
 # 詳細牌譜データの参照エンドポイント
 @csrf_exempt
@@ -289,8 +287,7 @@ def tiles_req(request):
                     return JsonResponse({'message': f"File '{req_file_name}' not found."}, status=404)
 
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
@@ -346,8 +343,7 @@ def detection_tiles(request):
                     )
             
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
@@ -373,8 +369,8 @@ def hand_tiles_point_calculate(request):
         try:
             Req_BODY = request.POST
 
-            hand_tiles_info = Req_BODY["hand_tiles_info"]
-            options = Req_BODY["options"]
+            hand_tiles_info = json.loads(Req_BODY["hand_tiles_info"])
+            options = json.loads(Req_BODY["options"])
 
             point_result = point_calculate(
                 hand_tiles_info["hand_tiles"],
@@ -400,14 +396,13 @@ def hand_tiles_point_calculate(request):
             return JsonResponse(
                 {
                 'message': message,
-                "detection_result": point_result["result"]
+                "point_result": point_result["result"]
                 }, 
                 status=point_result["status"]
                 )
             
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
