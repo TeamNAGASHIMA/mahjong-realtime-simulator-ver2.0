@@ -134,15 +134,18 @@ def point_calculate(
         }
 
         # エラーメッセージ出力用
-        message = "Error in hand_tiles"
+        message_err = "Error in hand_tiles"
 
         # 物体検知の結果の手牌を麻雀点数計算の形式に変換
         manz = [] # 萬子配列
         pinz = [] # 筒子配列
         souz = [] # 索子配列
         honz = [] # 字牌配列
+        aka_dora_in_hand_tiles = False
         for hand_num in hand_tiles:
             hand_num = id_change(hand_num)
+            if not aka_dora_in_hand_tiles and hand_num >= 34:
+                aka_dora_in_hand_tiles = True
             card_hand = list(majong_map[hand_num])
             if card_hand[0] == "m":
                 manz.append(int(card_hand[1]))
@@ -181,7 +184,7 @@ def point_calculate(
             pin = pinz_sort_join,
             sou = souz_sort_join,
             honors = honz_sort_join,
-            has_aka_dora = True
+            has_aka_dora = aka_dora_in_hand_tiles
         )
 
         message_err = "Error in win_tile"
@@ -338,10 +341,12 @@ def point_calculate(
 
         # 計算結果のエラー判定
         if result.error:
+            result_calc = None
             message = "【point calculation error】- cause: {}".format(result.error)
             status = 430
         else:
             if result.fu == None or result.han == None:
+                result_calc = None
                 message = "hu or han is None"
                 status = 440
             else:
@@ -377,4 +382,4 @@ def point_calculate(
         return {"message" : message, "result" : result_calc, "status" : status}
     except Exception as e:
         message = message_err
-        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e)}
+        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e), "status": 400}
