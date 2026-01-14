@@ -141,8 +141,11 @@ def point_calculate(
         pinz = [] # 筒子配列
         souz = [] # 索子配列
         honz = [] # 字牌配列
+        aka_dora_in_hand_tiles = False
         for hand_num in hand_tiles:
             hand_num = id_change(hand_num)
+            if not aka_dora_in_hand_tiles and hand_num >= 34:
+                aka_dora_in_hand_tiles = True
             card_hand = list(majong_map[hand_num])
             if card_hand[0] == "m":
                 manz.append(int(card_hand[1]))
@@ -181,7 +184,7 @@ def point_calculate(
             pin = pinz_sort_join,
             sou = souz_sort_join,
             honors = honz_sort_join,
-            has_aka_dora = True
+            has_aka_dora = aka_dora_in_hand_tiles
         )
 
         message_err = "Error in win_tile"
