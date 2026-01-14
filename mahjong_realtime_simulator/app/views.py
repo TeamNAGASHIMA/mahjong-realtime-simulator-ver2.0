@@ -381,8 +381,8 @@ def hand_tiles_point_calculate(request):
             )
 
             # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+            message = point_result["message"]
             if point_result["status"] != 200:
-                message = point_result["message"]
                 status = point_result["status"]
 
                 return JsonResponse(
