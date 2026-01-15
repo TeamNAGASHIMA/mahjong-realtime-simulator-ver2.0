@@ -1,3 +1,5 @@
+// START OF FILE MainScreen.js
+
 // MainScreen.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -101,32 +103,59 @@ function dataURLtoBlob(dataurl) {
     while(n--){ u8arr[n] = bstr.charCodeAt(n); }
     return new Blob([u8arr], {type:mime});
 }
+
 const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
-  if (!Array.isArray(meldArray)) return [];
-  return meldArray.map(tiles => {
-    tiles.sort((a,b) => a - b); 
+  if (!Array.isArray(meldArray)) return { melds: [], tilesToHand: [] };
+  
+  const results = meldArray.map(tiles => {
+    // 1000番台の牌（誤認識牌）があるかどうかをチェック
+    const hasErrorTile = tiles.some(t => t >= 1000);
+
+    // 誤認識牌がある場合は、面子を崩して全ての牌を手牌に戻す
+    if (hasErrorTile) {
+      const tilesToReturn = tiles.map(t => t % 100); // 正規化して手牌に戻す
+      return { meld: null, tilesToHand: tilesToReturn };
+    }
+
+    // 誤認識牌がない場合は、通常の面子として処理
+    const normalizedTilesForCheck = tiles.map(t => t % 100);
+    normalizedTilesForCheck.sort((a, b) => a - b);
+    
     let type = 'unknown';
-    let exposed_index = null;
-    if (tiles.length === 3) {
-      if (tiles[0] === tiles[1] && tiles[1] === tiles[2]) {
-        type = 'pon';
-        exposed_index = 1;
-      } else if (tiles[0] + 1 === tiles[1] && tiles[1] + 1 === tiles[2] && 
-                  Math.floor(tiles[0] / 9) === Math.floor(tiles[1] / 9) &&
-                  Math.floor(tiles[1] / 9) === Math.floor(tiles[2] / 9)) {
-        type = 'chi';
-        exposed_index = 1;
-      }
-    } else if (tiles.length === 4) {
-      if (tiles[0] === tiles[1] && tiles[1] === tiles[2] && tiles[2] === tiles[3]) {
-        type = 'ankan';
-        exposed_index = null;
+    let exposed_index = 1;
+
+    if (normalizedTilesForCheck.length >= 3) {
+      if (normalizedTilesForCheck.length === 3) {
+        if (normalizedTilesForCheck[0] === normalizedTilesForCheck[1] && normalizedTilesForCheck[1] === normalizedTilesForCheck[2]) {
+          type = 'pon';
+        } else if (normalizedTilesForCheck[0] + 1 === normalizedTilesForCheck[1] && normalizedTilesForCheck[1] + 1 === normalizedTilesForCheck[2] && 
+                    Math.floor(normalizedTilesForCheck[0] / 9) === Math.floor(normalizedTilesForCheck[1] / 9) &&
+                    Math.floor(normalizedTilesForCheck[1] / 9) === Math.floor(normalizedTilesForCheck[2] / 9)) {
+          type = 'chi';
+        }
+      } else if (normalizedTilesForCheck.length === 4) {
+        if (normalizedTilesForCheck[0] === normalizedTilesForCheck[1] && normalizedTilesForCheck[1] === normalizedTilesForCheck[2] && normalizedTilesForCheck[2] === normalizedTilesForCheck[3]) {
+          type = 'kan';
+        }
       }
     }
-    const from = playerKey === 'self' ? 'self' : null;
-    return { type, tiles, from, exposed_index };
+    
+    if (type === 'unknown') {
+      return { meld: null, tilesToHand: tiles.map(t => t % 100) }; // 不正な面子も手牌に戻す
+    }
+
+    const meld = { type, tiles: tiles, from: playerKey, exposed_index };
+    return { meld, tilesToHand: [] };
   });
+
+  // 全ての面子と手牌に戻す牌を分離して返す
+  const melds = results.map(r => r.meld).filter(m => m !== null);
+  const tilesToHand = results.flatMap(r => r.tilesToHand);
+
+  return { melds, tilesToHand };
 };
+
+
 const createPayloadFromBoardState = (boardState, settings) => {
     const allHandTiles = [...(boardState.hand_tiles?.map(tile => tile) ?? [])];
     if (boardState.tsumo_tile !== null && boardState.tsumo_tile !== undefined) {
@@ -157,27 +186,45 @@ const createPayloadFromBoardState = (boardState, settings) => {
 
 // 牌譜データをboardState形式に変換するヘルパー関数
 const convertKifuDataToBoardState = (kifuTurnData) => {
-  if (!kifuTurnData) return INITIAL_GAME_STATE; // データがなければ初期状態を返す
+  if (!kifuTurnData) return INITIAL_GAME_STATE;
 
   const melds = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.melded_blocks) {
-    melds.self = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_bottom || [], 'self');
-    melds.shimocha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_right || [], 'shimocha');
-    melds.toimen = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_top || [], 'toimen');
-    melds.kamicha = convertMeldsToBoardStateFormat(kifuTurnData.melded_blocks.melded_tiles_left || [], 'kamicha');
+  let tilesFromBrokenMelds = [];
+
+  const meldSource = kifuTurnData.melded_tiles || kifuTurnData.melded_blocks;
+  if (meldSource) {
+    const selfResult = convertMeldsToBoardStateFormat(meldSource.melded_tiles_bottom || [], 'self');
+    melds.self = selfResult.melds;
+    tilesFromBrokenMelds.push(...selfResult.tilesToHand);
+
+    const shimochaResult = convertMeldsToBoardStateFormat(meldSource.melded_tiles_right || [], 'shimocha');
+    melds.shimocha = shimochaResult.melds;
+    // 他家の不明牌は手牌に戻さない
+
+    const toimenResult = convertMeldsToBoardStateFormat(meldSource.melded_tiles_top || [], 'toimen');
+    melds.toimen = toimenResult.melds;
+
+    const kamichaResult = convertMeldsToBoardStateFormat(meldSource.melded_tiles_left || [], 'kamicha');
+    melds.kamicha = kamichaResult.melds;
   }
 
   const player_discards = { self: [], shimocha: [], toimen: [], kamicha: [] };
-  if (kifuTurnData.river_tiles) {
-    player_discards.self = kifuTurnData.river_tiles.discard_tiles_bottom || [];
-    player_discards.shimocha = kifuTurnData.river_tiles.discard_tiles_right || [];
-    player_discards.toimen = kifuTurnData.river_tiles.discard_tiles_top || [];
-    player_discards.kamicha = kifuTurnData.river_tiles.discard_tiles_left || [];
+  const discardSource = kifuTurnData.discard_tiles || kifuTurnData.river_tiles;
+  if (discardSource) {
+      player_discards.self = discardSource.discard_tiles_bottom || [];
+      player_discards.shimocha = discardSource.discard_tiles_right || [];
+      player_discards.toimen = discardSource.discard_tiles_top || [];
+      player_discards.kamicha = discardSource.discard_tiles_left || [];
   }
 
-  let hand_tiles = [...(kifuTurnData.hand_tiles || [])];
+  // 元の手牌と、崩された面子から戻された牌を結合
+  let hand_tiles = [
+    ...(kifuTurnData.hand_tiles || []),
+    ...tilesFromBrokenMelds
+  ];
   let tsumo_tile = null;
-  if (hand_tiles.length === 14) {
+  
+  if (hand_tiles.length % 3 === 2) {
     tsumo_tile = hand_tiles.pop();
   }
 
@@ -263,7 +310,7 @@ const MainScreen = () => {
     brightness: 100, screenSize: 'fullscreen', theme: 'dark', fontSize: '14px',
     soundEffects: true, tableBg: 'default', tableBgImage: null, appBg: 'default',
     appBgImage: null, syanten_type: 1, 
-    flag: 1
+    flag: 1, showTooltips: true,
   });
   const [use3DDisplay, setUse3DDisplay] = useState(false); 
 
@@ -366,6 +413,10 @@ const MainScreen = () => {
       if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
       const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
+      if (finalSettings.flag === 0) { // 牌譜モードの場合のみ
+        console.log("牌譜モードでの計算開始: バックエンドに送信するデータを表示します。");
+        console.log("送信されるペイロード (fixes_board_info):", fixes_board_info);
+      }   
       formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
       formData.append('syanten_Type', finalSettings.syanten_type); 
       formData.append('flag', finalSettings.flag);
@@ -428,14 +479,16 @@ const MainScreen = () => {
         };
         const apiMeldsSource = detectedResult.melded_blocks || detectedResult.melded_tiles;
         let selfMelds = [], shimochaMelds = [], toimenMelds = [], kamichaMelds = [];
+        // ▼▼▼ ここから修正 ▼▼▼
         if (Array.isArray(apiMeldsSource)) {
-            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self').melds;
         } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
-            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
-            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
-            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
-            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self').melds;
+            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha').melds;
+            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen').melds;
+            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha').melds;
         }
+        // ▲▲▲ ここまで修正 ▲▲▲
         updatedBoardState = {
             ...INITIAL_GAME_STATE, 
             turn: detectedResult.turn ?? 1,
@@ -540,14 +593,16 @@ const MainScreen = () => {
             };
             const apiMeldsSource = detectedResultError.melded_blocks || detectedResultError.melded_tiles;
             let selfMelds = [], shimochaMelds = [], toimenMelds = [], kamichaMelds = [];
+            // ▼▼▼ ここから修正 ▼▼▼
             if (Array.isArray(apiMeldsSource)) {
-                selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+                selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self').melds;
             } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
-                selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
-                shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
-                toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
-                kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+                selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self').melds;
+                shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha').melds;
+                toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen').melds;
+                kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha').melds;
             }
+            // ▲▲▲ ここまで修正 ▲▲▲
             setBoardState({
                 ...INITIAL_GAME_STATE,
                 turn: detectedResultError.turn ?? 1, round_wind: boardState.round_wind, hand_tiles: recognizedHandTiles,
@@ -572,22 +627,15 @@ const MainScreen = () => {
     }
   };
 
-  // ★★★ 追加: 画像認識のみを行う関数 ★★★
   const handleDetection = async () => {
     if (!sidePanelRef.current) return;
-    
-    // 計算中フラグではなく、認識中フラグを立てる
     setIsRecognizing(true);
     setCalculationError(null);
-
     try {
-      // SidePanelから画像データを取得
       const { images } = sidePanelRef.current.getSidePanelData();
       const formData = new FormData();
       const handImageBlob = dataURLtoBlob(images.handImage);
       const boardImageBlob = dataURLtoBlob(images.boardImage);
-
-      // 画像のチェックと格納
       if (!handImageBlob || handImageBlob.size === 0) {
         alert("手牌カメラの映像が取得できませんでした。");
         setIsRecognizing(false);
@@ -597,20 +645,14 @@ const MainScreen = () => {
       if (boardImageBlob) {
         formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
       }
-
-      // 認識専用エンドポイントへ送信
       const response = await fetch('/app/detection_tiles/', {
           method: 'POST',
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
           body: formData
       });
-
       const data = await response.json();
-
       if (response.status === 200) {
         let detectedResult = data.detection_result;
-        
-        // 捨て牌データの整形
         if (detectedResult && Array.isArray(detectedResult.discard_tiles)) {
             const singleDiscardList = detectedResult.discard_tiles;
             const reDistributedDiscards = {
@@ -625,15 +667,11 @@ const MainScreen = () => {
             }
             detectedResult.discard_tiles = reDistributedDiscards; 
         }
-
-        // 手牌・ツモ牌の処理
         let recognizedHandTiles = detectedResult.hand_tiles ?? [];
         let recognizedTsumoTile = null;
         if (recognizedHandTiles.length === 14) {
           recognizedTsumoTile = recognizedHandTiles.pop(); 
         }
-
-        // 副露（鳴き）の整形ヘルパー
         const getMeldsForPlayer = (playerData, playerKey) => {
           let meldData = [];
           if (Array.isArray(playerData)) { meldData = playerData; }
@@ -645,7 +683,6 @@ const MainScreen = () => {
           }
           return meldData;
         };
-        // 捨て牌取得ヘルパー
         const getDiscardsForPlayer = (playerKey, discardData) => {
             if (playerKey === 'self') return discardData?.discard_tiles_bottom ?? [];
             if (playerKey === 'shimocha') return discardData?.discard_tiles_right ?? [];
@@ -653,20 +690,18 @@ const MainScreen = () => {
             if (playerKey === 'kamicha') return discardData?.discard_tiles_left ?? [];
             return [];
         };
-
         const apiMeldsSource = detectedResult.melded_blocks || detectedResult.melded_tiles;
         let selfMelds = [], shimochaMelds = [], toimenMelds = [], kamichaMelds = [];
-        
+        // ▼▼▼ ここから修正 ▼▼▼
         if (Array.isArray(apiMeldsSource)) {
-            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self');
+            selfMelds = convertMeldsToBoardStateFormat(apiMeldsSource, 'self').melds;
         } else if (typeof apiMeldsSource === 'object' && apiMeldsSource !== null) {
-            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self');
-            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha');
-            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen');
-            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha');
+            selfMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'self'), 'self').melds;
+            shimochaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'shimocha'), 'shimocha').melds;
+            toimenMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'toimen'), 'toimen').melds;
+            kamichaMelds = convertMeldsToBoardStateFormat(getMeldsForPlayer(apiMeldsSource, 'kamicha'), 'kamicha').melds;
         }
-
-        // 盤面状態を更新
+        // ▲▲▲ ここまで修正 ▲▲▲
         const updatedBoardState = {
             ...INITIAL_GAME_STATE, 
             turn: detectedResult.turn ?? 1,
@@ -688,12 +723,10 @@ const MainScreen = () => {
         };
         setBoardState(updatedBoardState); 
         console.log("画像認識による盤面更新完了");
-
       } else {
         const errorMessage = data.message?.error || data.message || "Unknown error";
         setCalculationError(`認識エラー (Status: ${response.status}): ${errorMessage}`);
       }
-
     } catch (err) {
       console.error('通信に失敗しました:', err);
       setCalculationError('通信に失敗しました。詳細はコンソールを確認してください。');
@@ -701,6 +734,214 @@ const MainScreen = () => {
       setIsRecognizing(false);
     }
   };
+
+  const recordingStatus = useRef(0);
+  const [rendering, setRendering] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const recordingFunction = () => {
+    if (recordingStatus.current === 0) {
+      if (!isCameraActive) {
+        alert("カメラが起動していないため、記録に失敗しました。");
+        return; 
+      }
+      if (window.confirm('記録を開始しますか？')){
+        console.log('記録を開始しました。')
+        recordingStatus.current = 1;
+        setRendering(true);
+      }
+    } 
+    else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
+      recordingStatus.current = 2;
+      setRendering(false);
+      setIsModalOpen(true);
+    } 
+    else if (recordingStatus.current === 2) {
+      console.log('保存をキャンセルしました。');
+      recordingStatus.current = 0;
+      setIsModalOpen(false);
+    };
+  };
+
+  const tilesSaveEndpointConnecting = async (formData, isQuickSave = false) => {
+    console.log("バックエンド通信：", recordingStatus.current);
+    const isSaveAction = (recordingStatus.current === 2 && isModalOpen) || isQuickSave;
+    if (isSaveAction) {
+      setIsSaving(true);
+    }
+    if (!formData.has('hand_tiles_image')) {
+      if (sidePanelRef.current) {
+        const { images } = sidePanelRef.current.getSidePanelData();
+        const handImageBlob = dataURLtoBlob(images.handImage);
+        const boardImageBlob = dataURLtoBlob(images.boardImage);
+        if (!handImageBlob || handImageBlob.size === 0) {
+          console.error("手牌カメラの映像が取得できませんでした。");
+        }
+        formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+        if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+      }
+    }
+    try {
+      const response = await fetch('/app/tiles_save/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          body: formData
+      });
+      const data = await response.json();
+      if (response.status === 200) {
+        if (isQuickSave) {
+          console.log("クイック保存しました:", data.file_name);
+        } else if (recordingStatus.current === 1) {
+          console.log("記録データを送信しました:", data.message);
+        } else if (recordingStatus.current === 2 && isModalOpen) {
+          alert(`記録を保存しました: ${data.file_name}`);
+          console.log("記録を保存しました:", data);
+          recordingStatus.current = 0;
+          setIsModalOpen(false);
+        }
+      } else {
+        const errorMessage = data.message || "記録データの送信に失敗しました。";
+        console.error(errorMessage);
+        if (recordingStatus.current !== 1 && !isQuickSave) alert(errorMessage);
+        if (isQuickSave) alert("クイック保存に失敗しました: " + errorMessage);
+      }
+    } catch (err) {
+      console.error('記録APIとの通信に失敗しました:', err);
+      if (recordingStatus.current !== 1 && !isQuickSave) alert('通信エラーが発生しました。');
+      if (isQuickSave) alert('クイック保存中に通信エラーが発生しました。');
+    } finally {
+      if (isSaveAction) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const sendRecordingData = async (save_name, isQuickSave = false) => {
+    console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
+    if (!sidePanelRef.current) {
+      console.error("sidePanelRef is not available.");
+      return;
+    }
+    const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
+    const finalSettings = {...settings, ...sidePanelSettings};
+    const formData = new FormData();
+    const handImageBlob = dataURLtoBlob(images.handImage);
+    const boardImageBlob = dataURLtoBlob(images.boardImage);
+    if (!handImageBlob || handImageBlob.size === 0) {
+      console.error("手牌カメラの映像が取得できませんでした。");
+    }
+    formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
+    if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
+    formData.append('syanten_Type', finalSettings.syanten_type); 
+    formData.append('flag', finalSettings.flag);
+    const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
+    const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
+    formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
+    formData.append('record_flag', recordingStatus.current);
+    if (save_name) {
+      formData.append('save_name', save_name);
+    }
+    tilesSaveEndpointConnecting(formData, isQuickSave);
+  };
+
+  const handleResetBoardState = () => {
+    setBoardState(INITIAL_GAME_STATE);
+    setCalculationResults([]);
+    setIsLoadingCalculation(false);
+    setIsRecognizing(false);
+    setCalculationError(null);
+  };
+
+  useEffect(() => {
+    if (settings.flag === 0) {
+      fetchKifuList();
+    } else {
+      setKifuFileList([]);
+      setSelectedKifuData([]);
+      handleResetBoardState();
+    }
+  }, [settings.flag]);
+
+  useEffect(() => {
+    if (selectedKifuData.length > 0 && currentKifuTurn >= 1) {
+      const turnData = selectedKifuData.find(d => d.turn === currentKifuTurn);
+      if (turnData) {
+        setBoardState(convertKifuDataToBoardState(turnData));
+      }
+    } else if (settings.flag === 0) {
+      setBoardState(INITIAL_GAME_STATE);
+    }
+  }, [selectedKifuData, currentKifuTurn]);
+
+
+  const fetchKifuList = async () => {
+    try {
+      const response = await fetch('/app/tiles_json_req/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({})
+      });
+      const data = await response.json();
+      if (response.status === 200 && data.file_list) {
+        setKifuFileList(data.file_list);
+      } else {
+        alert(data.message || "牌譜リストの取得に失敗しました。");
+      }
+    } catch (err) {
+      console.error("牌譜リスト取得APIとの通信に失敗:", err);
+      alert("牌譜リスト取得APIとの通信に失敗しました。");
+    }
+  };
+
+  const handleKifuSelect = async (fileName) => {
+    try {
+      const formData = new FormData();
+      formData.append('file_name', fileName);
+      const response = await fetch('/app/tiles_json_req/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData
+      });
+      const data = await response.json();
+      if (data && data.temp_result) {
+        const sortedKifuData = [...data.temp_result].sort((a, b) => {
+            if (a.turn == null) return 1;
+            if (b.turn == null) return -1;
+            return a.turn - b.turn;
+        });
+        setSelectedKifuData(sortedKifuData);
+        setCurrentKifuTurn(sortedKifuData[0]?.turn || 1); 
+        console.log(`牌譜「${fileName}」を読み込みました。`);
+      } else {
+        alert(data.message || `牌譜「${fileName}」のデータ形式が不正です。`);
+      }
+    } catch (err) {
+      console.error("牌譜データ取得APIとの通信に失敗:", err);
+      alert("牌譜データ取得APIとの通信に失敗しました。");
+    }
+  };
+
+  const startResizing = useCallback((mouseDownEvent) => {
+    mouseDownEvent.preventDefault();
+    const startX = mouseDownEvent.clientX;
+    const startWidth = sidePanelWidth;
+    const onMouseMove = (mouseMoveEvent) => {
+      const moveX = startX - mouseMoveEvent.clientX;
+      const newWidth = startWidth + moveX;
+      if (newWidth >= 260 && newWidth <= 800) {
+        setSidePanelWidth(newWidth);
+      }
+    };
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [sidePanelWidth]);
 
   const appContainerStyle = {
     margin: 'auto', border: '1px solid #ccc', display: 'flex', flexDirection: 'column',
@@ -755,240 +996,9 @@ const MainScreen = () => {
     }
   };
 
-  const recordingStatus = useRef(0); // 0: 非記録中, 1: 記録中, 2: 保存待ち
-  const [rendering, setRendering] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // レコーディング処理全体の制御関数
-  const recordingFunction = () => {
-    // 記録開始のフロー
-    if (recordingStatus.current === 0) {
-      if (!isCameraActive) {
-        alert("カメラが起動していないため、記録に失敗しました。");
-        return; 
-      }
-
-      if (window.confirm('記録を開始しますか？')){
-        console.log('記録を開始しました。')
-        recordingStatus.current = 1;
-        setRendering(true);
-      }
-    } 
-    // 記録終了のフロー
-    else if (recordingStatus.current === 1 && window.confirm('記録を終了しますか？')){
-      recordingStatus.current = 2;
-      setRendering(false);
-      setIsModalOpen(true);
-    } 
-    // 保存キャンセルのフロー
-    else if (recordingStatus.current === 2) {
-      console.log('保存をキャンセルしました。');
-      recordingStatus.current = 0;
-      setIsModalOpen(false);
-    };
-  };
-
-  // /tiles_save/ への記録データ送信関数
-  // isQuickSave 引数を追加
-  const tilesSaveEndpointConnecting = async (formData, isQuickSave = false) => {
-    console.log("バックエンド通信：", recordingStatus.current);
-    
-    // 保存処理（終了時の保存、またはクイック保存）の場合、ローディング表示を開始
-    const isSaveAction = (recordingStatus.current === 2 && isModalOpen) || isQuickSave;
-    if (isSaveAction) {
-      setIsSaving(true);
-    }
-
-    if (!formData.has('hand_tiles_image')) {
-      if (sidePanelRef.current) {
-        const { images } = sidePanelRef.current.getSidePanelData();
-        const handImageBlob = dataURLtoBlob(images.handImage);
-        const boardImageBlob = dataURLtoBlob(images.boardImage);
-        if (!handImageBlob || handImageBlob.size === 0) {
-          console.error("手牌カメラの映像が取得できませんでした。");
-        }
-        formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
-        if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
-      }
-    }
-    try {
-      const response = await fetch('/app/tiles_save/', {
-          method: 'POST',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') },
-          body: formData
-      });
-  
-      const data = await response.json();
-  
-      if (response.status === 200) {
-        if (isQuickSave) {
-          console.log("クイック保存しました:", data.file_name);
-        } else if (recordingStatus.current === 1) {
-          console.log("記録データを送信しました:", data.message);
-        } else if (recordingStatus.current === 2 && isModalOpen) {
-          alert(`記録を保存しました: ${data.file_name}`);
-          console.log("記録を保存しました:", data);
-          recordingStatus.current = 0; // 保存後は非記録状態に戻す
-          setIsModalOpen(false);
-        }
-      } else {
-        const errorMessage = data.message || "記録データの送信に失敗しました。";
-        console.error(errorMessage);
-        if (recordingStatus.current !== 1 && !isQuickSave) alert(errorMessage);
-        if (isQuickSave) alert("クイック保存に失敗しました: " + errorMessage);
-      }
-    } catch (err) {
-      console.error('記録APIとの通信に失敗しました:', err);
-      if (recordingStatus.current !== 1 && !isQuickSave) alert('通信エラーが発生しました。');
-      if (isQuickSave) alert('クイック保存中に通信エラーが発生しました。');
-    } finally {
-      // 保存処理が終わったらローディング表示を終了
-      if (isSaveAction) {
-        setIsSaving(false);
-      }
-    }
-  };
-
-  // 記録保存ボタンが押されたときの処理
-  // isQuickSave 引数を追加
-  const sendRecordingData = async (save_name, isQuickSave = false) => {
-    console.log(`sendRecordingData called with recordingStatus: ${recordingStatus.current}`);
-    if (!sidePanelRef.current) {
-      console.error("sidePanelRef is not available.");
-      return;
-    }
-
-    const { images, settings: sidePanelSettings } = sidePanelRef.current.getSidePanelData();
-    const finalSettings = {...settings, ...sidePanelSettings};
-    const formData = new FormData();
-    const handImageBlob = dataURLtoBlob(images.handImage);
-    const boardImageBlob = dataURLtoBlob(images.boardImage);
-  
-    if (!handImageBlob || handImageBlob.size === 0) {
-      console.error("手牌カメラの映像が取得できませんでした。");
-    }
-  
-    formData.append('hand_tiles_image', handImageBlob, "hand_tiles_image.jpg");
-    if (boardImageBlob) formData.append("board_tiles_image", boardImageBlob, "board_tiles_image.jpg");
-
-    formData.append('syanten_Type', finalSettings.syanten_type); 
-    formData.append('flag', finalSettings.flag);
-    
-    const { fixes_pai_info, fixes_river_tiles } = createPayloadFromBoardState(boardState, finalSettings);
-    const fixes_board_info = { fixes_pai_info, fixes_river_tiles };
-    formData.append('fixes_board_info', JSON.stringify(fixes_board_info));
-  
-    formData.append('record_flag', recordingStatus.current);
-
-    if (save_name) {
-      formData.append('save_name', save_name);
-    }
-  
-    tilesSaveEndpointConnecting(formData, isQuickSave);
-  };
-
-  const handleResetBoardState = () => {
-    setBoardState(INITIAL_GAME_STATE);
-    setCalculationResults([]);
-    setIsLoadingCalculation(false);
-    setIsRecognizing(false);
-    setCalculationError(null);
-  };
-
-  useEffect(() => {
-    if (settings.flag === 0) {
-      fetchKifuList();
-    } else {
-      setKifuFileList([]);
-      setSelectedKifuData([]);
-    }
-  }, [settings.flag]);
-
-  useEffect(() => {
-    if (selectedKifuData.length > 0 && currentKifuTurn >= 1 && currentKifuTurn <= selectedKifuData.length) {
-      const currentTurnData = selectedKifuData[currentKifuTurn - 1];
-      setBoardState(convertKifuDataToBoardState(currentTurnData));
-    }
-  }, [selectedKifuData, currentKifuTurn]);
-
-
-  const fetchKifuList = async () => {
-    try {
-      const response = await fetch('/app/tiles_json_req/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({}) // 空のPOSTリクエスト
-      });
-      const data = await response.json();
-      if (response.status === 200 && data.file_list) {
-        setKifuFileList(data.file_list);
-        console.log("牌譜リストを取得しました:", data.file_list);
-      } else {
-        alert(data.message || "牌譜リストの取得に失敗しました。");
-      }
-    } catch (err) {
-      console.error("牌譜リスト取得APIとの通信に失敗:", err);
-      alert("牌譜リスト取得APIとの通信に失敗しました。");
-    }
-  };
-
-  const handleKifuSelect = async (fileName) => {
-    try {
-      const formData = new FormData();
-      formData.append('file_name', fileName);
-
-      const response = await fetch('/app/tiles_json_req/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-        body: formData
-      });
-      const data = await response.json();
-      if (data.status === 200 && data.temp_result) {
-        setSelectedKifuData(data.temp_result);
-        setCurrentKifuTurn(1); // 最初の巡目にリセット
-        console.log(`牌譜「${fileName}」を読み込みました。`);
-      } else {
-        alert(data.message || `牌譜「${fileName}」の読み込みに失敗しました。`);
-      }
-    } catch (err) {
-      console.error("牌譜データ取得APIとの通信に失敗:", err);
-      alert("牌譜データ取得APIとの通信に失敗しました。");
-    }
-  };
-
-  const startResizing = useCallback((mouseDownEvent) => {
-    mouseDownEvent.preventDefault();
-    
-    const startX = mouseDownEvent.clientX;
-    const startWidth = sidePanelWidth;
-
-    const onMouseMove = (mouseMoveEvent) => {
-      const moveX = startX - mouseMoveEvent.clientX;
-      const newWidth = startWidth + moveX;
-
-      if (newWidth >= 260 && newWidth <= 800) {
-        setSidePanelWidth(newWidth);
-      }
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = 'default';
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    document.body.style.cursor = 'col-resize';
-  }, [sidePanelWidth]);
-
 
   return (
     <div style={appContainerStyle}>
-      {/* 保存処理中のオーバーレイ */}
       {isSaving && <SavingOverlay />}
 
       <Header onMenuClick={handleMenuClick} />
@@ -1011,15 +1021,16 @@ const MainScreen = () => {
             onKifuTurnChange={setCurrentKifuTurn} 
             isSaving={isSaving}
             calculationError={calculationError}
-            displaySettings={displaySettings}            
+            displaySettings={displaySettings}    
+            kifuFileList={kifuFileList}
+            onKifuSelect={handleKifuSelect}
+            currentKifuTurn={currentKifuTurn}
           />
         </div>
         
         <div
           style={styles.resizeHandle}
           onMouseDown={startResizing}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           <div style={styles.resizeLine} />
         </div>
@@ -1042,7 +1053,6 @@ const MainScreen = () => {
             kifuFileList={kifuFileList}
             onKifuSelect={handleKifuSelect}
             displaySettings={displaySettings}
-            // ★★★ 追加: 画像認識関数を渡す ★★★
             onDetection={handleDetection}
           />
         </div>

@@ -1,4 +1,5 @@
 // GameStatusArea.js
+
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
 import ButtonContainer from './GameStatusArea_child/ButtonContainer';
@@ -33,11 +34,15 @@ const GameStatusArea = ({
   displaySettings,  
   isSaving,
   calculationError,
+  // MainScreenから受け取るプロパティ
   selectedKifuData,
+  currentKifuTurn,
   onKifuTurnChange
 }) => {
+
   return (
     <div style={styles.gameStatusContainer}>
+      
       {displaySettings && displaySettings.showStatus && (
         <TileDisplayArea
           boardState={boardState}
@@ -53,17 +58,25 @@ const GameStatusArea = ({
         />
       )}
 
-      {/* ボタンエリア */}
+      {/* ButtonContainerに必要なデータを全て渡す */}
       <ButtonContainer
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
+        // 計算ボタンのテキスト制御
+        calculationText={isLoadingCalculation ? "計算中..." : "計算開始"}
+        
         isSimulatorMode={isSimulatorMode}
         recordingStatus={recordingStatus}
         isModalOpen={isModalOpen}
         onRecordingFunction={onRecordingFunction}
         onSendRecordingData={onSendRecordingData}
         isSaving={isSaving}
+        
+        // ★★★ TurnSelector用データ ★★★
+        selectedKifuData={selectedKifuData}
+        currentKifuTurn={currentKifuTurn}
+        onKifuTurnChange={onKifuTurnChange}
       />
 
       {displaySettings && displaySettings.showSimulation && (

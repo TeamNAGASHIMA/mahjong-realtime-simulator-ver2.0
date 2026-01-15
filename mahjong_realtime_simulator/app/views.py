@@ -7,6 +7,7 @@ import json
 from .calc import main_score_calc, score_calc
 from .detect import analyze_mahjong_board
 from .create_json import difference_check
+from .point_calculation import point_calculate
 from django.conf import settings
 import os
 
@@ -17,7 +18,7 @@ def mahjong_render(request):
     # debug
     # return render(request, 'app/test.html')
 
-
+# 期待値計算エンドポイント
 @csrf_exempt
 def main(request):
     if request.method == 'POST':
@@ -143,12 +144,11 @@ def main(request):
                     )
 
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
-
+# 牌譜作成、牌譜保存エンドポイント
 @csrf_exempt
 def tiles_save(request):
     '''
@@ -231,10 +231,9 @@ def tiles_save(request):
                                 status=save_result["status"]
                             )
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
 
-
+# 詳細牌譜データの参照エンドポイント
 @csrf_exempt
 def tiles_req(request):
     if request.method == 'POST':
@@ -288,11 +287,11 @@ def tiles_req(request):
                     return JsonResponse({'message': f"File '{req_file_name}' not found."}, status=404)
 
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+# 物体検知エンドポイント
 @csrf_exempt
 def detection_tiles(request):
     '''
@@ -344,8 +343,68 @@ def detection_tiles(request):
                     )
             
         except Exception as e:
-            message = "Exception error"
-            return JsonResponse({'message': "{}: {} {}".format(message, type(e), e)}, status=400)
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
+    else:
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+# 点数計算エンドポイント
+@csrf_exempt
+def hand_tiles_point_calculate(request):
+    '''
+    牌検知
+    引数: 
+        hand_tiles_info : 手牌、鳴き牌、ドラ牌、ツモorロン牌
+            hand_tiles : 手牌
+            meld_tiles : 鳴き牌
+            dora_indicators : ドラ牌
+            win_tile : ツモorロン牌
+        options : ユーザ任意設定オプション
+
+    戻り値:
+        message : 処理結果メッセージ
+        point_result : 点数計算結果
+        status : ステータスコード
+    '''
+    if request.method == 'POST':
+        try:
+            Req_BODY = request.POST
+
+            hand_tiles_info = json.loads(Req_BODY["hand_tiles_info"])
+            options = json.loads(Req_BODY["options"])
+
+            point_result = point_calculate(
+                hand_tiles_info["hand_tiles"],
+                hand_tiles_info["win_tile"],
+                hand_tiles_info["meld_tiles"],
+                hand_tiles_info["dora_indicators"],
+                options
+            )
+
+            # ステータスコードが200でない場合、物体検知処理上でエラーが出たのでそれをレスポンスする。
+            if point_result["status"] != 200:
+                message = point_result["message"]
+                status = point_result["status"]
+
+                return JsonResponse(
+                    {
+                    'message': message,
+                    "point_result": []
+                    }, 
+                    status=status
+                )
+
+            return JsonResponse(
+                {
+                'message': message,
+                "point_result": point_result["result"]
+                }, 
+                status=point_result["status"]
+                )
+            
+        except Exception as e:
+            return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)
+    else:
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 
 def imageChangeNp(request_image):
