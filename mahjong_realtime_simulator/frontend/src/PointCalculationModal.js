@@ -139,9 +139,9 @@ export const PointCalculationModal = ({ isOpen, onClose, initialData, winSnapsho
                 body: formData
             });
             const data = await response.json();
-            console.log("Backend Response:", data);
+            // console.log("Backend Response:", data);
             if (response.status === 200) {
-                console.log("Setting calcResult to:", data.point_result);
+                // console.log("Setting calcResult to:", data.point_result);
                 const resultData = data.point_result || data.result;
                 setCalcResult(resultData);
                 setCalcError(null);
