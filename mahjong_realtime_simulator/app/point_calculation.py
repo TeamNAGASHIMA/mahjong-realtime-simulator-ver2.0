@@ -87,6 +87,7 @@ def point_calculate(
             "Tanyao" : "断幺九",
             "Pinfu" : "平和",
             "Iipeiko" :  "一盃口",
+            "Ittsu" : "一気通貫",
             "Yakuhai (wind of place)" : "自風牌",
             "Yakuhai (wind of round)" : "場風牌",
             "Chiitoitsu" : "七対子",
