@@ -749,24 +749,23 @@ from point_calculation import point_calculate
 
 print("test : 22 (手牌のhas_aka_dora動作確認)")
 point_calculate(
-    hand_tiles = [0,0,0,1,1,1,2,2,2,3,3,3,13,13],
-    win_tile = 34,
+    hand_tiles = [0,0,0,1,1,1,2,2,2,13,13,13,4,4],
+    win_tile = 1,
     melds_list = [],
     dora_list = [10],
     options_dict = {
         "player_wind": 28,
         "round_wind": 27,
-        "is_tsumo": True,
+        "is_tsumo": False,
         "is_riichi": False,
         "is_rinshan": False,
         "is_ippatsu": False,
         "is_chankan": False,
-        "is_haitei": True,
+        "is_haitei": False,
         "is_houtei": False,
-        "is_daburu_riichi": True,
+        "is_daburu_riichi": False,
         "options": {
             "kazoe_limit": 0,
-            "has_aka_dora": True,
             "has_open_tanyao": False,
             "kiriage": False,
         }
