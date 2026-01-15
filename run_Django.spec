@@ -4,7 +4,23 @@
 a = Analysis(
     ['mahjong_realtime_simulator\\manage.py'],
     pathex=[],
-    binaries=[],
+    binaries=[
+        # --- CUDA ---
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudart64_12.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cublas64_12.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cublasLt64_12.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cusolver64_11.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cusparse64_12.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cufft64_11.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/curand64_10.dll','.'),
+        # --- cuDNN 9 ---
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn64_9.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_engines_runtime_compiled64_9.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_engines_precompiled64_9.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_graph64_9.dll','.'),
+        # --- zlib ---
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/zlibwapi.dll','.'),
+    ],
     datas=[
         ('mahjong_realtime_simulator/pt', 'pt'), 
         ('mahjong_realtime_simulator/frontend/build/static', 'static'), 
