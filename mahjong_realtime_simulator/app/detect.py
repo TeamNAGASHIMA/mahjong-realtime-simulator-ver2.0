@@ -192,6 +192,7 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
     # モデルがロードされているか確認し、ロードされていなければロードする
     try:
         model = _load_yolo_model()
+        print(f"使用デバイス: {model.get_providers()[0]}")
     except (FileNotFoundError, RuntimeError) as e:
         # モデルロードに失敗した場合、ValueErrorを発生させる
         raise ValueError(f"Model loading failed: {e}") from e
