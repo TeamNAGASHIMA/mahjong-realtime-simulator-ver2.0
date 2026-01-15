@@ -95,7 +95,7 @@ def point_calculate(
             "Yakuhai (hatsu)" : "發",
             "Yakuhai (chun)" : "中",
             "Haitei Raoyue" : "海底撈月",
-            "Hoitei Raoyue" : "河底撈月",
+            "Houtei Raoyui" : "河底撈月",
             "Sanshoku Doujun" : "三色同順",
             "Sanshoku Doukou" : "三色同刻",
             "San Ankou" : "三暗刻",
@@ -338,7 +338,7 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        print_hand_result(result, yaku_map)
+        # print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:
