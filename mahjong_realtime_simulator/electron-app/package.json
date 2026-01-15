@@ -10,14 +10,22 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "36.2.0",
+    "electron": "^33.0.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
     "win": {
       "target": "nsis"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "extraResources": [
+      {
+      "from": "mahjong-cpp",
+      "to": "mahjong-cpp"
+      },
       {
         "from": "backend/run_Django",
         "to": "backend"

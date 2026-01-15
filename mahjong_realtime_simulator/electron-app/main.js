@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const http = require('http');
 
 let djangoProcess = null;
+let mahjongCppProcess = null;
 let mainWindow = null;
 
 app.setPath('userData', path.join(app.getPath('appData'), 'mahjong-simulator-data'));
@@ -22,6 +23,23 @@ function startDjango() {
 
   djangoProcess.stdout.on('data', (data) => console.log(`Django: ${data}`));
   djangoProcess.stderr.on('data', (data) => console.error(`Django Error: ${data}`));
+}
+
+function startMahjongCpp() {
+  // mahjong-cppの実行ファイルパス
+  const exePath = app.isPackaged
+    ? path.join(process.resourcesPath, 'mahjong-cpp', 'server.exe')
+    : path.join(__dirname, 'mahjong-cpp', 'server.exe');
+
+  const args = []; 
+
+  mahjongCppProcess = spawn(exePath, args, { 
+    shell: false ,
+    cwd: path.dirname(exePath)
+  });
+
+  mahjongCppProcess.stdout.on('data', (data) => console.log(`MahjongCpp: ${data}`));
+  mahjongCppProcess.stderr.on('data', (data) => console.error(`MahjongCpp Error: ${data}`));
 }
 
 function createWindow() {
@@ -57,10 +75,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   startDjango();
+  startMahjongCpp();
   createWindow();
 });
 
 app.on('window-all-closed', () => {
   if (djangoProcess) djangoProcess.kill();
+  if (mahjongCppProcess) mahjongCppProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
