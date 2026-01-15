@@ -18,6 +18,8 @@ a = Analysis(
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_engines_runtime_compiled64_9.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_engines_precompiled64_9.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_graph64_9.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_ops64_9.dll','.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_cnn64_9.dll', '.'),
         # --- zlib ---
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/zlibwapi.dll','.'),
     ],

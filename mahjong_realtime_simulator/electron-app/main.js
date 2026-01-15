@@ -56,6 +56,23 @@ function createWindow() {
 
   mainWindow.setAspectRatio(16 / 9);
 
+  const djangoUrl = 'http://127.0.0.1:8010/app/mahjong_render/';
+
+  const waitForDjango = () => {
+    http.get(djangoUrl, (res) => {
+      console.log('Django is ready!');
+      mainWindow.loadURL(djangoUrl);
+      mainWindow.once('ready-to-show', () => {
+        mainWindow.show(); // ウィンドウを表示
+      });
+    }).on('error', () => {
+      console.log('Waiting for Django...');
+      setTimeout(waitForDjango, 1000);
+    });
+  };
+
+  waitForDjango();
+
   // DjangoアプリケーションのURLをロードします
   // mainWindow.loadURL('http://127.0.0.1:8010/admin'); // Djangoの開発サーバーのURLに合わせてください
   mainWindow.loadURL('http://127.0.0.1:8010/app/mahjong_render/');
