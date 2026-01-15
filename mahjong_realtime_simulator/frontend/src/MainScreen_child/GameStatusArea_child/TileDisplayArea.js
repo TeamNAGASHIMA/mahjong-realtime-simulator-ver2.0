@@ -40,7 +40,7 @@ import Z5 from '../../img/Z5.png';
 import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
-// EM1, EM2... のインポートは削除しても動作しますが、可読性のために残してもOKです。
+// EM1, EM2... のインポート
 import EM1 from '../../img/EM1.png';
 import EM2 from '../../img/EM2.png';
 import EM3 from '../../img/EM3.png';
@@ -81,8 +81,8 @@ import EZ7 from '../../img/EZ7.png';
 
 
 // --- データマッピング ---
-const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, EM1, EM2, EM3, EM4, EM5, ERM5, EM6, EM7, EM8, EM9, EP1, EP2, EP3, EP4, EP5, ERP5, EP6, EP7, EP8, EP9, ES1, ES2, ES3, ES4, ES5, ERS5, ES6, ES7, ES8, ES9, EZ1, EZ2, EZ3, EZ4, EZ5, EZ6, EZ7 };
-const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5', 1000: 'EM1', 1001: 'EM2', 1002: 'EM3', 1003: 'EM4', 1004: 'EM5', 1005: 'EM6', 1006: 'EM7', 1007: 'EM8', 1008: 'EM9', 1009: 'EP1', 1010: 'EP2', 1011: 'EP3', 1012: 'EP4', 1013: 'EP5', 1014: 'EP6', 1015: 'EP7', 1016: 'EP8', 1017: 'EP9', 1018: 'ES1', 1019: 'ES2', 1020: 'ES3', 1021: 'ES4', 1022: 'ES5', 1023: 'ES6', 1024: 'ES7', 1025: 'ES8', 1026: 'ES9', 1027: 'EZ1', 1028: 'EZ2', 1029: 'EZ3', 1030: 'EZ4', 1031: 'EZ5', 1032: 'EZ6', 1033: 'EZ7', 1034: 'ERM5', 1035: 'ERP5', 1036: 'ERS5' };
+export const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, EM1, EM2, EM3, EM4, EM5, ERM5, EM6, EM7, EM8, EM9, EP1, EP2, EP3, EP4, EP5, ERP5, EP6, EP7, EP8, EP9, ES1, ES2, ES3, ES4, ES5, ERS5, ES6, ES7, ES8, ES9, EZ1, EZ2, EZ3, EZ4, EZ5, EZ6, EZ7 };
+export const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5', 1000: 'EM1', 1001: 'EM2', 1002: 'EM3', 1003: 'EM4', 1004: 'EM5', 1005: 'EM6', 1006: 'EM7', 1007: 'EM8', 1008: 'EM9', 1009: 'EP1', 1010: 'EP2', 1011: 'EP3', 1012: 'EP4', 1013: 'EP5', 1014: 'EP6', 1015: 'EP7', 1016: 'EP8', 1017: 'EP9', 1018: 'ES1', 1019: 'ES2', 1020: 'ES3', 1021: 'ES4', 1022: 'ES5', 1023: 'ES6', 1024: 'ES7', 1025: 'ES8', 1026: 'ES9', 1027: 'EZ1', 1028: 'EZ2', 1029: 'EZ3', 1030: 'EZ4', 1031: 'EZ5', 1032: 'EZ6', 1033: 'EZ7', 1034: 'ERM5', 1035: 'ERP5', 1036: 'ERS5' };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
 
 const TILE_NAME_MAP = {
@@ -131,6 +131,17 @@ const styles = `
     border: 3px solid #00aaff; 
     box-shadow: 0 8px 15px rgba(50, 150, 255, 0.5); 
   }
+  
+  /* 和了牌選択モード中のスタイル */
+  .tile-wrapper.selecting-win {
+    animation: win-tile-pulse 1.5s infinite;
+  }
+  @keyframes win-tile-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
+  }
+
   .tile-pool .tile-wrapper:hover { transform: scale(1.1); }
   .tile-pool .tile-wrapper.rotated:hover { transform: scale(1.1) rotate(90deg); }
   .empty-pool-tile {
@@ -287,6 +298,18 @@ const styles = `
   .reset-button { font-family: "'Inter', sans-serif"; font-size: 0.8em; color: #ffffff; background-color: #dc3545; border: 1px solid #c82333; padding: 4px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; margin-left: 10px; }
   .reset-button:hover { background-color: #c82333; }
 
+  /* 和了牌確認用メッセージ */
+  .win-selection-banner {
+    background-color: #f1c40f;
+    color: #2c3e50;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+
   /* --- 回転用のスタイル --- */
   .tile-wrapper.rotated {
     transform: rotate(90deg);
@@ -367,7 +390,7 @@ const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) =>
   );
 };
 
-const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical', showTooltips }) => {
+const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical', showTooltips, isSelectingWinTile }) => {
   const isRotated = (tileNum !== null && tileNum >= 100 && tileNum < 200) || orientation === 'horizontal';
 
   // 裏向きの牌('b')の処理
@@ -407,7 +430,7 @@ const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation
 
   return (
     <div 
-      className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''}`} 
+      className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''} ${isSelectingWinTile ? 'selecting-win' : ''}`} 
       onClick={onClick} 
       title={showTooltips ? tileDisplayName : undefined} // 条件付きでtitle属性を設定
     >
@@ -609,7 +632,37 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose, settings })
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1, showTooltips: true }, onModeChange, calculationError, }) => {
+// 和了牌確認用ダイアログ
+const WinTileConfirmModal = ({ tileNum, onConfirm, onCancel, settings }) => {
+  if (tileNum === null) return null;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ width: '300px', textAlign: 'center' }}>
+        <div className="modal-header">この牌で和了しますか？</div>
+        <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>
+           <Tile tileNum={tileNum} size="hand" showTooltips={settings.showTooltips} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+          <button className="meld-button" onClick={onConfirm}>はい</button>
+          <button className="modal-cancel-button" onClick={onCancel}>いいえ</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+const TileDisplayArea = ({ 
+  boardState, 
+  onBoardStateChange, 
+  onResetBoardState, 
+  settings = { theme: 'dark', fontSize: '14px', flag: 1, showTooltips: true }, 
+  onModeChange, 
+  calculationError,
+  isSelectingWinTile, // 追加：和了牌選択モードフラグ
+  onWinTileConfirmed, // 追加：和了牌確定時コールバック
+  onCancelWinSelection // 追加：和了牌選択キャンセルコールバック
+}) => {
 
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
@@ -617,8 +670,8 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   
   const normalize = (n) => {
       if (n === null || n === undefined) return null;
-      if (n >= 1000) return normalize(n - 1000); // 1000番台を通常牌に変換
-      if (n >= 100) return normalize(n - 100);   // 100番台を通常牌に変換
+      if (n >= 1000) return normalize(n - 1000); 
+      if (n >= 100) return normalize(n - 100);   
       return (n in RED_TO_NORMAL_MAP) ? RED_TO_NORMAL_MAP[n] : n;
   };
 
@@ -656,20 +709,14 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
 
   const [selection, setSelection] = useState({ type: null });
   const [isMeldModalOpen, setIsMeldModalOpen] = useState(false);
+  const [tempWinTile, setTempWinTile] = useState(null); // 和了牌選択中の一時保存
 
-  // ▼▼▼ ここから修正 ▼▼▼
   const findMeldCandidates = (currentBoardState) => {
     if (!currentBoardState) return [];
-
-    // 元のコード: boardStateの構造が不完全な場合にエラーになる可能性がありました
-    // const { hand_tiles: hand, tsumo_tile: tsumoTile, melds: { self: selfMelds }, last_discard: lastDiscard } = currentBoardState;
-
-    // 修正後: stateが不完全な場合でも安全に動作するように、デフォルト値を用意します
     const hand = currentBoardState.hand_tiles || [];
     const tsumoTile = currentBoardState.tsumo_tile;
     const selfMelds = (currentBoardState.melds && Array.isArray(currentBoardState.melds.self)) ? currentBoardState.melds.self : [];
     const lastDiscard = currentBoardState.last_discard;
-  // ▲▲▲ ここまで修正 ▲▲▲
 
     const candidates = [];
     const fullHand = [...hand, tsumoTile].filter(t => t !== null);
@@ -962,6 +1009,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   };
   
   const handleTileClick = (type, index, playerKey = 'self', options = {}) => {
+      // ▼▼▼ 和了牌選択モード中の処理を追加 ▼▼▼
+      if (isSelectingWinTile) {
+          if (type === 'hand') {
+              setTempWinTile(sortedHand[index]);
+          } else if (type === 'tsumo') {
+              setTempWinTile(boardState.tsumo_tile);
+          }
+          return;
+      }
+      // ▲▲▲ ここまで ▲▲▲
+
       if (!boardState) return;
       const newSelection = {type, index, playerKey, ...options};
       
@@ -1066,11 +1124,36 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         onClose={() => setIsMeldModalOpen(false)}
         settings={settings}
       />
+      
+      {/* 和了牌確認ダイアログ */}
+      <WinTileConfirmModal 
+        tileNum={tempWinTile} 
+        onConfirm={() => {
+            onWinTileConfirmed(tempWinTile);
+            setTempWinTile(null);
+        }} 
+        onCancel={() => setTempWinTile(null)}
+        settings={settings}
+      />
+
       <div 
         className={`tile-display-container theme-${settings.theme}`}
         style={{ fontSize: settings.fontSize }}
       >
-        {selection.type && (
+        {/* 和了牌選択モード中のバナー */}
+        {isSelectingWinTile && (
+            <div className="win-selection-banner">
+                和了牌（あがり牌）を選択してください。
+                <button 
+                    onClick={onCancelWinSelection} 
+                    style={{ marginLeft: '15px', padding: '2px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer', backgroundColor: '#e74c3c', color: 'white' }}
+                >
+                    キャンセル
+                </button>
+            </div>
+        )}
+
+        {selection.type && !isSelectingWinTile && (
           <div className="tile-pool">
             <button className="tile-pool-close-button" onClick={() => setSelection({ type: null })}>×</button>
             {!selection.type.startsWith('add_') && <EmptyPoolTile onClick={() => handlePoolTileClick(null)} />}
@@ -1109,7 +1192,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                   <button
                       className="meld-button"
                       onClick={() => setIsMeldModalOpen(true)}
-                      disabled={meldCandidates.length === 0}
+                      disabled={meldCandidates.length === 0 || isSelectingWinTile}
                       title={meldCandidates.length > 0 ? "鳴き候補を選択" : "鳴ける牌がありません"}
                   >
                       鳴く
@@ -1119,12 +1202,18 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 <div className="hand-tiles-container">
                   {sortedHand.map((tileNum, i) => (
                     <div key={`hand-tile-${i}`} className="hand-tile" onClick={() => handleTileClick('hand', i)}>
-                      <Tile tileNum={tileNum} size="hand" isSelected={selection.type === 'hand' && selection.index === i} showTooltips={settings.showTooltips}/>
+                      <Tile 
+                        tileNum={tileNum} 
+                        size="hand" 
+                        isSelected={selection.type === 'hand' && selection.index === i} 
+                        showTooltips={settings.showTooltips}
+                        isSelectingWinTile={isSelectingWinTile} // 追加
+                      />
                     </div>
                   ))}
 
                   {[...Array(Math.max(0, (MAX_HAND_SLOTS - numMelds * 3) - sortedHand.length))].map((_, i) => (
-                    <div key={`empty-slot-${i}`} className="hand-tile" onClick={() => setSelection({ type: 'add_hand' })}>
+                    <div key={`empty-slot-${i}`} className="hand-tile" onClick={() => !isSelectingWinTile && setSelection({ type: 'add_hand' })}>
                       <div className="empty-slot">
                         {selection.type === 'add_hand' && <div className="selection-highlight"></div>}
                       </div>
@@ -1133,11 +1222,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                   <div className="tsumo-tile">
                     {boardState.tsumo_tile !== null ? (
                       <div onClick={() => handleTileClick('tsumo')} style={{cursor: 'pointer'}}>
-                        <Tile tileNum={boardState.tsumo_tile} size="tsumo" isSelected={selection.type === 'tsumo'} showTooltips={settings.showTooltips}/>
+                        <Tile 
+                            tileNum={boardState.tsumo_tile} 
+                            size="tsumo" 
+                            isSelected={selection.type === 'tsumo'} 
+                            showTooltips={settings.showTooltips}
+                            isSelectingWinTile={isSelectingWinTile} // 追加
+                        />
                       </div>
                     ) : (
                       (sortedHand.length + numMelds * 3) < 14 && 
-                      <div className="empty-slot" onClick={() => setSelection({ type: 'add_tsumo' })}>
+                      <div className="empty-slot" onClick={() => !isSelectingWinTile && setSelection({ type: 'add_tsumo' })}>
                         {selection.type === 'add_tsumo' && <div className="selection-highlight"></div>}
                       </div>
                     )}
