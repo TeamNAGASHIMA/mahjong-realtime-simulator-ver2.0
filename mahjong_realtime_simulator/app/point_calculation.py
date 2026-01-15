@@ -324,7 +324,7 @@ def point_calculate(
             is_daburu_riichi = options_dict["is_daburu_riichi"],
             options = OptionalRules(
                 kazoe_limit = kazoe_limit_map[options_dict["options"]["kazoe_limit"]],
-                has_aka_dora = True,
+                has_aka_dora = aka_dora_in_hand_tiles,
                 has_open_tanyao = options_dict["options"]["has_open_tanyao"],
                 has_double_yakuman = True,
                 kiriage = options_dict["options"]["kiriage"],
@@ -338,7 +338,7 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        # print_hand_result(result, yaku_map)
+        print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:
