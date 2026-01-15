@@ -165,7 +165,15 @@ export const PointCalculationModal = ({ isOpen, onClose, initialData, winSnapsho
                 if (key === 'is_houtei') { next.is_tsumo = false; next.is_rinshan = false; next.is_haitei = false; }
                 if (key === 'is_rinshan') { next.is_tsumo = true; next.is_haitei = false; next.is_houtei = false; }
                 if (key === 'is_daburu_riichi') { next.is_riichi = true; }
+            } else {
+                // OFFにした時の連動
+                if (key === 'is_riichi') {
+                    // 立直をOFFにしたら一発もダブル立直もOFFにする
+                    next.is_ippatsu = false;
+                    next.is_daburu_riichi = false;
+                }
             }
+
             if (key === 'is_tsumo') {
                 if (currentVal) next.is_houtei = false;
                 else { next.is_haitei = false; next.is_rinshan = false; }
@@ -175,6 +183,7 @@ export const PointCalculationModal = ({ isOpen, onClose, initialData, winSnapsho
     };
 
     const checkDisabled = (key) => {
+        if (key === 'is_ippatsu') return !options.is_riichi && !options.is_daburu_riichi;        
         if (key === 'is_tsumo') return options.is_haitei || options.is_houtei || options.is_rinshan;
         if (key === 'is_haitei') return !options.is_tsumo || options.is_houtei || options.is_rinshan;
         if (key === 'is_houtei') return options.is_tsumo || options.is_haitei || options.is_rinshan;
