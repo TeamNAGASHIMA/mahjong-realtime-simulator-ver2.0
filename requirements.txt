@@ -32,7 +32,6 @@ networkx==3.5
 numpy==2.3.0
 nvidia-cuda-runtime==13.1.80
 onnx==1.20.0
-onnxruntime==1.23.0
 onnxruntime-gpu==1.23.2
 opencv-python==4.11.0.86
 packaging==25.0
