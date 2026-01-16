@@ -5,6 +5,8 @@ a = Analysis(
     ['mahjong_realtime_simulator\\manage.py'],
     pathex=[],
     binaries=[
+        ('C:/mrsv2/env/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_cuda.dll','onnxruntime/capi'),
+        ('C:/mrsv2/env/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll','onnxruntime/capi'),
         # --- CUDA ---
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudart64_12.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cublas64_12.dll','.'),
@@ -20,6 +22,8 @@ a = Analysis(
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_graph64_9.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_ops64_9.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_cnn64_9.dll', '.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_adv64_9.dll', '.'),
+        ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudnn_heuristic64_9.dll', '.'),
         # --- zlib ---
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/zlibwapi.dll','.'),
     ],
