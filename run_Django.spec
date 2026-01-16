@@ -1,12 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
+import glob
+import os
+import onnxruntime
 
+ort_capi_path = os.path.join('env','Lib' ,'site-packages','onnxruntime','capi')
 
 a = Analysis(
     ['mahjong_realtime_simulator\\manage.py'],
     pathex=[],
     binaries=[
-        ('C:/mrsv2/env/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_cuda.dll','onnxruntime/capi'),
-        ('C:/mrsv2/env/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll','onnxruntime/capi'),
+        (os.path.join(ort_capi_path, 'onnxruntime_providers_cuda.dll'), 'onnxruntime/capi'),
+        (os.path.join(ort_capi_path, 'onnxruntime_providers_shared.dll'), 'onnxruntime/capi'),
         # --- CUDA ---
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cudart64_12.dll','.'),
         ('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/cublas64_12.dll','.'),
