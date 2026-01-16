@@ -83,10 +83,6 @@ def _load_yolo_model():
         try:
             # GPUが使える場合はCUDA、使えない場合はCPUを使用する
             providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-            # 使用可能なプロバイダを確認して設定
-            available_providers = ort.get_available_providers()
-            if 'CUDAExecutionProvider' not in available_providers:
-                providers = ['CPUExecutionProvider']
 
             _ort_session = ort.InferenceSession(LOCAL_YOLO_MODEL_PATH, providers=providers)
         except Exception as e:
