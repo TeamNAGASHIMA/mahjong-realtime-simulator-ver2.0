@@ -288,12 +288,20 @@ def main_score_calc(doraList, hand_tiles, raw_melded_tiles, river_tiles, turn, s
 
     # 結果出力
     result = {"message": "", "status": None, "result": ""}
-    # error
+
     if not res_data["success"]:
-        result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = 500
-        result["result"] = ""
-        return result
+        # 和了形の場合かそうでないか
+        if res_data['err_msg'] == "和了形です。":
+            result["message"] = {'message': "This is a winning hand."}
+            result["status"] = 510
+            result["result"] = ""
+            return result
+        # error
+        else:
+            result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
+            result["status"] = 500
+            result["result"] = ""
+            return result
     # success
     result["message"] = "calculation_success"
     result["status"] = 200
@@ -438,12 +446,20 @@ def score_calc(data, river_tiles):
 
     # 結果出力
     result = {"message": "", "status": "", "result": ""}
-    # error
+
     if not res_data["success"]:
-        result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
-        result["status"] = 500
-        result["result"] = ""
-        return result
+        # 和了形の場合かそうでないか
+        if res_data['err_msg'] == "和了形です。":
+            result["message"] = {'message': "This is a winning hand."}
+            result["status"] = 510
+            result["result"] = ""
+            return result
+        # error
+        else:
+            result["message"] = {'error': f" Failed to perform the calculation.(server_message: {res_data['err_msg']})"}
+            result["status"] = 500
+            result["result"] = ""
+            return result
     # success
     result["message"] = "calculation_success"
     result["status"] = 200

@@ -13,7 +13,7 @@ from mahjong.constants import EAST, SOUTH, WEST, NORTH
 calculator = HandCalculator()
 
 # 結果出力用
-def print_hand_result(hand_result):
+def print_hand_result(hand_result, yaku_map):
     # エラー判定をここに追加
     if hand_result.error:
         print("【計算エラー】")
@@ -29,7 +29,19 @@ def print_hand_result(hand_result):
         print(hand_result.cost['additional'], "点")
 
         #役
-        print(hand_result.yaku)
+        yaku_list = []
+        for yaku in hand_result.yaku:
+            yaku_str = str(yaku)
+            if yaku_str[0:4] == "Dora":
+                dora_num = yaku_str.split()
+                yaku_list.append("{} {}枚".format(yaku_map[dora_num[0]], dora_num[1]))
+            elif yaku_str[0:3] == "Aka":
+                aka_num = yaku_str.split()
+                yaku_list.append("{} {}枚".format(yaku_map[aka_num[0]], aka_num[2]))
+            else:
+                yaku_list.append(yaku_map[yaku_str])
+
+        print(yaku_list)
         #符数の詳細
         try:
             for fu_item in hand_result.fu_details:
@@ -62,16 +74,79 @@ def point_calculate(
             "h1","h2","h3","h4","h5","h6","h7",
             "m0","p0","s0"
             ]
+        # 役MAP
+        yaku_map = {
+            "Dora" : "ドラ",
+            "Aka" : "赤ドラ",
+            "Riichi" : "立直",
+            "Double Riichi" : "ダブル立直",
+            "Ippatsu" : "一発",
+            "Menzen Tsumo" : "門前清自摸和",
+            "Rinshan Kaihou" : "嶺上開花",
+            "Chankan" : "槍槓",
+            "Tanyao" : "断幺九",
+            "Pinfu" : "平和",
+            "Iipeiko" :  "一盃口",
+            "Ittsu" : "一気通貫",
+            "Yakuhai (wind of place)" : "自風牌",
+            "Yakuhai (wind of round)" : "場風牌",
+            "Chiitoitsu" : "七対子",
+            "Yakuhai (haku)" : "白",
+            "Yakuhai (hatsu)" : "發",
+            "Yakuhai (chun)" : "中",
+            "Haitei Raoyue" : "海底撈月",
+            "Houtei Raoyui" : "河底撈月",
+            "Sanshoku Doujun" : "三色同順",
+            "Sanshoku Doukou" : "三色同刻",
+            "San Ankou" : "三暗刻",
+            "San Kantsu" : "三槓子",
+            "Toitoi" : "対々和",
+            "Shou Sangen" : "小三元",
+            "Chantai" : "混全帯幺九",
+            "Junchan" : "純全帯幺九",
+            "Ryanpeikou" : "二盃口",
+            "Honroutou" : "混老頭",
+            "Honitsu" : "混一色",
+            "Chinitsu" : "清一色",
+            "Tsuu Iisou" : "字一色",
+            "Ryuuiisou" : "緑一色",
+            "Chinroutou" : "清老頭",
+            "Suu Ankou" :  "四暗刻",
+            "Suu Ankou Tanki" :  "四暗刻単騎",
+            "Daisangen" :  "大三元",
+            "Suu Kantsu" :  "四槓子",
+            "Shou Suushii" :  "小四喜",
+            "Dai Suushii" :  "大四喜",
+            "Chuuren Poutou" : "九蓮宝燈",
+            "Daburu Chuuren Poutou" : "純正九蓮宝燈",
+            "Kokushi Musou" : "国士無双",
+            "Kokushi Musou Juusanmen Matchi" : "国士無双十三面待ち",
+            "Tenhou" :  "天和",
+            "Chihou" :  "地和",
+            "Nagashi Mangan" : "流し満貫"
+        }
+
+        # 自風、場風MAP
+        wind_map = {
+            27 : EAST,
+            28 : SOUTH,
+            29 : WEST,
+            30 : NORTH
+        }
+
         # エラーメッセージ出力用
-        message = "Error in hand_tiles"
+        message_err = "Error in hand_tiles"
 
         # 物体検知の結果の手牌を麻雀点数計算の形式に変換
         manz = [] # 萬子配列
         pinz = [] # 筒子配列
         souz = [] # 索子配列
         honz = [] # 字牌配列
+        aka_dora_in_hand_tiles = False
         for hand_num in hand_tiles:
             hand_num = id_change(hand_num)
+            if not aka_dora_in_hand_tiles and hand_num >= 34:
+                aka_dora_in_hand_tiles = True
             card_hand = list(majong_map[hand_num])
             if card_hand[0] == "m":
                 manz.append(int(card_hand[1]))
@@ -110,7 +185,7 @@ def point_calculate(
             pin = pinz_sort_join,
             sou = souz_sort_join,
             honors = honz_sort_join,
-            has_aka_dora = options_dict["options"]["has_aka_dora"]
+            has_aka_dora = aka_dora_in_hand_tiles
         )
 
         message_err = "Error in win_tile"
@@ -233,53 +308,12 @@ def point_calculate(
         if dora_indicators == []:
             dora_indicators = None
 
-        #### caluculator.estimate_hand_value()の引数 ####
-        #・tiles(麻雀牌のアガリ形)
-        #・win_tile(アガリ牌)
-        #・melds(鳴き)
-        #・dora_indicators(ドラ)
-        #・config(オプション)設定
-
-        # configの設定例
-        # config=HandConfig(is_tsumo=True)
-
-        ####configの設定一覧 ####
-        # ・ツモ  　　　　　　　→　is_tsumo == True or False
-        # ・リーチ　　　　　　　→　is_riichi == True or False
-        # ・イッパツ　　　　　　→　is_ippatsu == True or False
-        # ・リンシャンカイホウ　→　is_rinshan == True or False
-        # ・チャンカン　　　　　→　is_chankan == True or False
-        # ・ハイテイ　　　　　　→　is_haitei == True or False
-        # ・ホウテイ　　　　　　→　is_houtei == True or False
-        # ・ダブルリーチ　　　　→　is_daburu_riichi == True or False
-        # ・流しマンガン　　　　→　is_nagashi_mangan == True or False
-        # ・テンホー　　　　　　→　is_tenhou == True or False
-        # ・レンホー　　　　　　→　is_renhou == True or False
-        # ・チーホー　　　　　　→　is_chiihou == True or False
-        # ・その他オプション　　→　options == ディクショナリ型(OptionalRulesクラス)
-
-        #### その他オプション(OptionalRulesクラス)一覧 ####
-        # ・数えヤクマン　　　　　　　　→　kazoe_limit == 1 or 2 or 3
-        #   ------ 1 : HandConfig.KAZOE_LIMITED(13翻以上をヤクマンとする場合(通常の数えヤクマン))
-        #   ------ 2 : HandConfig.KAZOE_SANBAIMAN(13翻以上をサンバイマンとする場合)
-        #   ------ 3 : HandConfig.KAZOE_NO_LIMIT(13翻以上をヤクマン,26翻以上をダブルヤクマンとする場合))
-        # ・赤ドラあり　　　　　　　　　→　has_aka_dora == True or False
-        # ・喰いタン　　　　　　       →　has_open_tanyao == True or False
-        # ・ダブルヤクマン　　　　　　　→　has_double_yakuman == True or False
-        # ・切り上げマンガン　　　　　　→　kiriage == True or False
-        # ・ピンフ　　　　　　　　　　　→　fu_for_open_pinfu == True or False
-        # ・ピンフツモ　　　　　　　　　→　fu_for_pinfu_tsumo == True or False
-        # ・レンホー　　　　　　　　　　→　renhou_as_yakuman == True or False
-        # ・ダイシャリン　　　　　　　　→　has_daisharin == True or False
-        # ・ダイチクリン&ダイスウリン　 →　has_daisharin_other_suits == True or False
-
-        # その他オプション設定例
-        #options=OptionalRules(has_open_tanyao=True, has_aka_dora=True)
-
         message_err = "Error in options"
         # オプション設定
         kazoe_limit_map = [HandConfig.KAZOE_LIMITED, HandConfig.KAZOE_SANBAIMAN, HandConfig.KAZOE_NO_LIMIT]
         config = HandConfig(
+            player_wind = wind_map[options_dict["player_wind"]],
+            round_wind = wind_map[options_dict["round_wind"]],
             is_tsumo = options_dict["is_tsumo"],
             is_riichi = options_dict["is_riichi"],
             is_rinshan = options_dict["is_rinshan"],
@@ -288,21 +322,13 @@ def point_calculate(
             is_haitei = options_dict["is_haitei"],
             is_houtei = options_dict["is_houtei"],
             is_daburu_riichi = options_dict["is_daburu_riichi"],
-            is_nagashi_mangan = options_dict["is_nagashi_mangan"],
-            is_tenhou = options_dict["is_tenhou"],
-            is_renhou = options_dict["is_renhou"],
-            is_chiihou = options_dict["is_chiihou"],
             options = OptionalRules(
                 kazoe_limit = kazoe_limit_map[options_dict["options"]["kazoe_limit"]],
-                has_aka_dora = options_dict["options"]["has_aka_dora"],
+                has_aka_dora = aka_dora_in_hand_tiles,
                 has_open_tanyao = options_dict["options"]["has_open_tanyao"],
-                has_double_yakuman = options_dict["options"]["has_double_yakuman"],
+                has_double_yakuman = True,
                 kiriage = options_dict["options"]["kiriage"],
-                fu_for_open_pinfu = options_dict["options"]["fu_for_open_pinfu"],
-                fu_for_pinfu_tsumo = options_dict["options"]["fu_for_pinfu_tsumo"],
-                renhou_as_yakuman = options_dict["options"]["renhou_as_yakuman"],
-                has_daisharin = options_dict["options"]["has_daisharin"],
-                has_daisharin_other_suits = options_dict["options"]["has_daisharin_other_suits"]
+                fu_for_pinfu_tsumo = True,
             )
         )
 
@@ -312,27 +338,43 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        # print_hand_result(result)
+        # print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:
-            message = "【計算エラー】・原因 : {}".format(result.error)
+            result_calc = None
+            message = "【point calculation error】- cause: {}".format(result.error)
             status = 430
         else:
             if result.fu == None or result.han == None:
+                result_calc = None
                 message = "hu or han is None"
-                status = 430
+                status = 440
             else:
                 if len(result.fu_details) <= 0:
                     fu_details = "この役に符は含まれていません。"
                 else:
                     fu_details = result.fu_details
+
+                #役
+                yaku_list = []
+                for yaku in result.yaku:
+                    yaku_str = str(yaku)
+                    if yaku_str[0:4] == "Dora":
+                        dora_num = yaku_str.split()
+                        yaku_list.append("{} {}枚".format(yaku_map[dora_num[0]], dora_num[1]))
+                    elif yaku_str[0:3] == "Aka":
+                        aka_num = yaku_str.split()
+                        yaku_list.append("{} {}枚".format(yaku_map[aka_num[0]], aka_num[2]))
+                    else:
+                        yaku_list.append(yaku_map[yaku_str])
+
                 result_calc = {
                     "hu" : result.fu,
                     "han" : result.han,
                     "main" : result.cost['main'],
                     "additional" : result.cost['additional'],
-                    "yaku" : result.yaku,
+                    "yaku" : yaku_list,
                     "fu_details" : fu_details
                 }
                 message = "successful calculation"
@@ -341,4 +383,4 @@ def point_calculate(
         return {"message" : message, "result" : result_calc, "status" : status}
     except Exception as e:
         message = message_err
-        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e)}
+        return {'message': "Exception error <{}>: {} {}".format(message, type(e), e), "status": 400}
