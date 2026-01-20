@@ -14,7 +14,7 @@ from .result_check import result_check_main # result_check.pyからインポー�
 
 
 # ローカルモデルのパスを指定
-LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
+LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver3-1.onnx") # onnxに変更
 # LOCAL_YOLO_MODEL_PATH = os.path.join("yolov8-best-ver2.onnx")
 
 # 検出閾値（YOLOv8の推論時に指定）
@@ -60,15 +60,18 @@ tile_convert = {
     10: 28, # 南 (2z)
     22: 31, # 白 (5z)
     14: 29, # 西 (3z)
+    0: 34, # 5萬 (赤)
+    1: 35, # 5筒 (赤)
+    2: 36, # 5索 (赤)
 }
 
-# 赤ドラ用の新しいIDマッピングを追加
-red_dora_id_map = {
-    # YOLOのclass_id: 新しい麻雀牌ID
-    19: 34, # 5萬 (赤) (YOLOの5萬のIDが19)
-    20: 35, # 5筒 (赤) (YOLOの5筒のIDが20)
-    21: 36, # 5索 (赤) (YOLOの5索のIDが21)
-}
+# 赤ドラ用の新しいIDマッピングを追加 (旧コードはコメントアウト)
+# red_dora_id_map = {
+#     # YOLOのclass_id: 新しい麻雀牌ID
+#     19: 34, # 5萬 (赤) (YOLOの5萬のIDが19)
+#     20: 35, # 5筒 (赤) (YOLOの5筒のIDが20)
+#     21: 36, # 5索 (赤) (YOLOの5索のIDが21)
+# }
 
 
 # グローバル変数としてONNXセッションを保持
@@ -297,19 +300,19 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
             if class_id in tile_convert:
                 converted_tile = tile_convert[class_id]
                 
-                # 5萬、5筒、5索の場合、赤ドラ判定を行う
-                if class_id in [19, 20, 21]: 
-                    # バウンディングボックスを画像範囲内に収める
-                    img_h, img_w = image_np.shape[:2]
-                    clip_x1 = max(0, x1)
-                    clip_y1 = max(0, y1)
-                    clip_x2 = min(img_w, x2)
-                    clip_y2 = min(img_h, y2)
+                # 5萬、5筒、5索の場合、赤ドラ判定を行う (旧コードはコメントアウト)
+                # if class_id in [19, 20, 21]: 
+                #     # バウンディングボックスを画像範囲内に収める
+                #     img_h, img_w = image_np.shape[:2]
+                #     clip_x1 = max(0, x1)
+                #     clip_y1 = max(0, y1)
+                #     clip_x2 = min(img_w, x2)
+                #     clip_y2 = min(img_h, y2)
                     
-                    if clip_x2 > clip_x1 and clip_y2 > clip_y1:
-                        cropped_tile_image = image_np[int(clip_y1):int(clip_y2), int(clip_x1):int(clip_x2)]
-                        if check_red_color_with_percentage(cropped_tile_image):
-                            converted_tile = red_dora_id_map.get(class_id, tile_convert[class_id])
+                #     if clip_x2 > clip_x1 and clip_y2 > clip_y1:
+                #         cropped_tile_image = image_np[int(clip_y1):int(clip_y2), int(clip_x1):int(clip_x2)]
+                #         if check_red_color_with_percentage(cropped_tile_image):
+                #             converted_tile = red_dora_id_map.get(class_id, tile_convert[class_id])
 
                 detected_tiles.append({
                     "confidence": confidence,
