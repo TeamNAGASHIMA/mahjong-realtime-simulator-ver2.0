@@ -33,7 +33,6 @@ def main(request):
             else:
                 # 手牌画像があれば正常処理を行う
                 fixes_list = json.loads(Req_BODY["fixes_board_info"])
-                print("fixes_list\n",fixes_list)
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
                 flag = int(Req_BODY["flag"])
@@ -108,29 +107,26 @@ def main(request):
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
                     fixes_river_tiles = fixes_list["fixes_river_tiles"]
 
-                    if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) >= 15:
-                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
-                        status =420
-
-                        return JsonResponse({
-                            'message': message,
-                            "detection_result": detection_result
-                            }, status=status
-                        )
+                    # 手牌枚数カウント
                     melded_blocks_bottom = fixes_data["melded_blocks"]["melded_tiles_bottom"]
+                    type_map = ["pon", "chi", "ankan", "daiminkan", "kakan"]
+                    hand_sum = 0
+                    for meld_type in type_map:
+                        hand_sum = hand_sum + len(melded_blocks_bottom[meld_type]) * 3
+                    hand_sum = hand_sum + len(fixes_data["hand_tiles"])
+
+                    # 計算用に鳴き牌をコンバート
                     newMelded_blocks_bottom = []
-
-                    type_map = {"pon": 0, "chi": 1, "ankan": 2, "daiminkan": 3, "kakan": 4}
-
-                    for meld_block_key in melded_blocks_bottom.keys():
-                        newMelded_blocks_bottom.append(
-                            {
-                                "type": type_map[meld_block_key],
-                                "tiles": melded_blocks_bottom[meld_block_key],
-                                "discarded_tile": melded_blocks_bottom[meld_block_key][0],
-                                "from": 0
-                            }
-                        )
+                    for type_num in range(len(type_map)):
+                        for meld_block in melded_blocks_bottom[type_map[type_num]]:
+                            newMelded_blocks_bottom.append(
+                                {
+                                    "type": type_num,
+                                    "tiles": meld_block,
+                                    "discarded_tile": meld_block[0],
+                                    "from": 0
+                                }
+                            )
 
                     fixes_data["melded_blocks"]["melded_tiles_bottom"] = newMelded_blocks_bottom
 
@@ -143,6 +139,8 @@ def main(request):
                         "melded_tiles_right": fixes_data["melded_blocks"]["melded_tiles_right"]
                     }
 
+                    fixes_data["melded_blocks"] = newMelded_blocks_bottom
+
                     detection_result = {
                         "turn": fixes_data["turn"],
                         "dora_indicators": fixes_data["dora_indicators"],
@@ -151,6 +149,19 @@ def main(request):
                         "discard_tiles": fixes_river_tiles
                     }
 
+                    if hand_sum <= 12 or hand_sum >= 15:
+                        message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
+                        status =420
+
+                        return JsonResponse({
+                            'message': message,
+                            "detection_result": detection_result
+                            }, status=status
+                        )
+
+                    for data in fixes_data:
+                        print(data, ": ", fixes_data[data])
+                    print(fixes_river_tiles)
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
