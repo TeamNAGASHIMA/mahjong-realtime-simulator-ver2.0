@@ -108,14 +108,6 @@ def main(request):
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
                     fixes_river_tiles = fixes_list["fixes_river_tiles"]
 
-                    detection_result = {
-                        "turn": fixes_data["turn"],
-                        "dora_indicators": fixes_data["dora_indicators"],
-                        "hand_tiles": fixes_data["hand_tiles"],
-                        "melded_blocks": fixes_data["melded_blocks"],
-                        "discard_tiles": fixes_river_tiles
-                    }
-
                     if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                         status =420
@@ -140,7 +132,24 @@ def main(request):
                             }
                         )
 
-                    fixes_data["melded_blocks"] = newMelded_blocks_bottom
+                    fixes_data["melded_blocks"]["melded_tiles_bottom"] = newMelded_blocks_bottom
+
+                    calc_melded_blocks_bottom = [[value] for value in melded_blocks_bottom.values()]
+
+                    fixes_meld_data = {
+                        "melded_tiles_bottom": calc_melded_blocks_bottom,
+                        "melded_tiles_top": fixes_data["melded_blocks"]["melded_tiles_top"],
+                        "melded_tiles_left": fixes_data["melded_blocks"]["melded_tiles_left"],
+                        "melded_tiles_right": fixes_data["melded_blocks"]["melded_tiles_right"]
+                    }
+
+                    detection_result = {
+                        "turn": fixes_data["turn"],
+                        "dora_indicators": fixes_data["dora_indicators"],
+                        "hand_tiles": fixes_data["hand_tiles"],
+                        "melded_blocks": fixes_meld_data,
+                        "discard_tiles": fixes_river_tiles
+                    }
 
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
