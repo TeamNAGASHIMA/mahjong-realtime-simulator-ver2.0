@@ -351,11 +351,6 @@ def point_calculate(
                 message = "hu or han is None"
                 status = 440
             else:
-                if len(result.fu_details) <= 0:
-                    fu_details = "この役に符は含まれていません。"
-                else:
-                    fu_details = result.fu_details
-
                 #役
                 yaku_list = []
                 for yaku in result.yaku:
@@ -375,7 +370,6 @@ def point_calculate(
                     "main" : result.cost['main'],
                     "additional" : result.cost['additional'],
                     "yaku" : yaku_list,
-                    "fu_details" : fu_details
                 }
                 message = "successful calculation"
                 status = 200
