@@ -128,10 +128,12 @@ def main(request):
                     melded_blocks_bottom = fixes_data["melded_blocks"]["melded_tiles_bottom"]
                     newMelded_blocks_bottom = []
 
+                    type_map = {"pon": 0, "chi": 1, "ankan": 2, "minkan": 3, "kakan": 4}
+
                     for meld_block_key in melded_blocks_bottom.keys():
                         newMelded_blocks_bottom.append(
                             {
-                                "type": meld_block_key,
+                                "type": type_map[meld_block_key],
                                 "tiles": melded_blocks_bottom[meld_block_key],
                                 "discarded_tile": melded_blocks_bottom[meld_block_key][0],
                                 "from": 0
