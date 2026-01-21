@@ -33,6 +33,7 @@ def main(request):
             else:
                 # 手牌画像があれば正常処理を行う
                 fixes_list = json.loads(Req_BODY["fixes_board_info"])
+                print("fixes_list\n",fixes_list)
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
                 flag = int(Req_BODY["flag"])
@@ -115,7 +116,7 @@ def main(request):
                         "discard_tiles": fixes_river_tiles
                     }
 
-                    if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"] * 3) >= 15:
+                    if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]['melded_tiles_bottom'] * 3) >= 15:
                         message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                         status =420
 
@@ -124,6 +125,22 @@ def main(request):
                             "detection_result": detection_result
                             }, status=status
                         )
+                    melded_blocks_bottom = fixes_data["melded_blocks"]["melded_tiles_bottom"]
+                    newMelded_blocks_bottom = []
+
+                    type_map = {"pon": 0, "chi": 1, "ankan": 2, "minkan": 3, "kakan": 4}
+
+                    for meld_block_key in melded_blocks_bottom.keys():
+                        newMelded_blocks_bottom.append(
+                            {
+                                "type": type_map[meld_block_key],
+                                "tiles": melded_blocks_bottom[meld_block_key],
+                                "discarded_tile": melded_blocks_bottom[meld_block_key][0],
+                                "from": 0
+                            }
+                        )
+
+                    fixes_data["melded_blocks"] = newMelded_blocks_bottom
 
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
