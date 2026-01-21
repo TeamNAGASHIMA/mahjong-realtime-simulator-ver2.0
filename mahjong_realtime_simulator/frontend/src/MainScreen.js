@@ -22,6 +22,8 @@
  * - hand_tilesにあがり牌を追加で含めず、二重カウントによる和了判定エラーを回避
  * - ESLint未定義エラーの修正：handleSettingsChange, closeModal等の定義位置を調整
  * - 950行以上の記述規模を確保：すべてのロジックを非省略で記述
+ * - 牌譜モード(flag: 0)で記録データを読み込んだ際に、場風・自風を含む全ての盤面情報を正しく復元するよう修正
+ * - ★バックエンドへの送信データ形式変更：melded_blocksを鳴きの種類(pon, chi, ankan, daiminkan, kakan)で分類したオブジェクト形式に変更
  * -----------------------------------------------------------------------------------------
  */
 
@@ -213,7 +215,9 @@ const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
         type = 'chi';
       }
     } else if (normalized.length === 4) {
-      type = 'kan';
+      // 槓の種類を判定
+      const hasExposedTile = tiles.some(t => t >= 100);
+      type = hasExposedTile ? 'minkan' : 'ankan';
     }
     
     if (type === 'unknown') {
@@ -244,28 +248,36 @@ const createPayloadFromBoardState = (boardState, settings) => {
     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
 
     // 全員の河（捨て牌）をマージ
-    // const river_tiles = [
-    //     ...(boardState.player_discards?.self || []),
-    //     ...(boardState.player_discards?.shimocha || []),
-    //     ...(boardState.player_discards?.toimen || []),
-    //     ...(boardState.player_discards?.kamicha || []),
-    // ];
+    const river_tiles = [
+        ...(boardState.player_discards?.self || []),
+        ...(boardState.player_discards?.shimocha || []),
+        ...(boardState.player_discards?.toimen || []),
+        ...(boardState.player_discards?.kamicha || []),
+    ];
 
-    // 各プレイヤーごとにまとめる
-    const river_tiles = {
-      "discard_tiles_bottom": (boardState.player_discards?.self || []),
-      "discard_tiles_right": (boardState.player_discards?.shimocha || []),
-      "discard_tiles_top": (boardState.player_discards?.toimen || []),
-      "discard_tiles_left": (boardState.player_discards?.kamicha || [])
-    };
+    // ★★★ 修正箇所: melded_blocksの形式をオブジェクトに変更し、槓を細分化 ★★★
+    const melded_blocks_bottom = (boardState.melds.self || []).reduce((acc, meld) => {
+        const key = meld.type;
+        if (key === 'pon') {
+            acc.pon.push(meld.tiles);
+        } else if (key === 'chi') {
+            acc.chi.push(meld.tiles);
+        } else if (key === 'ankan') {
+            acc.ankan.push(meld.tiles);
+        } else if (key === 'minkan') {
+            // 'minkan' は大明槓か加槓。厳密な区別情報がないため、ここでは'daiminkan'として扱う
+            // TODO: 必要であればkakanの情報をboardStateに残す改修を行う
+            acc.daiminkan.push(meld.tiles);
+        }
+        return acc;
+    }, { pon: [], chi: [], ankan: [], daiminkan: [], kakan: [] }); // 初期値としてキーを持つオブジェクトを設定
 
-    const melded_blocks = {
-      "melded_tiles_bottom": boardState.melds.self.map(meld => meld.tiles) || [],
+      const melded_blocks = {
+      "melded_tiles_bottom": melded_blocks_bottom || [],
       "melded_tiles_right": boardState.melds.shimocha.map(meld => meld.tiles) || [],
       "melded_tiles_top": boardState.melds.toimen.map(meld => meld.tiles) || [],
       "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || []
     };
-
     const fixes_pai_info = {
         "version": "0.9.0",
         "zikaze": boardState.player_winds?.self ?? 27, 
@@ -313,15 +325,31 @@ const convertKifuDataToBoardState = (kifuTurnData) => {
   if (hand.length % 3 === 2) {
     tsumo = hand.pop();
   }
+  
+  // 自風から各プレイヤーの風を決定する
+  const selfWind = kifuTurnData.zikaze ?? 27;
+  const WIND_ORDER = [27, 28, 29, 30];
+  const selfIndex = WIND_ORDER.indexOf(selfWind) !== -1 ? WIND_ORDER.indexOf(selfWind) : 0;
+  const playerWinds = {
+    self: selfWind,
+    shimocha: WIND_ORDER[(selfIndex + 1) % 4],
+    toimen: WIND_ORDER[(selfIndex + 2) % 4],
+    kamicha: WIND_ORDER[(selfIndex + 3) % 4],
+  };
 
+  // INITIAL_GAME_STATEを展開せず、必要なプロパティをすべて設定する
   return {
-    ...INITIAL_GAME_STATE,
     turn: kifuTurnData.turn || 1,
-    dora_indicators: kifuTurnData.dora_indicators || [],
-    hand_tiles: hand,
+    round_wind: kifuTurnData.bakaze ?? 27,
+    hand_tiles: hand.sort((a, b) => a - b),
     tsumo_tile: tsumo,
-    melds: melds,
+    player_winds: playerWinds,
     player_discards: discards,
+    melds: melds,
+    dora_indicators: kifuTurnData.dora_indicators || [],
+    last_discard: { tile: null, from: null, index: null }, // 牌譜再生時はリセット
+    bakaze: kifuTurnData.bakaze ?? 27,
+    counts: kifuTurnData.counts || []
   };
 };
 
