@@ -54,7 +54,7 @@ const ButtonContainer = ({
         {showTurnSelector ? (
           /* 牌譜モード: ターンセレクターを表示 */
           <TurnSelector 
-            currentTurnIndex={currentKifuTurn}
+            currentTurn={currentKifuTurn}
             kifuData={selectedKifuData}
             onTurnChange={onKifuTurnChange}
           />
