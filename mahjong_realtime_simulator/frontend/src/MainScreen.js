@@ -244,14 +244,27 @@ const createPayloadFromBoardState = (boardState, settings) => {
     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
 
     // 全員の河（捨て牌）をマージ
-    const river_tiles = [
-        ...(boardState.player_discards?.self || []),
-        ...(boardState.player_discards?.shimocha || []),
-        ...(boardState.player_discards?.toimen || []),
-        ...(boardState.player_discards?.kamicha || []),
-    ];
+    // const river_tiles = [
+    //     ...(boardState.player_discards?.self || []),
+    //     ...(boardState.player_discards?.shimocha || []),
+    //     ...(boardState.player_discards?.toimen || []),
+    //     ...(boardState.player_discards?.kamicha || []),
+    // ];
 
-    const melded_blocks = boardState.melds.self.map(meld => meld.tiles) || []; 
+    // 各プレイヤーごとにまとめる
+    const river_tiles = {
+      "discard_tiles_bottom": (boardState.player_discards?.self || []),
+      "discard_tiles_right": (boardState.player_discards?.shimocha || []),
+      "discard_tiles_top": (boardState.player_discards?.toimen || []),
+      "discard_tiles_left": (boardState.player_discards?.kamicha || [])
+    };
+
+    const melded_blocks = {
+      "melded_tiles_bottom": boardState.melds.self.map(meld => meld.tiles) || [],
+      "melded_tiles_right": boardState.melds.shimocha.map(meld => meld.tiles) || [],
+      "melded_tiles_top": boardState.melds.toimen.map(meld => meld.tiles) || [],
+      "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || []
+    };
 
     const fixes_pai_info = {
         "version": "0.9.0",
