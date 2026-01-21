@@ -2,6 +2,21 @@ import json
 import requests
 from .mrs_class import *
 
+# IDチェンジ関数
+def id_change(change_card, has_aka=False):
+    if change_card >= 1000:
+        change_card = change_card - 1000
+    if change_card >= 100:
+        change_card = change_card - 100
+    if has_aka:
+        if change_card == Tile.AkaManzu5:
+            change_card = Tile.Manzu5
+        elif change_card == Tile.AkaPinzu5:
+            change_card = Tile.Pinzu5
+        elif change_card == Tile.AkaSozu5:
+            change_card = Tile.Sozu5
+    return change_card
+
 # メンツ種類推測
 def infer_meld_type(tiles, type):
     # tilesがリストであることを確認する
@@ -9,17 +24,40 @@ def infer_meld_type(tiles, type):
         raise TypeError(f"Expected 'tiles' to be a list, but got {type(tiles)}. Value: {tiles}")
 
     if len(tiles) == 3:
+        for i in range(len(tiles)):
+            tiles[i] = id_change(tiles[i], True)
+
         if tiles[0] + 1 == tiles[1] and tiles[1] + 1 == tiles[2]:
             return MeldType.Ti
         elif tiles[0] == tiles[1] and tiles[1] == tiles[2]:
             return MeldType.Pon
         else:
-            raise ValueError("Invalid tiles pattern for meld.")
+            raise ValueError("Invalid tiles pattern for 3 meld.")
     elif len(tiles) == 4:
+        count100 = 0
+        for i in range(len(tiles)):
+            tile = tiles[i]
+            if tile >= 1000:
+                tile = tile - 1000
+            if tile >= 100:
+                tile = tile - 100
+                count100 += 1
+            if tile == Tile.AkaManzu5:
+                tile = Tile.Manzu5
+            elif tile == Tile.AkaPinzu5:
+                tile = Tile.Pinzu5
+            elif tile == Tile.AkaSozu5:
+                tile = Tile.Sozu5
+            tiles[i] = tile
         if tiles[0] == tiles[1] and tiles[1] == tiles[2] and tiles[2] == tiles[3]:
-            return MeldType.Minkan  # 明槓と仮定
+            if count100 == 0:
+                return MeldType.Ankan  # 暗槓
+            elif count100 == 1:
+                return MeldType.Minkan  # 明槓
+            else:
+                return MeldType.Kakan  # 加槓
         else:
-            raise ValueError("Invalid tiles pattern for meld.")
+            raise ValueError("Invalid tiles pattern for 4 meld.")
 
     raise ValueError("Number of tiles must be 3 or 4.")
 
@@ -27,21 +65,24 @@ def infer_meld_type(tiles, type):
 def create_meld_block(tiles, type=MeldType.Null):
     if type == MeldType.Null:
         type = infer_meld_type(tiles, type)
-    elif type == MeldType.Ti:
-        assert (
-            len(tiles) == 3 and tiles[0] + 1 == tiles[1] and tiles[1] + 1 == tiles[2]
-        ), "Invalid tiles pattern for meld."
-    elif type == MeldType.Pon:
-        assert (
-            len(tiles) == 3 and tiles[0] == tiles[1] and tiles[1] == tiles[2]
-        ), "Invalid tiles pattern for meld."
-    elif type in [MeldType.Ankan, MeldType.Minkan, MeldType.Kakan]:
-        assert (
-            len(tiles) == 4
-            and tiles[0] == tiles[1]
-            and tiles[1] == tiles[2]
-            and tiles[2] == tiles[3]
-        ), "Invalid tiles pattern for meld."
+    # elif type == MeldType.Ti:
+    #     assert (
+    #         len(tiles) == 3 and tiles[0] + 1 == tiles[1] and tiles[1] + 1 == tiles[2]
+    #     ), "Invalid tiles pattern for meld."
+    # elif type == MeldType.Pon:
+    #     assert (
+    #         len(tiles) == 3 and tiles[0] == tiles[1] and tiles[1] == tiles[2]
+    #     ), "Invalid tiles pattern for meld."
+    # elif type in [MeldType.Ankan, MeldType.Minkan, MeldType.Kakan]:
+    #     assert (
+    #         len(tiles) == 4
+    #         and tiles[0] == tiles[1]
+    #         and tiles[1] == tiles[2]
+    #         and tiles[2] == tiles[3]
+    #     ), "Invalid tiles pattern for meld."
+
+    for i in range(len(tiles)):
+        tiles[i] = id_change(tiles[i])
 
     # discard_tile (鳴いた牌) と from (誰から鳴かれたか) は計算には関係ないので、適当に埋める。
     meld_block = {"type": type, "tiles": tiles, "discarded_tile": tiles[0], "from": 0}
@@ -432,11 +473,46 @@ def score_calc(data, river_tiles):
     }
     """
 
+    # target_change_map = ["zikaze", "bakaze", "dora_indicators", "hand_tiles", "melded_blocks"]
 
-    melded_blocks = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
-    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], melded_blocks, river_tiles)
+    # for val in target_change_map:
+    #     id = data[val]
+    #     if isinstance(id, list):
+    #         for i in range(len(id)):
+    #             id[i] = id_change(id[i])
+    #         data[val] = id
+    #     elif isinstance(id, dict):
+    #         for block_key in id:
+    #             for ix2 in range(len(id[block_key])):
+    #                 for i in range(len(id[block_key][ix2])):
+    #                     id[block_key][ix2][i] = id_change(id[block_key][ix2][i])
+    #                 data[val] = id
+    #     else:
+    #         data[val] = id_change(id)
+
+    meld_type_map = {
+        "chi": MeldType.Ti,
+        "pon": MeldType.Pon,
+        "ankan": MeldType.Ankan,
+        "daiminkan": MeldType.Minkan,
+        "kakan": MeldType.Kakan
+        }
+
+    melded_blocks_bottom = data["melded_blocks"]["melded_blocks_calc"]
+    melded_blocks_all = data["melded_blocks"]["melded_tiles_bottom"] + data["melded_blocks"]["melded_tiles_right"] + data["melded_blocks"]["melded_tiles_top"] + data["melded_blocks"]["melded_tiles_left"]
+
+    melded_blocks = []
+    for melded_type in melded_blocks_bottom:
+        for meld in melded_blocks_bottom[melded_type]:
+            melded_blocks.append(create_meld_block(meld, meld_type_map[melded_type]))
+    melded_blocks_all = [create_meld_block(block_tiles) for block_tiles in melded_blocks_all]
+
+    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], melded_blocks_all, river_tiles)
     # data["melded_blocks"] = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
-    
+    data["melded_blocks"] = melded_blocks
+
+    print(data)
+
     payload = json.dumps(data)
     # リクエストを送信する。
     res = requests.post(

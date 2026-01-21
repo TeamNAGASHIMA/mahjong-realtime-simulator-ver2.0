@@ -244,7 +244,7 @@ const createPayloadFromBoardState = (boardState, settings) => {
     if (boardState.tsumo_tile !== null && boardState.tsumo_tile !== undefined) {
       allHandTiles.push(boardState.tsumo_tile);
     }
-    
+
     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
 
     // 全員の河（捨て牌）をマージ
@@ -272,12 +272,14 @@ const createPayloadFromBoardState = (boardState, settings) => {
         return acc;
     }, { pon: [], chi: [], ankan: [], daiminkan: [], kakan: [] }); // 初期値としてキーを持つオブジェクトを設定
 
-      const melded_blocks = {
-      "melded_tiles_bottom": melded_blocks_bottom || [],
+    const melded_blocks = {
+      "melded_tiles_bottom": boardState.melds.self.map(meld => meld.tiles) || [],
       "melded_tiles_right": boardState.melds.shimocha.map(meld => meld.tiles) || [],
       "melded_tiles_top": boardState.melds.toimen.map(meld => meld.tiles) || [],
-      "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || []
+      "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || [],
+      "melded_blocks_calc": melded_blocks_bottom || [],
     };
+
     const fixes_pai_info = {
         "version": "0.9.0",
         "zikaze": boardState.player_winds?.self ?? 27, 
@@ -604,6 +606,7 @@ const MainScreen = () => {
       // ★和了型（Status 510）の場合の処理
       if (response.status === 510) {
         console.log("和了検出：牌選択フローを開始します。");
+        console.log("APIレスポンスデータ:", data);
         
         // サーバー認識結果を一度盤面に反映
         const syncedState = syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds);
@@ -626,8 +629,9 @@ const MainScreen = () => {
 
       // 通常成功 (200)
       if (response.status === 200) {
-        setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds)); 
-        
+        if (data.detection_result != "") {
+          setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds));
+        }
         const resultData = data.result || data.result_calc;
         if (resultData) {
           const tIdx = (payload.fixes_pai_info.turn ?? 1) - 1;
@@ -743,7 +747,9 @@ const MainScreen = () => {
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
           body: formData
       });
+      const data = await response.json();
       if (response.status === 200) {
+        console.log("message:", data.message);
         if (!isQuickSave) {
           recordingStatus.current = 0;
           setIsModalOpen(false);

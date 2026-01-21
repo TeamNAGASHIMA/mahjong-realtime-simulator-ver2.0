@@ -337,7 +337,7 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        print_hand_result(result, yaku_map)
+        # print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:

@@ -835,8 +835,8 @@ const TileDisplayArea = ({
                 const discardIndex = discardPile.lastIndexOf(calledTile); 
                 if(discardIndex > -1) discardPile.splice(discardIndex, 1);
 
-                // const exposedTile = calledTile + 100;
-                const exposedTile = calledTile
+                const exposedTile = calledTile + 100;
+                // const exposedTile = calledTile
 
                 const meldTiles = [...meldToMake.hand_tiles, exposedTile].sort((a,b) => (a % 100) - (b % 100));
                 
