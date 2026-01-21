@@ -328,7 +328,6 @@ def point_calculate(
                 has_open_tanyao = options_dict["options"]["has_open_tanyao"],
                 has_double_yakuman = True,
                 kiriage = options_dict["options"]["kiriage"],
-                fu_for_pinfu_tsumo = True,
             )
         )
 
@@ -338,7 +337,7 @@ def point_calculate(
         result = calculator.estimate_hand_value(tiles, win_tile_convert, melds, dora_indicators, config)
 
         # デバッグ用プリントコード
-        # print_hand_result(result, yaku_map)
+        print_hand_result(result, yaku_map)
 
         # 計算結果のエラー判定
         if result.error:
