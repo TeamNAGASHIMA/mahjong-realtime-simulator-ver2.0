@@ -82,7 +82,7 @@ def create_meld_block(tiles, type=MeldType.Null):
     #     ), "Invalid tiles pattern for meld."
 
     for i in range(len(tiles)):
-        tiles[i] = id_change(tiles[i])
+        tiles[i] = id_change(tiles[i], True)
 
     # discard_tile (鳴いた牌) と from (誰から鳴かれたか) は計算には関係ないので、適当に埋める。
     meld_block = {"type": type, "tiles": tiles, "discarded_tile": tiles[0], "from": 0}

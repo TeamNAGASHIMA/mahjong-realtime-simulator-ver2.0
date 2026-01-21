@@ -49,6 +49,7 @@ def main(request):
 
                 # 手動修正内容がなければ物体検知を行う
                 if not fixes_flag:
+                    fixe_runing = False
                     np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
                     # 盤面画像が取得できていればnp配列に挿入し、無ければ空のnp配列を作成する
                     if 'board_tiles_image' in Img_FILES:
@@ -104,6 +105,7 @@ def main(request):
                             flag
                         )
                 else:
+                    fixe_runing = True
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
                     fixes_river_tiles = fixes_list["fixes_river_tiles"]
 
@@ -134,21 +136,14 @@ def main(request):
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
-                if result_calc["status"] == 200:
-                    # 処理結果をフロントエンドへレスポンスする
-                    return JsonResponse({
-                        'message': result_calc["message"],
-                        'result_calc': result_calc["result"],
-                        "detection_result": detection_result
-                        }, status=result_calc["status"]
-                    )
-                else:
-                    return JsonResponse({
-                        'message': result_calc["message"],
-                        'result_calc': result_calc["result"],
-                        "detection_result": detection_result
-                        }, status=result_calc["status"]
-                    )
+                # 処理結果をフロントエンドへレスポンスする
+                return JsonResponse({
+                    'message': result_calc["message"],
+                    'result_calc': result_calc["result"],
+                    "detection_result": detection_result,
+                    "fixe_runing": fixe_runing
+                    }, status=result_calc["status"]
+                )
 
         except Exception as e:
             return JsonResponse({'message': "Exception error: {} {}".format(type(e), e)}, status=400)

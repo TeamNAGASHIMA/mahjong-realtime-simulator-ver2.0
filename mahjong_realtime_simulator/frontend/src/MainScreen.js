@@ -606,7 +606,6 @@ const MainScreen = () => {
       // ★和了型（Status 510）の場合の処理
       if (response.status === 510) {
         console.log("和了検出：牌選択フローを開始します。");
-        console.log("APIレスポンスデータ:", data);
         
         // サーバー認識結果を一度盤面に反映
         const syncedState = syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds);
@@ -629,7 +628,7 @@ const MainScreen = () => {
 
       // 通常成功 (200)
       if (response.status === 200) {
-        if (data.detection_result != "") {
+        if (!data.fixe_runing) {
           setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds));
         }
         const resultData = data.result || data.result_calc;
