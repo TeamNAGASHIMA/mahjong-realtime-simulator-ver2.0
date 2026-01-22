@@ -32,6 +32,7 @@ def main(request):
                 return JsonResponse({'message': message}, status=400)
             else:
                 # 手牌画像があれば正常処理を行う
+                res_fixes = json.loads(Req_BODY["fixes_board_info"])
                 fixes_list = json.loads(Req_BODY["fixes_board_info"])
                 # jsのリクエストデータから向聴タイプと設定項目のデータを挿入する
                 syanten_Type = int(Req_BODY["syanten_Type"])
@@ -43,7 +44,7 @@ def main(request):
                         fixes_data["dora_indicators"], 
                         fixes_data["hand_tiles"], 
                         fixes_data["melded_blocks"]["melded_tiles_bottom"], 
-                        fixes_list["fixes_river_tiles"]
+                        fixes_list["fixes_river_tiles"]["discard_tiles_all"]
                     ]
                 )
 
@@ -107,7 +108,9 @@ def main(request):
                 else:
                     fixe_runing = True
                     # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-                    fixes_river_tiles = fixes_list["fixes_river_tiles"]
+                    fixes_river_tiles = fixes_list["fixes_river_tiles"]["discard_tiles_all"]
+                    res_river_tiles = res_fixes["fixes_river_tiles"]
+                    del res_river_tiles["discard_tiles_all"]
 
                     # 手牌の枚数チェック
                     hand_sum = len(fixes_data["hand_tiles"]) + (len(fixes_data["melded_blocks"]["melded_tiles_bottom"]) * 3)
@@ -121,21 +124,25 @@ def main(request):
                             }, status=status
                         )
 
-                    res_melded_blocks = dict(fixes_data["melded_blocks"])
-
+                    res_melded_blocks = res_fixes["fixes_pai_info"]["melded_blocks"]
                     del res_melded_blocks["melded_blocks_calc"]
 
+                    res_turn = int(res_fixes["fixes_pai_info"]["turn"])
+                    res_dora_indicators = res_fixes["fixes_pai_info"]["dora_indicators"]
+                    res_hand_tiles = res_fixes["fixes_pai_info"]["hand_tiles"]
+
                     detection_result = {
-                        "turn": fixes_data["turn"],
-                        "dora_indicators": fixes_data["dora_indicators"],
-                        "hand_tiles": fixes_data["hand_tiles"],
+                        "turn": res_turn,
+                        "dora_indicators": res_dora_indicators,
+                        "hand_tiles": res_hand_tiles,
                         "melded_blocks": res_melded_blocks,
-                        "discard_tiles": fixes_river_tiles
+                        "discard_tiles": res_river_tiles
                     }
 
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
+                print(detection_result)
                 # 処理結果をフロントエンドへレスポンスする
                 return JsonResponse({
                     'message': result_calc["message"],
@@ -162,7 +169,6 @@ def tiles_save(request):
         try:
             Img_FILES = request.FILES
             Req_BODY = request.POST
-            print(1)
             if 'record_flag' not in Req_BODY:
                 return JsonResponse(
                     {
@@ -171,19 +177,15 @@ def tiles_save(request):
                     status=420
                 )
             else:
-                print(2)
                 record_flag = int(Req_BODY["record_flag"])
                 if record_flag == 0:
                     return JsonResponse({'message': 'No saving requested.'}, status=420)
                 elif record_flag == 1:
-                        print(3)
                         save_data_return = savedata(Req_BODY, Img_FILES)
                         if isinstance(save_data_return, JsonResponse):
-                            print(save_data_return)
                             return save_data_return
                         save_data = save_data_return[0]
                         detection_result = save_data_return[1]
-                        print(4)
                         if save_data is not None:
                             # 牌譜保存処理の関数を呼び出す
                             difference_check(save_data,record_flag,"")
@@ -442,6 +444,7 @@ def savedata(Req_BODY, Img_FILES):
     else:
         # 手牌画像があれば正常処理を行う
         fixes_list = json.loads(Req_BODY["fixes_board_info"])
+        res_fixes = json.loads(Req_BODY["fixes_board_info"])
         # 修正内容があるかどうかを確認
         fixes_data = fixes_list["fixes_pai_info"]
         fixes_flag = any(
@@ -454,7 +457,6 @@ def savedata(Req_BODY, Img_FILES):
         )
         # 手動修正内容がなければ物体検知を行う
         if not fixes_flag:
-            print(11)
             np_hand_tiles_image = imageChangeNp(Img_FILES['hand_tiles_image'])
             # 盤面画像が取得できていればnp配列に挿入し、無ければ空のnp配列を作成する
             if 'board_tiles_image' in Img_FILES:
@@ -507,17 +509,26 @@ def savedata(Req_BODY, Img_FILES):
                 )
         else:
             # jsのリクエストデータの手動修正データから得たドラ、手牌、鳴き牌、捨て牌、巡目数のデータを挿入する
-            fixes_river_tiles = fixes_list["fixes_river_tiles"]
+
+            newRiver_tiles = res_fixes["fixes_river_tiles"]
+            del newRiver_tiles["discard_tiles_all"]
+
+            newMelded_blocks = res_fixes["fixes_pai_info"]["melded_blocks"]
+            del newMelded_blocks["melded_blocks_calc"]
+
+            res_turn = int(res_fixes["fixes_pai_info"]["turn"])
+            res_dora_indicators = res_fixes["fixes_pai_info"]["dora_indicators"]
+            res_hand_tiles = res_fixes["fixes_pai_info"]["hand_tiles"]
 
             detection_result = {
-                "turn": fixes_data["turn"],
-                "dora_indicators": fixes_data["dora_indicators"],
-                "hand_tiles": fixes_data["hand_tiles"],
-                "melded_blocks": fixes_data["melded_blocks"],
-                "discard_tiles": fixes_river_tiles
+                "turn": res_turn,
+                "dora_indicators": res_dora_indicators,
+                "hand_tiles": res_hand_tiles,
+                "melded_blocks": newMelded_blocks,
+                "discard_tiles": newRiver_tiles
             }
 
-            if len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]["melded_tiles_bottom"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(fixes_data["melded_blocks"]["melded_tiles_bottom"] * 3) >= 15:
+            if len(fixes_data["hand_tiles"]) + len(newMelded_blocks["melded_tiles_bottom"] * 3) <= 12 or len(fixes_data["hand_tiles"]) + len(newMelded_blocks["melded_tiles_bottom"] * 3) >= 15:
                 message = "The number of tiles in your hand is invalid. ({} tiles detected in hand)".format(len(fixes_data["hand_tiles"]))
                 status =420
 
@@ -531,11 +542,7 @@ def savedata(Req_BODY, Img_FILES):
 
             # 物体検知は行わずに直接計算を行う
             save_data = (
-                    fixes_data["dora_indicators"],
-                    fixes_data["hand_tiles"],
-                    fixes_data["melded_blocks"],
-                    fixes_river_tiles,
-                    fixes_data["turn"]
+                    detection_result
                 )
         # print(save_data)
     return save_data,detection_result

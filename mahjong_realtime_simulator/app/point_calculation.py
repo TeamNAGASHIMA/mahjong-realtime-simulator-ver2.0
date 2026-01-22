@@ -51,10 +51,8 @@ def print_hand_result(hand_result, yaku_map):
         print('')
 
 def id_change(change_card):
-    if change_card >= 1000:
-        change_card = change_card - 1000
     if change_card >= 100:
-        change_card = change_card - 100
+        change_card = change_card % 100
     return change_card
 
 # 点数計算メイン処理
@@ -190,19 +188,15 @@ def point_calculate(
 
         message_err = "Error in win_tile"
         # ツモorロン牌のコンバート処理
-        win_tile_aka_dora = False
-        win_tile = id_change(win_tile)
-        if win_tile >= 34:
-            win_tile_aka_dora = True
         card_win_tile = list(majong_map[win_tile])
         if card_win_tile[0] == "m":
-            win_tile_convert = TilesConverter.string_to_136_array(man = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
+            win_tile_convert = TilesConverter.string_to_136_array(man = card_win_tile[1], has_aka_dora = aka_dora_in_hand_tiles)[0]
         elif card_win_tile[0] == "p":
-            win_tile_convert = TilesConverter.string_to_136_array(pin = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
+            win_tile_convert = TilesConverter.string_to_136_array(pin = card_win_tile[1], has_aka_dora = aka_dora_in_hand_tiles)[0]
         elif card_win_tile[0] == "s":
-            win_tile_convert = TilesConverter.string_to_136_array(sou = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
+            win_tile_convert = TilesConverter.string_to_136_array(sou = card_win_tile[1], has_aka_dora = aka_dora_in_hand_tiles)[0]
         elif card_win_tile[0] == "h":
-            win_tile_convert = TilesConverter.string_to_136_array(honors = card_win_tile[1], has_aka_dora = win_tile_aka_dora)[0]
+            win_tile_convert = TilesConverter.string_to_136_array(honors = card_win_tile[1], has_aka_dora = aka_dora_in_hand_tiles)[0]
 
         message_err = "Error in meld_tiles"
         # 鳴き(ダイミンカン:true, アンカン:False)
@@ -236,11 +230,11 @@ def point_calculate(
                     card_meld_chi_sort = sorted([int(card_meld_chi_1[1]), int(card_meld_chi_2[1]), int(card_meld_chi_3[1])])
                     card_meld_chi_join = "".join(map(str, card_meld_chi_sort))
                     if chi_hai_type == "m":
-                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(man=card_meld_chi_join)))
+                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(man=card_meld_chi_join, has_aka_dora=aka_dora_in_hand_tiles)))
                     elif chi_hai_type == "p":
-                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(pin=card_meld_chi_join)))
+                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(pin=card_meld_chi_join, has_aka_dora=aka_dora_in_hand_tiles)))
                     elif chi_hai_type == "s":
-                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(sou=card_meld_chi_join)))
+                        melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(sou=card_meld_chi_join, has_aka_dora=aka_dora_in_hand_tiles)))
                     elif chi_hai_type == "h":
                         melds.append(Meld(Meld.CHI, TilesConverter.string_to_136_array(honors=card_meld_chi_join)))
             elif len(meld) == 4:

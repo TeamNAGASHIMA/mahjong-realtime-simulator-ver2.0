@@ -198,12 +198,25 @@ const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
   
   const results = meldArray.map(tiles => {
     // 誤認識牌チェック (1000以上のID)
-    const hasErrorTile = tiles.some(t => t >= 1000);
-    if (hasErrorTile) {
-      return { meld: null, tilesToHand: tiles.map(t => t % 100) };
-    }
+    // const hasErrorTile = tiles.some(t => t >= 1000);
+    // if (hasErrorTile) {
+    //   return { meld: null, tilesToHand: tiles.map(t => t % 100) };
+    // }
 
-    const normalized = tiles.map(t => t % 100).sort((a, b) => a - b);
+    let normalize = tiles.map(t => t % 100);
+
+    for (let i = 0; i < normalize.length; i++) {
+      if (normalize[i] === 34) {
+        normalize[i] = 4;
+      } else if (normalize[i] === 35) {
+        normalize[i] = 13;
+      } else if (normalize[i] === 36) {
+        normalize[i] = 22;
+      };
+    };
+
+    const normalized = normalize.sort((a, b) => a - b);
+
     let type = 'unknown';
     let exposed_index = 1;
 
@@ -248,12 +261,21 @@ const createPayloadFromBoardState = (boardState, settings) => {
     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
 
     // 全員の河（捨て牌）をマージ
-    const river_tiles = [
+    const river_tiles_all = [
         ...(boardState.player_discards?.self || []),
         ...(boardState.player_discards?.shimocha || []),
         ...(boardState.player_discards?.toimen || []),
         ...(boardState.player_discards?.kamicha || []),
     ];
+
+    // 各プレイヤーごとにまとめる
+    const river_tiles = {
+      "discard_tiles_bottom": boardState.player_discards?.self || [],
+      "discard_tiles_right": boardState.player_discards?.shimocha || [],
+      "discard_tiles_top": boardState.player_discards?.toimen || [],
+      "discard_tiles_left": boardState.player_discards?.kamicha || [],
+      "discard_tiles_all": river_tiles_all || [],
+    };
 
     // ★★★ 修正箇所: melded_blocksの形式をオブジェクトに変更し、槓を細分化 ★★★
     const melded_blocks_bottom = (boardState.melds.self || []).reduce((acc, meld) => {

@@ -26,6 +26,7 @@ def infer_meld_type(tiles, type):
     if len(tiles) == 3:
         for i in range(len(tiles)):
             tiles[i] = id_change(tiles[i], True)
+        tiles.sort()
 
         if tiles[0] + 1 == tiles[1] and tiles[1] + 1 == tiles[2]:
             return MeldType.Ti
@@ -507,11 +508,14 @@ def score_calc(data, river_tiles):
             melded_blocks.append(create_meld_block(meld, meld_type_map[melded_type]))
     melded_blocks_all = [create_meld_block(block_tiles) for block_tiles in melded_blocks_all]
 
-    data["counts"] = calc_remaining_tiles(data["hand_tiles"], data["dora_indicators"], melded_blocks_all, river_tiles)
+    hand_tiles = [id_change(tile, False) for tile in data["hand_tiles"]]
+    data["hand_tiles"] = hand_tiles
+    dora_indicators = [id_change(tile, False) for tile in data["dora_indicators"]]
+    data["dora_indicators"] = dora_indicators
+
+    data["counts"] = calc_remaining_tiles(hand_tiles, dora_indicators, melded_blocks_all, river_tiles)
     # data["melded_blocks"] = [create_meld_block(block_tiles) for block_tiles in data["melded_blocks"]]
     data["melded_blocks"] = melded_blocks
-
-    print(data)
 
     payload = json.dumps(data)
     # リクエストを送信する。
