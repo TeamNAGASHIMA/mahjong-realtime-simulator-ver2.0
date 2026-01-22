@@ -697,6 +697,7 @@ const MainScreen = () => {
       const { images } = sidePanelRef.current.getSidePanelData();
       const formData = new FormData();
       formData.append('hand_tiles_image', dataURLtoBlob(images.handImage), "hand.jpg");
+      formData.append('board_tiles_image', dataURLtoBlob(images.boardImage), "board.jpg");
       
       const response = await fetch('/app/detection_tiles/', {
           method: 'POST',
@@ -705,10 +706,13 @@ const MainScreen = () => {
       });
       const data = await response.json();
       if (response.status === 200) {
+        console.log("牌認識成功:", data.message);
         setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds));
+      } else {
+        console.error("牌認識失敗:", data.message);
       }
     } catch (err) {
-      console.error("認識失敗:", err);
+      console.error("通信失敗:", err);
     } finally {
       setIsRecognizing(false);
     }
