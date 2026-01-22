@@ -142,7 +142,6 @@ def main(request):
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
-                print(detection_result)
                 # 処理結果をフロントエンドへレスポンスする
                 return JsonResponse({
                     'message': result_calc["message"],
