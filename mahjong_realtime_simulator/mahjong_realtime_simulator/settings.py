@@ -27,11 +27,12 @@ if getattr(sys, 'frozen', False):
         BASE_DIR = internal_dir
     else:
         BASE_DIR = exe_dir
+    env_path = BASE_DIR / '.env'
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent
+    env_path = BASE_DIR.parent / '.env'
 
 # デバッグ用：探しているパスを表示
-env_path = BASE_DIR / '.env'
 print(f"Loading .env from: {env_path}")
 
 # 明示的にパスを指定して読み込む
