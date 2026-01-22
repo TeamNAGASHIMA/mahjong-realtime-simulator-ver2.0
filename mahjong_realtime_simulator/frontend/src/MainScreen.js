@@ -198,12 +198,25 @@ const convertMeldsToBoardStateFormat = (meldArray, playerKey) => {
   
   const results = meldArray.map(tiles => {
     // 誤認識牌チェック (1000以上のID)
-    const hasErrorTile = tiles.some(t => t >= 1000);
-    if (hasErrorTile) {
-      return { meld: null, tilesToHand: tiles.map(t => t % 100) };
-    }
+    // const hasErrorTile = tiles.some(t => t >= 1000);
+    // if (hasErrorTile) {
+    //   return { meld: null, tilesToHand: tiles.map(t => t % 100) };
+    // }
 
-    const normalized = tiles.map(t => t % 100).sort((a, b) => a - b);
+    let normalize = tiles.map(t => t % 100);
+
+    for (let i = 0; i < normalize.length; i++) {
+      if (normalize[i] === 34) {
+        normalize[i] = 4;
+      } else if (normalize[i] === 35) {
+        normalize[i] = 13;
+      } else if (normalize[i] === 36) {
+        normalize[i] = 22;
+      };
+    };
+
+    const normalized = normalize.sort((a, b) => a - b);
+
     let type = 'unknown';
     let exposed_index = 1;
 
@@ -244,16 +257,25 @@ const createPayloadFromBoardState = (boardState, settings) => {
     if (boardState.tsumo_tile !== null && boardState.tsumo_tile !== undefined) {
       allHandTiles.push(boardState.tsumo_tile);
     }
-    
+
     const dora_indicators = boardState.dora_indicators?.map(tile => tile) ?? [];
 
     // 全員の河（捨て牌）をマージ
-    const river_tiles = [
+    const river_tiles_all = [
         ...(boardState.player_discards?.self || []),
         ...(boardState.player_discards?.shimocha || []),
         ...(boardState.player_discards?.toimen || []),
         ...(boardState.player_discards?.kamicha || []),
     ];
+
+    // 各プレイヤーごとにまとめる
+    const river_tiles = {
+      "discard_tiles_bottom": boardState.player_discards?.self || [],
+      "discard_tiles_right": boardState.player_discards?.shimocha || [],
+      "discard_tiles_top": boardState.player_discards?.toimen || [],
+      "discard_tiles_left": boardState.player_discards?.kamicha || [],
+      "discard_tiles_all": river_tiles_all || [],
+    };
 
     // ★★★ 修正箇所: melded_blocksの形式をオブジェクトに変更し、槓を細分化 ★★★
     const melded_blocks_bottom = (boardState.melds.self || []).reduce((acc, meld) => {
@@ -272,12 +294,14 @@ const createPayloadFromBoardState = (boardState, settings) => {
         return acc;
     }, { pon: [], chi: [], ankan: [], daiminkan: [], kakan: [] }); // 初期値としてキーを持つオブジェクトを設定
 
-      const melded_blocks = {
-      "melded_tiles_bottom": melded_blocks_bottom || [],
+    const melded_blocks = {
+      "melded_tiles_bottom": boardState.melds.self.map(meld => meld.tiles) || [],
       "melded_tiles_right": boardState.melds.shimocha.map(meld => meld.tiles) || [],
       "melded_tiles_top": boardState.melds.toimen.map(meld => meld.tiles) || [],
-      "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || []
+      "melded_tiles_left": boardState.melds.kamicha.map(meld => meld.tiles) || [],
+      "melded_blocks_calc": melded_blocks_bottom || [],
     };
+
     const fixes_pai_info = {
         "version": "0.9.0",
         "zikaze": boardState.player_winds?.self ?? 27, 
@@ -626,8 +650,9 @@ const MainScreen = () => {
 
       // 通常成功 (200)
       if (response.status === 200) {
-        setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds)); 
-        
+        if (!data.fixe_runing) {
+          setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds));
+        }
         const resultData = data.result || data.result_calc;
         if (resultData) {
           const tIdx = (payload.fixes_pai_info.turn ?? 1) - 1;
@@ -743,7 +768,9 @@ const MainScreen = () => {
           headers: { 'X-CSRFToken': getCookie('csrftoken') },
           body: formData
       });
+      const data = await response.json();
       if (response.status === 200) {
+        console.log("message:", data.message);
         if (!isQuickSave) {
           recordingStatus.current = 0;
           setIsModalOpen(false);
