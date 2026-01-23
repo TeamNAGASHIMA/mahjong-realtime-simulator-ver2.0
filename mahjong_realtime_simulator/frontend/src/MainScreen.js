@@ -779,6 +779,8 @@ const MainScreen = () => {
           recordingStatus.current = 0;
           setIsModalOpen(false);
         }
+      } else {
+        console.error(`記録の保存に失敗しました: `, data.message);
       }
     } catch (e) {
       alert("記録の保存中にサーバーエラーが発生しました。");
@@ -800,9 +802,13 @@ const MainScreen = () => {
         body: JSON.stringify({})
       });
       const data = await response.json();
-      if (data.file_list) setKifuFileList(data.file_list);
+      if (data.file_list) {
+        setKifuFileList(data.file_list);
+      } else {
+        console.error("牌譜一覧取得失敗:", data.message);
+      }
     } catch (e) { 
-      console.error("牌譜一覧取得失敗:", e); 
+      console.error("通信に失敗しました。:", e); 
     }
   };
 
@@ -824,9 +830,11 @@ const MainScreen = () => {
         const sorted = [...data.temp_result].sort((a, b) => (a.turn || 0) - (b.turn || 0));
         setSelectedKifuData(sorted);
         setCurrentKifuTurn(sorted[0]?.turn || 1); 
+      } else {
+        console.error("牌譜データ取得失敗:", data.message);
       }
     } catch (e) { 
-      console.error("牌譜データ取得失敗:", e); 
+      console.error("通信に失敗しました。:", e); 
     }
   };
 
