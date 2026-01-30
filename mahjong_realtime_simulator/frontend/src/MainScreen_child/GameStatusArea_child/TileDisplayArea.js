@@ -818,15 +818,15 @@ const TileDisplayArea = ({
         if (meldToMake.type === 'kakan') {
             const meldToUpdate = newBoardState.melds.self[meldToMake.from_meld_index];
             if(removeTilesFromHand(meldToMake.tiles)) {
-                meldToUpdate.type = 'minkan'; 
+                meldToUpdate.type = 'minkan'; // 加槓もminkanとして扱う
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
-                meldToUpdate.tiles.sort((a, b) => a - b);
+                meldToUpdate.tiles.sort((a, b) => (a % 100) - (b % 100));
             }
         } else if (meldToMake.type === 'ankan') {
             if(removeTilesFromHand(meldToMake.tiles)) {
                 newBoardState.melds.self.push({ type: 'ankan', tiles: meldToMake.tiles, from: 'self' });
             }
-        } else if (meldToMake.from) { 
+        } else if (meldToMake.from) { // ポン、チー、大明槓の処理
             const fromPlayer = meldToMake.from;
             const calledTile = meldToMake.called_tile; 
 
@@ -835,15 +835,19 @@ const TileDisplayArea = ({
                 const discardIndex = discardPile.lastIndexOf(calledTile); 
                 if(discardIndex > -1) discardPile.splice(discardIndex, 1);
 
-                const meldTiles = [...meldToMake.hand_tiles, calledTile].sort((a,b)=>a-b);
+                const exposedTile = calledTile + 100;
+                // const exposedTile = calledTile
+
+                const meldTiles = [...meldToMake.hand_tiles, exposedTile].sort((a,b) => (a % 100) - (b % 100));
+                
                 let exposed_index;
                 if (meldToMake.type === 'chi') {
-                    exposed_index = meldTiles.findIndex(t => t === calledTile);
-                } else { 
+                    exposed_index = meldTiles.findIndex(t => t === exposedTile);
+                } else { // ★★★ 修正箇所: ポンと大明槓のロジックを共通化 ★★★
                     if (fromPlayer === 'kamicha') exposed_index = 0; 
                     else if (fromPlayer === 'toimen') exposed_index = 1; 
                     else if (fromPlayer === 'shimocha') exposed_index = 2; 
-                    else exposed_index = 0; 
+                    else exposed_index = 0;
                 }
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
