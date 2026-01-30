@@ -34,10 +34,10 @@ const GameStatusArea = ({
   displaySettings,  
   isSaving,
   calculationError,
-  // MainScreenから受け取るプロパティ
+  // ★★★ 修正: 親から受け取るProps名を変更 (Turn -> Index) ★★★
   selectedKifuData,
-  currentKifuTurn,
-  onKifuTurnChange
+  currentKifuIndex,    // 旧: currentKifuTurn
+  onKifuIndexChange    // 旧: onKifuTurnChange
 }) => {
 
   return (
@@ -54,7 +54,10 @@ const GameStatusArea = ({
           onModeChange={onModeChange}
           calculationError={calculationError}
           selectedKifuData={selectedKifuData}
-          onKifuTurnChange={onKifuTurnChange}
+          // ★★★ 修正: TileDisplayAreaへ渡す名前も変更 ★★★
+          // 注意: TileDisplayArea.js側でも props を currentKifuIndex として受け取る修正が必要です
+          currentKifuIndex={currentKifuIndex} 
+          onKifuIndexChange={onKifuIndexChange}
         />
       )}
 
@@ -73,10 +76,10 @@ const GameStatusArea = ({
         onSendRecordingData={onSendRecordingData}
         isSaving={isSaving}
         
-        // ★★★ TurnSelector用データ ★★★
+        // ★★★ 修正: Indexを渡すように変更 ★★★
         selectedKifuData={selectedKifuData}
-        currentKifuTurn={currentKifuTurn}
-        onKifuTurnChange={onKifuTurnChange}
+        currentKifuIndex={currentKifuIndex} // 旧: currentKifuTurn
+        onKifuIndexChange={onKifuIndexChange} // 旧: onKifuTurnChange
       />
 
       {displaySettings && displaySettings.showSimulation && (
