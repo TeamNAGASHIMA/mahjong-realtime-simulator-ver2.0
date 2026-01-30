@@ -142,7 +142,6 @@ def main(request):
                     # 物体検知は行わずに直接計算を行う
                     result_calc = score_calc(fixes_data, fixes_river_tiles)
 
-                print(detection_result)
                 # 処理結果をフロントエンドへレスポンスする
                 return JsonResponse({
                     'message': result_calc["message"],
@@ -452,7 +451,7 @@ def savedata(Req_BODY, Img_FILES):
                 fixes_data["dora_indicators"], 
                 fixes_data["hand_tiles"], 
                 fixes_data["melded_blocks"]["melded_tiles_bottom"], 
-                fixes_list["fixes_river_tiles"]
+                fixes_list["fixes_river_tiles"]["discard_tiles_all"]
             ]
         )
         # 手動修正内容がなければ物体検知を行う
