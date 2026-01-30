@@ -21,8 +21,9 @@ export const CameraModal = ({
       const constraints = {
         video: {
           deviceId: { exact: selectedBoardCamera },
-          width: { exact: 1920 },
-          height: { exact: 1080 }
+          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値)          
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       };
 
@@ -55,8 +56,9 @@ export const CameraModal = ({
       const constraints = {
         video: {
           deviceId: { exact: selectedHandCamera },
-          width: { exact: 1920 },
-          height: { exact: 1080 }
+          //width: { ideal: 1920 }, // exact(厳格) <-> ideal(理想値)          
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       };
       

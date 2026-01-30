@@ -1,5 +1,5 @@
 // Header/SettingsModal.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // useEffect をインポート
 import { styles } from './styles';
 
 export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
@@ -16,8 +16,28 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
     tableBg: 'default', 
     tableBgImage: null, 
     appBg: 'default', 
-    appBgImage: null 
+    appBgImage: null,
+    showTooltips: true
   };
+
+  // ★ここから追加: Escapeキーでモーダルを閉じるための処理
+  useEffect(() => {
+    // キーが押されたときに実行される関数
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose(); // Escapeキーが押されたらonClose関数を呼び出す
+      }
+    };
+
+    // グローバルなkeydownイベントリスナーを追加
+    window.addEventListener('keydown', handleKeyDown);
+
+    // クリーンアップ関数: コンポーネントがアンマウントされるときにイベントリスナーを削除
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]); // 依存配列にonCloseを含め、onCloseが変更された場合に再設定する
+  // ★ここまで追加
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -44,7 +64,9 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
   };
 
   return (
+    // このonClick={onClose}が枠外クリックで閉じる機能を担当しています
     <div style={styles.modalOverlay} onClick={onClose}>
+      {/* このstopPropagationがモーダル内部のクリックイベントの伝播を防ぎます */}
       <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
           <h3 style={styles.modalHeaderTitle}>設定</h3>
@@ -79,6 +101,15 @@ export const SettingsModal = ({ settings, onSettingsChange, onClose }) => {
               <option value="16px">大</option>
               <option value="18px">特大</option>
             </select>
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>ツールチップ表示</label>
+            <div>
+              <input type="radio" id="tooltipsOn" name="tooltips_radio" checked={settings.showTooltips === true} onChange={() => handleRadioChange('showTooltips', true)} />
+              <label htmlFor="tooltipsOn" style={styles.radioLabel}>表示</label>
+              <input type="radio" id="tooltipsOff" name="tooltips_radio" checked={settings.showTooltips === false} onChange={() => handleRadioChange('showTooltips', false)} />
+              <label htmlFor="tooltipsOff" style={styles.radioLabel}>非表示</label>
+            </div>
           </div>
           <div style={styles.formGroup}>
             <label style={styles.formLabel}>効果音</label>

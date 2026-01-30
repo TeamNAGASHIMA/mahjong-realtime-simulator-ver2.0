@@ -1,4 +1,5 @@
 // GameStatusArea.js
+
 import React from 'react';
 import TileDisplayArea from './GameStatusArea_child/TileDisplayArea';
 import ButtonContainer from './GameStatusArea_child/ButtonContainer';
@@ -26,36 +27,67 @@ const GameStatusArea = ({
   use3D,
   isSimulatorMode,  
   onModeChange,
-  isRecording, onRecordStart, onRecordStop 
+  recordingStatus, 
+  isModalOpen,
+  onRecordingFunction,
+  onSendRecordingData,
+  displaySettings,  
+  isSaving,
+  calculationError,
+  // MainScreenから受け取るプロパティ
+  selectedKifuData,
+  currentKifuTurn,
+  onKifuTurnChange
 }) => {
+
   return (
     <div style={styles.gameStatusContainer}>
-      <TileDisplayArea
-        boardState={boardState}
-        onBoardStateChange={onBoardStateChange}
-        onResetBoardState={onResetBoardState} 
-        settings={settings}
-        use3D={use3D}
-        isSimulatorMode={isSimulatorMode}        
-        onModeChange={onModeChange} // ★★★ 修正箇所2: 受け取ったonModeChangeをTileDisplayAreaに渡す
-      />
+      
+      {displaySettings && displaySettings.showStatus && (
+        <TileDisplayArea
+          boardState={boardState}
+          onBoardStateChange={onBoardStateChange}
+          onResetBoardState={onResetBoardState} 
+          settings={settings}
+          use3D={use3D}
+          isSimulatorMode={isSimulatorMode}        
+          onModeChange={onModeChange}
+          calculationError={calculationError}
+          selectedKifuData={selectedKifuData}
+          onKifuTurnChange={onKifuTurnChange}
+        />
+      )}
 
+      {/* ButtonContainerに必要なデータを全て渡す */}
       <ButtonContainer
         onCalculationClick={onStartCalculation}
         isLoading={isLoadingCalculation}
         isDisabled={isCalculationDisabled || isRecognizing}
+        // 計算ボタンのテキスト制御
+        calculationText={isLoadingCalculation ? "計算中..." : "計算開始"}
+        
         isSimulatorMode={isSimulatorMode}
-        isRecording={isRecording}
-        onRecordStart={onRecordStart}
-        onRecordStop={onRecordStop}    
+        recordingStatus={recordingStatus}
+        isModalOpen={isModalOpen}
+        onRecordingFunction={onRecordingFunction}
+        onSendRecordingData={onSendRecordingData}
+        isSaving={isSaving}
+        
+        // ★★★ TurnSelector用データ ★★★
+        selectedKifuData={selectedKifuData}
+        currentKifuTurn={currentKifuTurn}
+        onKifuTurnChange={onKifuTurnChange}
       />
 
-      <CalculationResults
-        results={calculationResults}
-        isLoading={isLoadingCalculation}
-        currentTurn={boardState ? boardState.turn : 1}
-        settings={settings}
-      />
+      {displaySettings && displaySettings.showSimulation && (
+        <CalculationResults
+          results={calculationResults}
+          isLoading={isLoadingCalculation}
+          currentTurn={boardState ? boardState.turn : 1}
+          settings={settings}
+          displaySettings={displaySettings}
+        />
+      )}
     </div>
   );
 };

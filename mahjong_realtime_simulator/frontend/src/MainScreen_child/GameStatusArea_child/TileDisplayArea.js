@@ -1,7 +1,7 @@
 // TileDisplayArea.js
 import React, { useState, useEffect } from 'react';
 
-//牌の画像
+//牌の画像（縦向きのみ）
 import M1 from '../../img/M1.png';
 import M2 from '../../img/M2.png';
 import M3 from '../../img/M3.png';
@@ -40,53 +40,62 @@ import Z5 from '../../img/Z5.png';
 import Z6 from '../../img/Z6.png';
 import Z7 from '../../img/Z7.png';
 
-//横向きの牌画像
-import YM1 from '../../img/YM1.png';
-import YM2 from '../../img/YM2.png';
-import YM3 from '../../img/YM3.png';
-import YM4 from '../../img/YM4.png';
-import YM5 from '../../img/YM5.png';
-import YM6 from '../../img/YM6.png';
-import YM7 from '../../img/YM7.png';
-import YM8 from '../../img/YM8.png';
-import YM9 from '../../img/YM9.png';
-import YRM5 from '../../img/YRM5.png';
-import YP1 from '../../img/YP1.png';
-import YP2 from '../../img/YP2.png';
-import YP3 from '../../img/YP3.png';
-import YP4 from '../../img/YP4.png';
-import YP5 from '../../img/YP5.png';
-import YP6 from '../../img/YP6.png';
-import YP7 from '../../img/YP7.png';
-import YP8 from '../../img/YP8.png';
-import YP9 from '../../img/YP9.png';
-import YRP5 from '../../img/YRP5.png';
-import YS1 from '../../img/YS1.png';
-import YS2 from '../../img/YS2.png';
-import YS3 from '../../img/YS3.png';
-import YS4 from '../../img/YS4.png';
-import YS5 from '../../img/YS5.png';
-import YRS5 from '../../img/YRS5.png';
-import YS6 from '../../img/YS6.png';
-import YS7 from '../../img/YS7.png';
-import YS8 from '../../img/YS8.png';
-import YS9 from '../../img/YS9.png';
-import YZ1 from '../../img/YZ1.png';
-import YZ2 from '../../img/YZ2.png';
-import YZ3 from '../../img/YZ3.png';
-import YZ4 from '../../img/YZ4.png';
-import YZ5 from '../../img/YZ5.png';
-import YZ6 from '../../img/YZ6.png';
-import YZ7 from '../../img/YZ7.png';
+// EM1, EM2... のインポート
+import EM1 from '../../img/EM1.png';
+import EM2 from '../../img/EM2.png';
+import EM3 from '../../img/EM3.png';
+import EM4 from '../../img/EM4.png';
+import EM5 from '../../img/EM5.png';
+import EM6 from '../../img/EM6.png';
+import EM7 from '../../img/EM7.png';
+import EM8 from '../../img/EM8.png';
+import EM9 from '../../img/EM9.png';
+import ERM5 from '../../img/ERM5.png';
+import EP1 from '../../img/EP1.png';
+import EP2 from '../../img/EP2.png';
+import EP3 from '../../img/EP3.png';
+import EP4 from '../../img/EP4.png';
+import EP5 from '../../img/EP5.png';
+import EP6 from '../../img/EP6.png';
+import EP7 from '../../img/EP7.png';
+import EP8 from '../../img/EP8.png';
+import EP9 from '../../img/EP9.png';
+import ERP5 from '../../img/ERP5.png';
+import ES1 from '../../img/ES1.png';
+import ES2 from '../../img/ES2.png';
+import ES3 from '../../img/ES3.png';
+import ES4 from '../../img/ES4.png';
+import ES5 from '../../img/ES5.png';
+import ERS5 from '../../img/ERS5.png';
+import ES6 from '../../img/ES6.png';
+import ES7 from '../../img/ES7.png';
+import ES8 from '../../img/ES8.png';
+import ES9 from '../../img/ES9.png';
+import EZ1 from '../../img/EZ1.png';
+import EZ2 from '../../img/EZ2.png';
+import EZ3 from '../../img/EZ3.png';
+import EZ4 from '../../img/EZ4.png';
+import EZ5 from '../../img/EZ5.png';
+import EZ6 from '../../img/EZ6.png';
+import EZ7 from '../../img/EZ7.png';
 
-//1000番台は誤検知の可能性のある牌
 
 // --- データマッピング ---
-const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, YM1, YM2, YM3, YM4, YM5, YRM5, YM6, YM7, YM8, YM9, YP1, YP2, YP3, YP4, YP5, YRP5, YP6, YP7, YP8, YP9, YS1, YS2, YS3, YS4, YS5, YRS5, YS6, YS7, YS8, YS9, YZ1, YZ2, YZ3, YZ4, YZ5, YZ6, YZ7 };
-const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
-const TILE_NUM_TO_IMAGE_KEY = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7',  34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'YM1', 101: 'YM2', 102: 'YM3', 103: 'YM4', 104: 'YM5', 105: 'YM6', 106: 'YM7', 107: 'YM8', 108: 'YM9', 109: 'YP1', 110: 'YP2', 111: 'YP3', 112: 'YP4', 113: 'YP5', 114: 'YP6', 115: 'YP7', 116: 'YP8', 117: 'YP9', 118: 'YS1', 119: 'YS2', 120: 'YS3', 121: 'YS4', 122: 'YS5', 123: 'YS6', 124: 'YS7', 125: 'YS8', 126: 'YS9', 127: 'YZ1', 128: 'YZ2', 129: 'YZ3', 130: 'YZ4', 131: 'YZ5', 132: 'YZ6', 133: 'YZ7', 134: 'YRM5', 135: 'YRP5', 136: 'YRS5' };
+export const TILE_IMAGES = { M1, M2, M3, M4, M5, RM5, M6, M7, M8, M9, P1, P2, P3, P4, P5, RP5, P6, P7, P8, P9, S1, S2, S3, S4, S5, RS5, S6, S7, S8, S9, Z1, Z2, Z3, Z4, Z5, Z6, Z7, EM1, EM2, EM3, EM4, EM5, ERM5, EM6, EM7, EM8, EM9, EP1, EP2, EP3, EP4, EP5, ERP5, EP6, EP7, EP8, EP9, ES1, ES2, ES3, ES4, ES5, ERS5, ES6, ES7, ES8, ES9, EZ1, EZ2, EZ3, EZ4, EZ5, EZ6, EZ7 };
+export const TILE_NUM_TO_NAME = { 0: 'M1', 1: 'M2', 2: 'M3', 3: 'M4', 4: 'M5', 5: 'M6', 6: 'M7', 7: 'M8', 8: 'M9', 9: 'P1', 10: 'P2', 11: 'P3', 12: 'P4', 13: 'P5', 14: 'P6', 15: 'P7', 16: 'P8', 17: 'P9', 18: 'S1', 19: 'S2', 20: 'S3', 21: 'S4', 22: 'S5', 23: 'S6', 24: 'S7', 25: 'S8', 26: 'S9', 27: 'Z1', 28: 'Z2', 29: 'Z3', 30: 'Z4', 31: 'Z5', 32: 'Z6', 33: 'Z7', 34: 'RM5', 35: 'RP5', 36: 'RS5', 100: 'M1', 101: 'M2', 102: 'M3', 103: 'M4', 104: 'M5', 105: 'M6', 106: 'M7', 107: 'M8', 108: 'M9', 109: 'P1', 110: 'P2', 111: 'P3', 112: 'P4', 113: 'P5', 114: 'P6', 115: 'P7', 116: 'P8', 117: 'P9', 118: 'S1', 119: 'S2', 120: 'S3', 121: 'S4', 122: 'S5', 123: 'S6', 124: 'S7', 125: 'S8', 126: 'S9', 127: 'Z1', 128: 'Z2', 129: 'Z3', 130: 'Z4', 131: 'Z5', 132: 'Z6', 133: 'Z7', 134: 'RM5', 135: 'RP5', 136: 'RS5', 1000: 'EM1', 1001: 'EM2', 1002: 'EM3', 1003: 'EM4', 1004: 'EM5', 1005: 'EM6', 1006: 'EM7', 1007: 'EM8', 1008: 'EM9', 1009: 'EP1', 1010: 'EP2', 1011: 'EP3', 1012: 'EP4', 1013: 'EP5', 1014: 'EP6', 1015: 'EP7', 1016: 'EP8', 1017: 'EP9', 1018: 'ES1', 1019: 'ES2', 1020: 'ES3', 1021: 'ES4', 1022: 'ES5', 1023: 'ES6', 1024: 'ES7', 1025: 'ES8', 1026: 'ES9', 1027: 'EZ1', 1028: 'EZ2', 1029: 'EZ3', 1030: 'EZ4', 1031: 'EZ5', 1032: 'EZ6', 1033: 'EZ7', 1034: 'ERM5', 1035: 'ERP5', 1036: 'ERS5' };
 const WIND_NUM_TO_KANJI = { 27: '東', 28: '南', 29: '西', 30: '北' };
-const ALL_TILES_IN_POOL = Object.keys(TILE_NUM_TO_IMAGE_KEY).map(Number);
+
+const TILE_NAME_MAP = {
+  M1: 'イーマン', M2: 'リャンマン', M3: 'サンマン', M4: 'スーマン', M5: 'ウーマン', M6: 'ローマン', M7: 'チーマン', M8: 'パーマン', M9: 'キュウマン', RM5: 'アカウーマン',
+  P1: 'イーピン', P2: 'リャンピン', P3: 'サンピン', P4: 'スーピン', P5: 'ウーピン', P6: 'ローピン', P7: 'チーピン', P8: 'パーピン', P9: 'キュウピン', RP5: 'アカウーピン',
+  S1: 'イーソウ', S2: 'リャンソウ', S3: 'サンソウ', S4: 'スーソウ', S5: 'ウーソウ', S6: 'ローソウ', S7: 'チーソウ', S8: 'パーソウ', S9: 'キュウソウ', RS5: 'アカウーソウ',
+  Z1: 'トン', Z2: 'ナン', Z3: 'シャー', Z4: 'ペー', Z5: 'ハク', Z6: 'ハツ', Z7: 'チュン', 
+  EM1: 'イーマン 誤検知の可能性あり', EM2: 'リャンマン 誤検知の可能性あり', EM3: 'サンマン 誤検知の可能性あり', EM4: 'スーマン 誤検知の可能性あり', EM5: 'ウーマン 誤検知の可能性あり', EM6: 'ローマン 誤検知の可能性あり', EM7: 'チーマン 誤検知の可能性あり', EM8: 'パーマン 誤検知の可能性あり', EM9: 'キュウマン 誤検知の可能性あり', ERM5: 'アカウーマン 誤検知の可能性あり',
+  EP1: 'イーピン 誤検知の可能性あり', EP2: 'リャンピン 誤検知の可能性あり', EP3: 'サンピン 誤検知の可能性あり', EP4: 'スーピン 誤検知の可能性あり', EP5: 'ウーピン 誤検知の可能性あり', EP6: 'ローピン 誤検知の可能性あり', EP7: 'チーピン 誤検知の可能性あり', EP8: 'パーピン 誤検知の可能性あり', EP9: 'キュウピン 誤検知の可能性あり', ERP5: 'アカウーピン 誤検知の可能性あり',
+  ES1: 'イーソウ 誤検知の可能性あり', ES2: 'リャンソウ 誤検知の可能性あり', ES3: 'サンソウ 誤検知の可能性あり', ES4: 'スーソウ 誤検知の可能性あり', ES5: 'ウーソウ 誤検知の可能性あり', ES6: 'ローソウ 誤検知の可能性あり', ES7: 'チーソウ 誤検知の可能性あり', ES8: 'パーソウ 誤検知の可能性あり', ES9: 'キュウソウ 誤検知の可能性あり', ERS5: 'アカウーソウ 誤検知の可能性あり',
+  EZ1: 'トン 誤検知の可能性あり', EZ2: 'ナン 誤検知の可能性あり', EZ3: 'シャー 誤検知の可能性あり', EZ4: 'ペー 誤検知の可能性あり', EZ5: 'ハク 誤検知の可能性あり', EZ6: 'ハツ 誤検知の可能性あり', EZ7: 'チュン 誤検知の可能性あり',
+};
+const ALL_TILES_IN_POOL = Array.from({ length: 37 }, (_, i) => i);
 
 // --- CSS定義 ---
 const styles = `
@@ -111,16 +120,30 @@ const styles = `
     transition: all 0.2s ease-in-out; cursor: pointer; 
   }
   .tile-wrapper:hover { transform: translateY(-5px); }
+  .tile-wrapper.rotated:hover { transform: translateY(-5px) rotate(90deg); }
   .tile-img { 
     display: block; background-color: #f0ead6; border-radius: 4px; 
     box-shadow: 0 2px 2px rgba(0,0,0,0.3); 
   }
   .tile-wrapper.selected { transform: translateY(-12px); }
+  .tile-wrapper.rotated.selected { transform: translateY(-12px) rotate(90deg); }
   .tile-wrapper.selected .tile-img { 
     border: 3px solid #00aaff; 
     box-shadow: 0 8px 15px rgba(50, 150, 255, 0.5); 
   }
+  
+  /* 和了牌選択モード中のスタイル */
+  .tile-wrapper.selecting-win {
+    animation: win-tile-pulse 1.5s infinite;
+  }
+  @keyframes win-tile-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
+  }
+
   .tile-pool .tile-wrapper:hover { transform: scale(1.1); }
+  .tile-pool .tile-wrapper.rotated:hover { transform: scale(1.1) rotate(90deg); }
   .empty-pool-tile {
     width: 45px; height: 65px; background-color: #7f8c8d;
     border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,0.3);
@@ -170,8 +193,17 @@ const styles = `
     background-color: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.3);
     border-radius: 3px; cursor: pointer;
   }
-  .discard-slot .tile-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-  .discard-slot .tile-wrapper .tile-img { width: 100%; height: 100%; }
+  .discard-slot .tile-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+  
+  .discard-slot .tile-wrapper:not(.rotated) .tile-img {
+    width: 100%;
+    height: auto;
+  }
+  .discard-slot .tile-wrapper.rotated .tile-img {
+    width: auto;
+    height: 100%;
+  }
+
   .dora-indicator-area { 
     margin: 15px ; display: flex; justify-content: start;
   }
@@ -246,6 +278,7 @@ const styles = `
   .modal-content {
     padding: 20px; border-radius: 8px;
     width: 640px; max-width: 90%;
+    background-color: #f0f0f0; border: 2px solid #000000ff;
   }
   .modal-header {
     font-size: 1.2em; font-weight: bold;
@@ -264,6 +297,31 @@ const styles = `
   .modal-cancel-button:hover { background-color: #c0392b; }
   .reset-button { font-family: "'Inter', sans-serif"; font-size: 0.8em; color: #ffffff; background-color: #dc3545; border: 1px solid #c82333; padding: 4px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; margin-left: 10px; }
   .reset-button:hover { background-color: #c82333; }
+
+  /* 和了牌確認用メッセージ */
+  .win-selection-banner {
+    background-color: #f1c40f;
+    color: #2c3e50;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+
+  /* --- 回転用のスタイル --- */
+  .tile-wrapper.rotated {
+    transform: rotate(90deg);
+  }
+  .other-player-meld-set .tile-wrapper.rotated {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+  .own-meld-set .tile-wrapper.rotated {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
 
   /* --- Theme Specific Styles --- */
   .theme-dark .tile-display-container, .theme-dark .tile-pool { background-color: #005522; }
@@ -309,9 +367,9 @@ const styles = `
   .theme-light .kan-type-label { color: #333; }
 `;
 
+
 // --- 子コンポーネント定義 ---
 const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) => {
-  // isSimulatorMode (true/false) に基づいてボタンのテキストを決定する
   const dynamicButtonText = isSimulatorMode ? '牌譜' : 'リアルタイムシミュレーター';  
 
   const buttonStyle = {
@@ -332,54 +390,51 @@ const StatusHeader = ({ title, onResetClick, isSimulatorMode, onModeChange }) =>
   );
 };
 
-const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical' }) => {
-  const getHorizontalTileNum = (verticalNum) => {
-    if (verticalNum === null || verticalNum === 'b' || verticalNum >= 100) return verticalNum;
-    return verticalNum + 100;
-  };
-  
-  const displayTileNum = orientation === 'horizontal' ? getHorizontalTileNum(tileNum) : tileNum;
+const Tile = ({ tileNum, size = 'hand', onClick, isSelected = false, orientation = 'vertical', showTooltips, isSelectingWinTile }) => {
+  const isRotated = (tileNum !== null && tileNum >= 100 && tileNum < 200) || orientation === 'horizontal';
 
-  if (displayTileNum === 'b') {
+  // 裏向きの牌('b')の処理
+  if (tileNum === 'b') {
     const sizeStyles = {
         hand: { width: '45px', height: '65px' },
         meld: { width: '45px', height: '65px' },
         other_meld: { width: '26px', height: '38px' },
     };
     return (
-      <div className={`tile-wrapper ${isSelected ? 'selected' : ''}`} onClick={onClick}>
+      <div 
+        className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''}`} 
+        onClick={onClick} 
+        title={showTooltips ? "裏向きの牌" : undefined} // 条件付きでtitle属性を設定
+      >
         <div style={{...sizeStyles[size], backgroundColor: '#005936', border: '2px solid #f0ead6', borderRadius: '4px', boxSizing: 'border-box'}} className="tile-img" />
       </div>
     );
   }
 
-  const imageKey = TILE_NUM_TO_IMAGE_KEY[displayTileNum] || 'b';
-  const src = TILE_IMAGES[imageKey];
-  const alt = TILE_NUM_TO_NAME[tileNum] || '不明'; 
+  const imageKey = TILE_NUM_TO_NAME[tileNum] || null;
+  const tileDisplayName = imageKey ? TILE_NAME_MAP[imageKey] || imageKey : '不明な牌';
+  const src = imageKey ? TILE_IMAGES[imageKey] : null;
   
+  if (!src) return null;
+
   const sizeStyles = {
     hand: { width: '45px', height: '65px' },
     tsumo: { width: '45px', height: '65px' },
-    discard: { width: '100%', height: '100%' },
     pool: { width: '45px', height: '65px' }, 
     dora: { width: '100%', height: '100%' },
-    meld: { 
-      vertical: { width: '45px', height: '65px' },
-      horizontal: { width: '65px', height: '45px' }
-    },
-    other_meld: { 
-      vertical: { width: '26px', height: '38px' },
-      horizontal: { width: '38px', height: '26px' }
-    }
+    meld: { width: '45px', height: '65px' },
+    other_meld: { width: '26px', height: '38px' }
   };
-
-  const finalSizeStyle = (size === 'meld' || size === 'other_meld')
-    ? sizeStyles[size][orientation]
-    : sizeStyles[size];
   
+  const finalSizeStyle = sizeStyles[size] || {};
+
   return (
-    <div className={`tile-wrapper ${isSelected ? 'selected' : ''}`} onClick={onClick}>
-        <img src={src} alt={alt} style={finalSizeStyle} className="tile-img" />
+    <div 
+      className={`tile-wrapper ${isSelected ? 'selected' : ''} ${isRotated ? 'rotated' : ''} ${isSelectingWinTile ? 'selecting-win' : ''}`} 
+      onClick={onClick} 
+      title={showTooltips ? tileDisplayName : undefined} // 条件付きでtitle属性を設定
+    >
+        <img src={src} alt={tileDisplayName} style={finalSizeStyle} className="tile-img" />
     </div>
   );
 };
@@ -390,7 +445,7 @@ const EmptyPoolTile = ({ onClick }) => (
   </div>
 );
 
-const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
+const DoraIndicatorArea = ({ indicators, onSlotClick, selection, settings }) => {
   const slots = Array(5).fill(null);
   indicators.forEach((tileNum, index) => { 
     if (index < 5) slots[index] = tileNum; 
@@ -401,7 +456,7 @@ const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
         {slots.map((tileNum, index) => (
           <div key={index} className="dora-slot" onClick={() => onSlotClick(index)}>
             {tileNum !== null ? (
-                <Tile tileNum={tileNum} size="dora" isSelected={selection.type === 'dora' && selection.index === index} />
+                <Tile tileNum={tileNum} size="dora" isSelected={selection.type === 'dora' && selection.index === index} showTooltips={settings.showTooltips}/>
             ) : (
                 selection.type === 'add_dora' && selection.index === index && <div className="selection-highlight"></div>
             )}
@@ -412,13 +467,12 @@ const DoraIndicatorArea = ({ indicators, onSlotClick, selection }) => {
   );
 };
 
-const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick }) => {
-    const maxDiscards = 21; 
+const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection, onTileClick, onAddSlotClick, onMeldTileClick, settings}) => {
+  const maxDiscards = 21; 
     const slots = Array(maxDiscards).fill(null);
     discards.forEach((tileNum, index) => {
         if (index < maxDiscards) slots[index] = tileNum;
     });
-
     return (
         <div className="player-display">
             <div className="player-label-container">
@@ -442,6 +496,7 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                             tileNum={finalTileNum} 
                             size="other_meld" 
                             orientation={isExposed ? 'horizontal' : 'vertical'}
+                            showTooltips={settings.showTooltips}
                           />
                         </div>
                     );
@@ -457,6 +512,7 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                                 <Tile
                                     tileNum={tileNum} size="discard"
                                     isSelected={selection.type === 'discard' && selection.playerKey === playerKey && selection.index === i}
+                                    showTooltips={settings.showTooltips}
                                 />
                             </div>
                         ) : ( selection.type === 'add_discard' && selection.playerKey === playerKey && <div className="selection-highlight"></div>)}
@@ -467,7 +523,7 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
     );
 };
 
-const OwnMeldArea = ({ melds, onMeldTileClick, selection }) => {
+const OwnMeldArea = ({ melds, onMeldTileClick, selection, settings }) => {
   return (
     <div className="own-melds-area">
       {melds.map((meld, meldIndex) => (
@@ -485,6 +541,7 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection }) => {
                   tileNum={finalTileNum} 
                   size="meld"
                   orientation={isExposed ? 'horizontal' : 'vertical'}
+                  showTooltips={settings.showTooltips}
                 />
               </div>
             );
@@ -495,7 +552,7 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection }) => {
   );
 };
 
-const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
+const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose, settings }) => {
   const [selectedMeldType, setSelectedMeldType] = useState('pon');
   
   const ponCandidates = candidates.filter(c => c.type === 'pon');
@@ -559,7 +616,7 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
             <div key={index} className="meld-candidate-item" onClick={() => onSelect(candidate)}>
               <div style={{display: 'flex'}}>
                 {getMeldDisplayTiles(candidate).sort((a,b) => a - b).map((tileNum, tileIndex) => (
-                      <Tile key={tileIndex} tileNum={tileNum} size="hand" />
+                      <Tile key={tileIndex} tileNum={tileNum} size="hand" showTooltips={settings.showTooltips}/>
                 ))}
               </div>
               {selectedMeldType === 'kan' && <span className="kan-type-label">{KAN_TYPE_LABELS[candidate.type]}</span>}
@@ -575,13 +632,48 @@ const MeldSelectionModal = ({ isOpen, candidates, onSelect, onClose }) => {
 };
 
 
-const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, settings = { theme: 'dark', fontSize: '14px', flag: 1 }, onModeChange }) => { 
+// 和了牌確認用ダイアログ
+const WinTileConfirmModal = ({ tileNum, onConfirm, onCancel, settings }) => {
+  if (tileNum === null) return null;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ width: '300px', textAlign: 'center' }}>
+        <div className="modal-header">この牌で和了しますか？</div>
+        <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>
+           <Tile tileNum={tileNum} size="hand" showTooltips={settings.showTooltips} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+          <button className="meld-button" onClick={onConfirm}>はい</button>
+          <button className="modal-cancel-button" onClick={onCancel}>いいえ</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+const TileDisplayArea = ({ 
+  boardState, 
+  onBoardStateChange, 
+  onResetBoardState, 
+  settings = { theme: 'dark', fontSize: '14px', flag: 1, showTooltips: true }, 
+  onModeChange, 
+  calculationError,
+  isSelectingWinTile, // 追加：和了牌選択モードフラグ
+  onWinTileConfirmed, // 追加：和了牌確定時コールバック
+  onCancelWinSelection // 追加：和了牌選択キャンセルコールバック
+}) => {
 
   const AKA_DORA_NUMS = [34, 35, 36];
   const NORMAL_TO_RED_MAP = { 4: 34, 13: 35, 22: 36 };
   const RED_TO_NORMAL_MAP = { 34: 4, 35: 13, 36: 22 };
   
-  const normalize = (n) => n === null ? null : RED_TO_NORMAL_MAP[n] ?? n;
+  const normalize = (n) => {
+      if (n === null || n === undefined) return null;
+      if (n >= 1000) return normalize(n - 1000); 
+      if (n >= 100) return normalize(n - 100);   
+      return (n in RED_TO_NORMAL_MAP) ? RED_TO_NORMAL_MAP[n] : n;
+  };
 
   const getCombinations = (array, size) => {
     const result = [];
@@ -600,7 +692,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   
   const isMeldValid = (type, tiles) => {
     if (!tiles || tiles.some(t => t === null || t === undefined)) return false;
-    const normalizedTiles = tiles.map(normalize).sort((a, b) => a - b);
+    const normalizedTiles = tiles.map(t => normalize(t)).sort((a, b) => a - b);
     if (type === 'pon' || type.includes('kan') || type.includes('minkan')) {
       return normalizedTiles.every(t => t === normalizedTiles[0]);
     }
@@ -617,11 +709,14 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
 
   const [selection, setSelection] = useState({ type: null });
   const [isMeldModalOpen, setIsMeldModalOpen] = useState(false);
+  const [tempWinTile, setTempWinTile] = useState(null); // 和了牌選択中の一時保存
 
   const findMeldCandidates = (currentBoardState) => {
     if (!currentBoardState) return [];
-
-    const { hand_tiles: hand, tsumo_tile: tsumoTile, melds: { self: selfMelds }, last_discard: lastDiscard } = currentBoardState;
+    const hand = currentBoardState.hand_tiles || [];
+    const tsumoTile = currentBoardState.tsumo_tile;
+    const selfMelds = (currentBoardState.melds && Array.isArray(currentBoardState.melds.self)) ? currentBoardState.melds.self : [];
+    const lastDiscard = currentBoardState.last_discard;
 
     const candidates = [];
     const fullHand = [...hand, tsumoTile].filter(t => t !== null);
@@ -646,7 +741,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 candidates.push({ type: 'daiminkan', hand_tiles: combo, from: lastDiscard.from, called_tile: discardedTile });
             });
         }
-        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && discardedTile < 27) {
+        if (lastDiscard.from === 'kamicha' && discardedTile !== undefined && discardedTile !== null && normalize(discardedTile) < 27) {
             const n = normalize(discardedTile);
             const suit = Math.floor(n / 9);
 
@@ -663,9 +758,9 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 }
             };
             
-            if (n >= 2) checkChiPattern(n - 2, n - 1);
-            if (n >= 1 && n <= 7) checkChiPattern(n - 1, n + 1);
-            if (n <= 6) checkChiPattern(n + 1, n + 2);
+            if (n % 9 >= 2) checkChiPattern(n - 2, n - 1);
+            if (n % 9 >= 1 && n % 9 <= 7) checkChiPattern(n - 1, n + 1);
+            if (n % 9 <= 6) checkChiPattern(n + 1, n + 2);
         }
     } else {
         for (const norm in normalizedGroups) {
@@ -706,8 +801,6 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         let hand = newBoardState.hand_tiles;
         let tsumo = newBoardState.tsumo_tile;
 
-        console.log("Attempting to make meld:", meldToMake);
-        
         const removeTilesFromHand = (tilesToRemove) => {
             for (const tile of tilesToRemove) {
                 const indexInHand = hand.findIndex(h => h === tile);
@@ -725,15 +818,15 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         if (meldToMake.type === 'kakan') {
             const meldToUpdate = newBoardState.melds.self[meldToMake.from_meld_index];
             if(removeTilesFromHand(meldToMake.tiles)) {
-                meldToUpdate.type = 'minkan'; 
+                meldToUpdate.type = 'minkan'; // 加槓もminkanとして扱う
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
-                meldToUpdate.tiles.sort((a, b) => a - b);
+                meldToUpdate.tiles.sort((a, b) => (a % 100) - (b % 100));
             }
         } else if (meldToMake.type === 'ankan') {
             if(removeTilesFromHand(meldToMake.tiles)) {
                 newBoardState.melds.self.push({ type: 'ankan', tiles: meldToMake.tiles, from: 'self' });
             }
-        } else if (meldToMake.from) { 
+        } else if (meldToMake.from) { // ポン、チー、大明槓の処理
             const fromPlayer = meldToMake.from;
             const calledTile = meldToMake.called_tile; 
 
@@ -742,15 +835,19 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 const discardIndex = discardPile.lastIndexOf(calledTile); 
                 if(discardIndex > -1) discardPile.splice(discardIndex, 1);
 
-                const meldTiles = [...meldToMake.hand_tiles, calledTile].sort((a,b)=>a-b);
+                const exposedTile = calledTile + 100;
+                // const exposedTile = calledTile
+
+                const meldTiles = [...meldToMake.hand_tiles, exposedTile].sort((a,b) => (a % 100) - (b % 100));
+                
                 let exposed_index;
                 if (meldToMake.type === 'chi') {
-                    exposed_index = meldTiles.findIndex(t => t === calledTile);
-                } else { 
+                    exposed_index = meldTiles.findIndex(t => t === exposedTile);
+                } else { // ★★★ 修正箇所: ポンと大明槓のロジックを共通化 ★★★
                     if (fromPlayer === 'kamicha') exposed_index = 0; 
                     else if (fromPlayer === 'toimen') exposed_index = 1; 
                     else if (fromPlayer === 'shimocha') exposed_index = 2; 
-                    else exposed_index = 0; 
+                    else exposed_index = 0;
                 }
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
@@ -852,35 +949,21 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
       if (indexToRemove > -1) tempBoard.splice(indexToRemove, 1);
     }
     
-    const countInBoard = (tile) => tempBoard.filter(t => t === tile).length;
+    const countInBoard = (tile) => tempBoard.filter(t => normalize(t) === normalize(tile)).length;
+    const countRedInBoard = (redTile) => tempBoard.filter(t => t === redTile || t === redTile + 100).length;
+
+    const normNewTile = normalize(newTileNum);
     
-    if (AKA_DORA_NUMS.includes(newTileNum)) {
-        if (countInBoard(newTileNum) >= 1) {
+    if (AKA_DORA_NUMS.includes(normNewTile)) {
+        if (countRedInBoard(normNewTile) >= 1) {
             alert("赤ドラは各種1枚までしか使用できません。");
             return;
         }
-        const normalVersion = RED_TO_NORMAL_MAP[newTileNum];
-        if (countInBoard(newTileNum) + countInBoard(normalVersion) >= 4) {
-            alert("同じ牌（赤含む）は4枚までしか使用できません。");
-            return;
-        }
     }
-    else if (NORMAL_TO_RED_MAP[newTileNum]) {
-        if (countInBoard(newTileNum) >= 3) {
-            alert(`通常の${TILE_NUM_TO_NAME[newTileNum]}は3枚までしか使用できません。`);
-            return;
-        }
-        const redVersion = NORMAL_TO_RED_MAP[newTileNum];
-        if (countInBoard(newTileNum) + countInBoard(redVersion) >= 4) {
-            alert("同じ牌（赤含む）は4枚までしか使用できません。");
-            return;
-        }
-    }
-    else {
-        if (countInBoard(newTileNum) >= 4) {
-            alert(`${TILE_NUM_TO_NAME[newTileNum]} は4枚までしか使用できません。`);
-            return;
-        }
+    
+    if (countInBoard(newTileNum) >= 4) {
+      alert(`${TILE_NUM_TO_NAME[normNewTile]} は4枚までしか使用できません。`);
+      return;
     }
     
     switch (selection.type) {
@@ -930,6 +1013,17 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
   };
   
   const handleTileClick = (type, index, playerKey = 'self', options = {}) => {
+      // ▼▼▼ 和了牌選択モード中の処理を追加 ▼▼▼
+      if (isSelectingWinTile) {
+          if (type === 'hand') {
+              setTempWinTile(sortedHand[index]);
+          } else if (type === 'tsumo') {
+              setTempWinTile(boardState.tsumo_tile);
+          }
+          return;
+      }
+      // ▲▲▲ ここまで ▲▲▲
+
       if (!boardState) return;
       const newSelection = {type, index, playerKey, ...options};
       
@@ -1011,6 +1105,18 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
 
   const MAX_HAND_SLOTS = 13;
   const numMelds = boardState.melds.self.length;
+
+  const errorStyle = {
+    color: '#ff4d4d',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    border: '1px solid #ff4d4d',
+    borderRadius: '4px',
+    padding: '10px',
+    marginTop: '10px',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: '0.9em'
+  };
   
   return (
     <>
@@ -1020,12 +1126,38 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
         candidates={meldCandidates}
         onSelect={handleSelectMeld}
         onClose={() => setIsMeldModalOpen(false)}
+        settings={settings}
       />
+      
+      {/* 和了牌確認ダイアログ */}
+      <WinTileConfirmModal 
+        tileNum={tempWinTile} 
+        onConfirm={() => {
+            onWinTileConfirmed(tempWinTile);
+            setTempWinTile(null);
+        }} 
+        onCancel={() => setTempWinTile(null)}
+        settings={settings}
+      />
+
       <div 
         className={`tile-display-container theme-${settings.theme}`}
         style={{ fontSize: settings.fontSize }}
       >
-        {selection.type && (
+        {/* 和了牌選択モード中のバナー */}
+        {isSelectingWinTile && (
+            <div className="win-selection-banner">
+                和了牌（あがり牌）を選択してください。
+                <button 
+                    onClick={onCancelWinSelection} 
+                    style={{ marginLeft: '15px', padding: '2px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer', backgroundColor: '#e74c3c', color: 'white' }}
+                >
+                    キャンセル
+                </button>
+            </div>
+        )}
+
+        {selection.type && !isSelectingWinTile && (
           <div className="tile-pool">
             <button className="tile-pool-close-button" onClick={() => setSelection({ type: null })}>×</button>
             {!selection.type.startsWith('add_') && <EmptyPoolTile onClick={() => handlePoolTileClick(null)} />}
@@ -1035,6 +1167,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 tileNum={tileNum} 
                 size="pool" 
                 onClick={() => handlePoolTileClick(tileNum)} 
+                showTooltips={settings.showTooltips}
               />
             )}
           </div>
@@ -1044,16 +1177,16 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
             <StatusHeader 
               title={headerTitle} 
               onResetClick={handleClearAll}
-              isSimulatorMode={settings.flag === 1} // flagが1ならtrue、それ以外ならfalseを渡す
+              isSimulatorMode={settings.flag === 1}
               onModeChange={onModeChange}
             />
             
-            <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} />
+            <DoraIndicatorArea indicators={boardState.dora_indicators} onSlotClick={(index) => handleTileClick(boardState.dora_indicators[index] !== undefined ? 'dora' : 'add_dora', index)} selection={selection} settings={settings}/>
             <div className="upper-game-area">
-              <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="shimocha" label="下家" subLabel={playerWindNames.shimocha} discards={boardState.player_discards.shimocha} melds={boardState.melds.shimocha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'shimocha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="toimen" label="対面" subLabel={playerWindNames.toimen} discards={boardState.player_discards.toimen} melds={boardState.melds.toimen} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'toimen'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
-              <PlayerDisplay playerKey="kamicha" label="上家" subLabel={playerWindNames.kamicha} discards={boardState.player_discards.kamicha} melds={boardState.melds.kamicha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'kamicha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })}/>
+              <PlayerDisplay playerKey="self" label="自" subLabel={playerWindNames.self} discards={boardState.player_discards.self} melds={boardState.melds.self} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'self'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="shimocha" label="下家" subLabel={playerWindNames.shimocha} discards={boardState.player_discards.shimocha} melds={boardState.melds.shimocha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'shimocha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="toimen" label="対面" subLabel={playerWindNames.toimen} discards={boardState.player_discards.toimen} melds={boardState.melds.toimen} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'toimen'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
+              <PlayerDisplay playerKey="kamicha" label="上家" subLabel={playerWindNames.kamicha} discards={boardState.player_discards.kamicha} melds={boardState.melds.kamicha} selection={selection} onTileClick={(playerKey, index) => handleTileClick('discard', index, playerKey)} onAddSlotClick={() => setSelection({type: 'add_discard', playerKey: 'kamicha'})} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} settings={settings}/>
             </div>
             <div className="own-hand-area">
               <div className="hand-controls">
@@ -1063,7 +1196,7 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                   <button
                       className="meld-button"
                       onClick={() => setIsMeldModalOpen(true)}
-                      disabled={meldCandidates.length === 0}
+                      disabled={meldCandidates.length === 0 || isSelectingWinTile}
                       title={meldCandidates.length > 0 ? "鳴き候補を選択" : "鳴ける牌がありません"}
                   >
                       鳴く
@@ -1073,12 +1206,18 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                 <div className="hand-tiles-container">
                   {sortedHand.map((tileNum, i) => (
                     <div key={`hand-tile-${i}`} className="hand-tile" onClick={() => handleTileClick('hand', i)}>
-                      <Tile tileNum={tileNum} size="hand" isSelected={selection.type === 'hand' && selection.index === i} />
+                      <Tile 
+                        tileNum={tileNum} 
+                        size="hand" 
+                        isSelected={selection.type === 'hand' && selection.index === i} 
+                        showTooltips={settings.showTooltips}
+                        isSelectingWinTile={isSelectingWinTile} // 追加
+                      />
                     </div>
                   ))}
 
                   {[...Array(Math.max(0, (MAX_HAND_SLOTS - numMelds * 3) - sortedHand.length))].map((_, i) => (
-                    <div key={`empty-slot-${i}`} className="hand-tile" onClick={() => setSelection({ type: 'add_hand' })}>
+                    <div key={`empty-slot-${i}`} className="hand-tile" onClick={() => !isSelectingWinTile && setSelection({ type: 'add_hand' })}>
                       <div className="empty-slot">
                         {selection.type === 'add_hand' && <div className="selection-highlight"></div>}
                       </div>
@@ -1087,19 +1226,32 @@ const TileDisplayArea = ({ boardState, onBoardStateChange, onResetBoardState, se
                   <div className="tsumo-tile">
                     {boardState.tsumo_tile !== null ? (
                       <div onClick={() => handleTileClick('tsumo')} style={{cursor: 'pointer'}}>
-                        <Tile tileNum={boardState.tsumo_tile} size="tsumo" isSelected={selection.type === 'tsumo'} />
+                        <Tile 
+                            tileNum={boardState.tsumo_tile} 
+                            size="tsumo" 
+                            isSelected={selection.type === 'tsumo'} 
+                            showTooltips={settings.showTooltips}
+                            isSelectingWinTile={isSelectingWinTile} // 追加
+                        />
                       </div>
                     ) : (
                       (sortedHand.length + numMelds * 3) < 14 && 
-                      <div className="empty-slot" onClick={() => setSelection({ type: 'add_tsumo' })}>
+                      <div className="empty-slot" onClick={() => !isSelectingWinTile && setSelection({ type: 'add_tsumo' })}>
                         {selection.type === 'add_tsumo' && <div className="selection-highlight"></div>}
                       </div>
                     )}
                   </div>
                 </div>
-                <OwnMeldArea melds={boardState.melds.self} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} selection={selection}/>
+                <OwnMeldArea melds={boardState.melds.self} onMeldTileClick={(playerKey, meldIndex, tileIndex) => handleTileClick('meld', tileIndex, playerKey, { meldIndex })} selection={selection} settings={settings}/>
               </div>
             </div>
+            
+            {calculationError && (
+              <div style={errorStyle}>
+                {calculationError}
+              </div>
+            )}
+
           </div>
         </div>
       </div>
