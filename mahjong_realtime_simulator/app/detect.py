@@ -5,9 +5,8 @@ import cv2
 import numpy as np
 import math
 import os
-from ultralytics import YOLO    # YOLOv8のライブラリ
+import onnxruntime as ort # onnxruntimeに変更
 from django.conf import settings
-import torch
 from .meld_sep import melded_tiles_sep # meld_sep.pyからインポート
 from .result_check import result_check_main # result_check.pyからインポート
 
@@ -15,14 +14,15 @@ from .result_check import result_check_main # result_check.pyからインポー�
 
 
 # ローカルモデルのパスを指定
-LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver2.onnx") # onnxに変更
+LOCAL_YOLO_MODEL_PATH = os.path.join(settings.PT_ROOT, "yolov8-best-ver3-1.onnx") # onnxに変更
 # LOCAL_YOLO_MODEL_PATH = os.path.join("yolov8-best-ver2.onnx")
 
 # 検出閾値（YOLOv8の推論時に指定）
 DETECTION_CONFIDENCE_THRESHOLD = 0.5
+iou_threshold = 0.4
 
-global gpu_flg
-gpu_flg = 0
+# YOLOv8の入力サイズ
+INPUT_SHAPE = (640, 640)
 
 # 牌種類変換表
 tile_convert = {
@@ -60,31 +60,41 @@ tile_convert = {
     10: 28, # 南 (2z)
     22: 31, # 白 (5z)
     14: 29, # 西 (3z)
+    0: 34, # 5萬 (赤)
+    1: 35, # 5筒 (赤)
+    2: 36, # 5索 (赤)
 }
 
-# 赤ドラ用の新しいIDマッピングを追加
-red_dora_id_map = {
-    # YOLOのclass_id: 新しい麻雀牌ID
-    19: 34, # 5萬 (赤) (YOLOの5萬のIDが19)
-    20: 35, # 5筒 (赤) (YOLOの5筒のIDが20)
-    21: 36, # 5索 (赤) (YOLOの5索のIDが21)
-}
+# 赤ドラ用の新しいIDマッピングを追加 (旧コードはコメントアウト)
+# red_dora_id_map = {
+#     # YOLOのclass_id: 新しい麻雀牌ID
+#     19: 34, # 5萬 (赤) (YOLOの5萬のIDが19)
+#     20: 35, # 5筒 (赤) (YOLOの5筒のIDが20)
+#     21: 36, # 5索 (赤) (YOLOの5索のIDが21)
+# }
 
 
-# グローバル変数としてYOLOモデルをロードしておく
-_yolo_model = None
+# グローバル変数としてONNXセッションを保持
+_ort_session = None
 
 def _load_yolo_model():
     """指定されたパスからYOLOv8モデルをロードし、グローバル変数に格納する。"""
-    global _yolo_model
-    if _yolo_model is None:
+    global _ort_session
+    if _ort_session is None:
         if not os.path.exists(LOCAL_YOLO_MODEL_PATH):
             raise FileNotFoundError(f"YOLO model not found at: {LOCAL_YOLO_MODEL_PATH}. Please ensure the path is correct.")
         try:
-            _yolo_model = YOLO(LOCAL_YOLO_MODEL_PATH)
+            # GPUが使える場合はCUDA、使えない場合はCPUを使用する
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            # 使用可能なプロバイダを確認して設定
+            available_providers = ort.get_available_providers()
+            if 'CUDAExecutionProvider' not in available_providers:
+                providers = ['CPUExecutionProvider']
+
+            _ort_session = ort.InferenceSession(LOCAL_YOLO_MODEL_PATH, providers=providers)
         except Exception as e:
             raise RuntimeError(f"Failed to load YOLO model from {LOCAL_YOLO_MODEL_PATH}: {e}")
-    return _yolo_model
+    return _ort_session
 
 def check_red_color_with_percentage(image_np: np.ndarray, red_pixel_threshold_percent=12) -> bool:
     """NumPy配列画像内の赤色の割合を計算し、しきい値以上ならTrueを返す関数。"""
@@ -112,6 +122,58 @@ def check_red_color_with_percentage(image_np: np.ndarray, red_pixel_threshold_pe
     return red_percentage >= red_pixel_threshold_percent
 
 
+def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=False, scaleFill=False, scaleup=True):
+    """画像をアスペクト比を維持したままリサイズし、パディングを追加する（YOLOの前処理用）。"""
+    shape = img.shape[:2] # 現在の形状 [高さ, 幅]
+    if isinstance(new_shape, int):
+        new_shape = (new_shape, new_shape)
+
+    # スケール比を計算
+    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+    if not scaleup:  # 小さい画像のスケールアップを防止
+        r = min(r, 1.0)
+
+    # パディングを計算
+    ratio = r, r 
+    new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1] 
+
+    # 自動パディング調整
+    if auto: 
+        dw, dh = np.mod(dw, 32), np.mod(dh, 32)
+    elif scaleFill:
+        dw, dh = 0.0, 0.0
+        new_unpad = (new_shape[1], new_shape[0])
+        ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]
+
+    dw /= 2
+    dh /= 2
+
+    if shape[::-1] != new_unpad:
+        img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
+
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color) 
+    return img, ratio, (dw, dh)
+
+
+def preprocess_image(img):
+    """画像をONNX Runtime入力用に前処理する"""
+    # レターボックス処理（アスペクト比維持リサイズ）
+    image, ratio, dwdh = letterbox(img, new_shape=INPUT_SHAPE, auto=False)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = image.transpose(2, 0, 1)
+    image = np.expand_dims(image, axis=0)
+    image = np.ascontiguousarray(image) # メモリを連続化（ONNX Runtimeの要件）
+    
+    # float32に変換し、0-1に正規化（YOLOv8の入力仕様）
+    image = image.astype(np.float32)
+    image /= 255.0
+    
+    return image, ratio, dwdh
+
+
 # tile_detection関数をローカル推論用に置き換える
 def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
     """画像内の麻雀牌をローカルのYOLOv8モデルで検出し、その座標情報を含めて返します。
@@ -133,6 +195,7 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
     # モデルがロードされているか確認し、ロードされていなければロードする
     try:
         model = _load_yolo_model()
+        print(f"使用デバイス: {model.get_providers()[0]}")
     except (FileNotFoundError, RuntimeError) as e:
         # モデルロードに失敗した場合、ValueErrorを発生させる
         raise ValueError(f"Model loading failed: {e}") from e
@@ -145,21 +208,62 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
     if image_np.ndim != 3 or image_np.shape[2] != 3:
         raise ValueError("Input image_np must be a BGR image with 3 channels.")
 
-    # GPU使用設定
-    global gpu_flg
-    global device
+    # 前処理
+    input_tensor, ratio, (pad_w, pad_h) = preprocess_image(image_np)
 
-    if gpu_flg == 0:
-        if torch.cuda.is_available():
-            device = "cuda"
-        else:
-            device = "cpu"
+    # 推論
+    input_name = model.get_inputs()[0].name
+    outputs = model.run(None, {input_name: input_tensor})
 
-        gpu_flg = 1
+    prediction = outputs[0][0]
+    prediction = prediction.transpose()
 
-    # YOLOv8モデルで推論を実行する
-    # verbose=Falseで推論時のコンソール出力を抑制
-    results = model.predict(source=image_np, conf=DETECTION_CONFIDENCE_THRESHOLD, verbose=False, device=device)
+    # 検出結果の解析
+    x = prediction[:, 0]
+    y = prediction[:, 1]
+    w = prediction[:, 2]
+    h = prediction[:, 3]
+
+    # クラススコア
+    scores = prediction[:, 4:]
+
+    # 最大スコアとクラスIDの取得
+    max_scores = np.max(scores, axis=1)
+    max_indices = np.argmax(scores, axis=1)
+
+    # しきい値以上の検出をフィルタリング
+    mask = max_scores >= DETECTION_CONFIDENCE_THRESHOLD
+
+    filtered_x = x[mask]
+    filtered_y = y[mask]
+    filtered_w = w[mask]
+    filtered_h = h[mask]
+    filtered_scores = max_scores[mask]
+    filtered_class_ids = max_indices[mask]
+
+    # NMS用のボックスリストの作成
+    nms_boxes = []
+    nms_confidences = []
+    nms_class_ids = []
+
+    for i in range(len(filtered_scores)):
+        cx = (filtered_x[i] - pad_w) / ratio[0]
+        cy = (filtered_y[i] - pad_h) / ratio[1]
+        width = filtered_w[i] / ratio[0]
+        height = filtered_h[i] / ratio[1]
+
+        # 左上座標に変換
+        left = int(cx - width / 2)
+        top = int(cy - height / 2)
+        w_int = int(width)
+        h_int = int(height)
+
+        nms_boxes.append([left, top, w_int, h_int])
+        nms_confidences.append(float(filtered_scores[i]))
+        nms_class_ids.append(int(filtered_class_ids[i]))
+
+    # NMS（非最大値抑制）を適用
+    indices = cv2.dnn.NMSBoxes(nms_boxes, nms_confidences, DETECTION_CONFIDENCE_THRESHOLD, iou_threshold)
 
     detected_tiles = []
 
@@ -168,29 +272,25 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
         debug_image = image_np.copy()
 
     # 推論結果の処理
-    if results and len(results) > 0:
-        result = results[0] # 各画像に対する検出結果
-        
-        # YOLOv8の検出結果から必要な情報を抽出する
-        boxes = result.boxes
-        
-        for box in boxes:
-            # バウンディングボックスの座標を Roboflow 形式 (center_x, center_y, width, height) に変換
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            center_x = (x1 + x2) / 2
-            center_y = (y1 + y2) / 2
-            width = x2 - x1
-            height = y2 - y1
-
+    if len(indices) > 0:
+        for i in indices.flatten():
+            box = nms_boxes[i]
+            confidence = round(nms_confidences[i], 2)
+            class_id = nms_class_ids[i]
+            
+            x1, y1, width, height = box
+            x2 = x1 + width
+            y2 = y1 + height
+            
+            # 中心座標 (結果返却用)
+            center_x = x1 + width / 2
+            center_y = y1 + height / 2
+            
             # 縦横比のチェック
             if width > height:
                 orientation = "landscape"
             else:
                 orientation = "portrait"
-
-            # 信頼度は小数点以下2桁で取得
-            confidence = round(float(box.conf[0]), 2)
-            class_id = int(box.cls[0]) # モデルが出力するクラスID
 
             # debug用に検出情報をコンソールに出力
             if debug:
@@ -198,24 +298,25 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
 
             # 変換表に存在しないclass_idは無視
             if class_id in tile_convert:
-                # 5萬、5筒、5索の場合、赤ドラ判定を行う
-                if class_id in [19, 20, 21]: # 5萬、5筒、5索のYOLO class_id
-                    # 牌のバウンディングボックスを切り出す
-                    x_min, y_min = int(x1), int(y1)
-                    x_max, y_max = int(x2), int(y2)
-                    cropped_tile_image = image_np[y_min:y_max, x_min:x_max]
-
-                    if check_red_color_with_percentage(cropped_tile_image):
-                        # 赤ドラであれば、専用のclass_idに変換
-                        converted_tile = red_dora_id_map.get(class_id, tile_convert[class_id])
-                    else:
-                        converted_tile = tile_convert[class_id]
-                else:
-                    converted_tile = tile_convert[class_id]
+                converted_tile = tile_convert[class_id]
                 
+                # 5萬、5筒、5索の場合、赤ドラ判定を行う (旧コードはコメントアウト)
+                # if class_id in [19, 20, 21]: 
+                #     # バウンディングボックスを画像範囲内に収める
+                #     img_h, img_w = image_np.shape[:2]
+                #     clip_x1 = max(0, x1)
+                #     clip_y1 = max(0, y1)
+                #     clip_x2 = min(img_w, x2)
+                #     clip_y2 = min(img_h, y2)
+                    
+                #     if clip_x2 > clip_x1 and clip_y2 > clip_y1:
+                #         cropped_tile_image = image_np[int(clip_y1):int(clip_y2), int(clip_x1):int(clip_x2)]
+                #         if check_red_color_with_percentage(cropped_tile_image):
+                #             converted_tile = red_dora_id_map.get(class_id, tile_convert[class_id])
+
                 detected_tiles.append({
                     "confidence": confidence,
-                    "class_id": converted_tile, # 変換後のclass_idを格納
+                    "class_id": converted_tile,
                     "x": center_x,
                     "y": center_y,
                     "width": width,
@@ -232,7 +333,7 @@ def tile_detection(image_np: np.ndarray, debug: bool = False) -> list:
                     text = f"{class_id}: {confidence:.2f}" 
                     cv2.putText(debug_image, text, (int(x1), int(y1) - 10), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0), 1) 
-    
+
     # デバッグモードがTrueの場合、検出後の画像を保存
     if debug and len(detected_tiles) > 0: # 何か検出された場合のみ保存 
         # 保存フォルダが存在しない場合は作成
@@ -465,7 +566,7 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
     }
 
     # 信頼度用の辞書を初期化
-    discard_confs_bty_player_zone = {
+    discard_confs_by_player_zone = {
         "discard_tiles_bottom": [],  # 自分（画面下部）
         "discard_tiles_right": [],   # 下家（画面右側）
         "discard_tiles_top": [],     # 対面（画面上部）
@@ -474,7 +575,7 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
 
     # クロップ処理からの返り値が辞書でない場合にエラーを発生させるのではなく、空の辞書を返すように変更
     if not isinstance(cropped_discard_areas_dict, dict):
-        return discard_by_player_zone
+        return discard_by_player_zone, discard_confs_by_player_zone
 
     # crop_discard_detection.py のキーとこの関数のキーのマッピング
     player_zone_key_map = {
@@ -509,45 +610,43 @@ def discard_detection(board_image_np: np.ndarray) -> dict:
         # ローカルモデルで牌検出を実行
         detection_results = tile_detection(current_img_for_detection)
 
-        # Y軸で3つのゾーンに分割
-        height = current_img_for_detection.shape[0]
-        zone1_limit = height / 3
-        zone2_limit = 2 * height / 3
-        zone1_tiles = []
-        zone2_tiles = []
-        zone3_tiles = []
-        for rd in detection_results:
-            y_coord = rd["y"]
-            if y_coord <= zone1_limit:
-                zone1_tiles.append(rd)
-            elif y_coord <= zone2_limit:
-                zone2_tiles.append(rd)
-            else:
-                zone3_tiles.append(rd)
-        
-        # 各ゾーン内でX座標でソート
-        zone1_tiles = sorted(zone1_tiles, key=lambda r: r["x"])
-        zone2_tiles = sorted(zone2_tiles, key=lambda r: r["x"])
-        zone3_tiles = sorted(zone3_tiles, key=lambda r: r["x"])
-        # ソートされた全牌リストを作成
-        detection_results = zone1_tiles + zone2_tiles + zone3_tiles
+        detection_results.sort(key=lambda r: r["y"])
 
-        # 検出された牌のIDを抽出し、現在のプレイヤーゾーンのリストに追加
-        current_zone_ids = []
-        current_zone_confs = []
+        rows = []
 
-        for rd in detection_results:
-            current_zone_ids.append(rd["class_id"])
-            current_zone_confs.append(rd["confidence"])
+        if detection_results:
+            current_row = [detection_results[0]]
+            # 隣り合う牌のY座標差が10以内なら同じ行とみなす
+            Y_THRESHOLD = 10
 
-            # 横向きの場合、IDに100を加算する
+            for i in range(1, len(detection_results)):
+                if detection_results[i]["y"] - detection_results[i - 1]["y"] <= Y_THRESHOLD:
+                    current_row.append(detection_results[i])
+                else:
+                    rows.append(current_row)
+                    current_row = [detection_results[i]]
+            rows.append(current_row)
+
+        sorted_results = []
+        for row in rows:
+            row.sort(key=lambda r: r["x"])
+            sorted_results.extend(row)
+
+        # IDと信頼度を分離
+        final_ids = []
+        final_confs = []
+        for rd in sorted_results:
+            tile_id = rd["class_id"]
             if rd.get("orientation") == "landscape":
-                current_zone_ids[-1] += 100
+                tile_id += 100
 
-        discard_by_player_zone[player_zone_actual_key] = current_zone_ids
-        discard_confs_bty_player_zone[player_zone_actual_key] = current_zone_confs
+            final_ids.append(tile_id)
+            final_confs.append(rd["confidence"])
 
-    return discard_by_player_zone, discard_confs_bty_player_zone
+        discard_by_player_zone[player_zone_actual_key] = final_ids
+        discard_confs_by_player_zone[player_zone_actual_key] = final_confs
+
+    return discard_by_player_zone, discard_confs_by_player_zone
 
 def hand_detection(hand_image_np: np.ndarray) -> list:
     """手牌の画像から手牌を検出し、その種類（ID）のリストを返します。

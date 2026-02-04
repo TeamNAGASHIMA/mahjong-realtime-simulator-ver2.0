@@ -30,6 +30,7 @@ export const Header = ({ onMenuClick }) => {
 
   const menuItems = [
     { label: '設定', key: 'settings' },
+    { label: 'ゲーム設定', key: 'gameSettings' }, 
     { label: 'カメラ', key: 'camera' },
     { label: '表示', key: 'display' },
   ];
