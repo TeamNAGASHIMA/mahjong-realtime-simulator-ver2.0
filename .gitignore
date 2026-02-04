@@ -186,3 +186,6 @@ mahjong_realtime_simulator/mahjong-cpp/
 
 # log.txt
 mahjong_realtime_simulator/log.txt
+
+mahjong_realtime_simulator/electron-app/mahjong-cpp
+mahjong_realtime_simulator/electron-app/backend
