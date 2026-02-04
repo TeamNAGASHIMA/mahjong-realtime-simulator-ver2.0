@@ -67,31 +67,33 @@ const styles = {
   },
 };
 
-// ★★★ 修正: Props名を currentTurn, kifuData に変更 ★★★
-const TurnSelector = ({ currentTurn, kifuData, onTurnChange }) => {
+// ★★★ 修正: Propsを currentIndex (何手目か) と onIndexChange に変更 ★★★
+// 親コンポーネントでは、stateとして「現在のインデックス(0始まり)」を管理してください。
+const TurnSelector = ({ currentIndex, kifuData, onIndexChange }) => {
   const [isHovered, setIsHovered] = useState({ left: false, right: false });
 
   const isDisabled = !kifuData || kifuData.length === 0;
 
-  // ★★★ 修正: 現在の巡目に対応するkifuDataのインデックスを探す ★★★
-  const currentIndex = isDisabled ? -1 : kifuData.findIndex(item => item.turn === currentTurn);
+  // ★★★ 修正: findIndexは不要。propsのcurrentIndexをそのまま信用する ★★★
+  // const currentIndex = isDisabled ? -1 : kifuData.findIndex(item => item.turn === currentTurn);
 
   const handleDecrement = () => {
-    // ★★★ 修正: 一つ前の巡目に変更する ★★★
+    // ★★★ 修正: インデックスを減らす ★★★
     if (currentIndex > 0) {
-      onTurnChange(kifuData[currentIndex - 1].turn);
+      onIndexChange(currentIndex - 1);
     }
   };
 
   const handleIncrement = () => {
-    // ★★★ 修正: 一つ先の巡目に変更する ★★★
+    // ★★★ 修正: インデックスを増やす ★★★
     if (currentIndex < kifuData.length - 1) {
-      onTurnChange(kifuData[currentIndex + 1].turn);
+      onIndexChange(currentIndex + 1);
     }
   };
 
   const handleSelectChange = (e) => {
-    onTurnChange(Number(e.target.value));
+    // ★★★ 修正: 選択されたインデックスを渡す ★★★
+    onIndexChange(Number(e.target.value));
   };
 
   const handleMouseOver = (button) => setIsHovered(prev => ({ ...prev, [button]: true }));
@@ -102,7 +104,6 @@ const TurnSelector = ({ currentTurn, kifuData, onTurnChange }) => {
       <button
         style={{
           ...styles.arrowButton,
-          // ★★★ 修正: インデックスで判定 ★★★
           ...(isDisabled || currentIndex <= 0 ? styles.arrowButtonDisabled : {}),
           ...(isHovered.left && !isDisabled && currentIndex > 0 && { backgroundColor: '#a569bd' })
         }}
@@ -118,14 +119,14 @@ const TurnSelector = ({ currentTurn, kifuData, onTurnChange }) => {
         <select
           id="turn-select"
           style={styles.select}
-          // ★★★ 修正: valueには現在の巡目(turn)を直接入れる ★★★
-          value={currentTurn}
+          // ★★★ 修正: valueにはインデックスを使用 ★★★
+          value={currentIndex}
           onChange={handleSelectChange}
           disabled={isDisabled}
         >
           {kifuData && kifuData.map((item, index) => (
-            // ★★★ 修正: valueには巡目(turn)を入れる ★★★
-            <option key={index} value={item.turn} style={{color: 'black'}}>
+            // ★★★ 修正: valueにindex(一意な値)を設定 ★★★
+            <option key={index} value={index} style={{color: 'black'}}>
               {`${index + 1}手目 (${item.turn}巡)`}
             </option>
           ))}

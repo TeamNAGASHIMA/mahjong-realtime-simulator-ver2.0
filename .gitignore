@@ -187,4 +187,5 @@ mahjong-cpp/
 # log.txt
 mahjong_realtime_simulator/log.txt
 
-!run_Django.spec
+mahjong_realtime_simulator/electron-app/mahjong-cpp
+mahjong_realtime_simulator/electron-app/backend

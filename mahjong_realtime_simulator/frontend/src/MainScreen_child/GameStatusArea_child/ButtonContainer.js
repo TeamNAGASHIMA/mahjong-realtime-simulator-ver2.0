@@ -35,10 +35,11 @@ const ButtonContainer = ({
   onRecordingFunction,
   onSendRecordingData,
   isSaving,
-  // ★★★ TurnSelector用のProps ★★★
+  // ★★★ 修正: 親から受け取るProps名を変更 (Turn -> Index) ★★★
+  // ここで受け取るのは「配列のインデックス(0, 1, 2...)」になります
   selectedKifuData,
-  currentKifuTurn,
-  onKifuTurnChange
+  currentKifuIndex,      // 旧: currentKifuTurn
+  onKifuIndexChange      // 旧: onKifuTurnChange
 }) => {
 
   // 牌譜モード かつ データがある場合にターンセレクターを表示する
@@ -53,10 +54,11 @@ const ButtonContainer = ({
       <div style={recordButtonWrapperStyles}>
         {showTurnSelector ? (
           /* 牌譜モード: ターンセレクターを表示 */
+          /* ★★★ 修正: TurnSelectorへ渡すPropsも変更 ★★★ */
           <TurnSelector 
-            currentTurn={currentKifuTurn}
+            currentIndex={currentKifuIndex} // インデックスを渡す
             kifuData={selectedKifuData}
-            onTurnChange={onKifuTurnChange}
+            onIndexChange={onKifuIndexChange} // インデックス変更関数を渡す
           />
         ) : (
           /* シミュレーターモード: 記録ボタンを表示 */
