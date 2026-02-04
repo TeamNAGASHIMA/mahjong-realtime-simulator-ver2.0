@@ -240,7 +240,7 @@ const styles = `
   .meld-button {
     font-size: 0.9em; font-weight: bold; color: #fff; background-color: #4CAF50;
     border: none; border-radius: 4px; padding: 6px 12px; margin-top: 8px;
-    cursor: pointer; transition: background-color 0.2s;
+    cursor: pointer; transition: background-color: 0.2s;
   }
   .meld-button:hover:not(:disabled) { background-color: #45a049; }
   .meld-button:disabled { background-color: #666; color: #aaa; cursor: not-allowed; }
@@ -485,7 +485,15 @@ const PlayerDisplay = ({ playerKey, label, subLabel, discards, melds, selection,
                   {meld.tiles.map((tileNum, tileIndex) => {
                     const isAnkan = meld.type === 'ankan';
                     const isClosed = isAnkan && (tileIndex === 0 || tileIndex === 3);
-                    const isExposed = !isAnkan && tileIndex === meld.exposed_index;
+                    
+                    const isKakan = meld.is_kakan;
+                    let isExposed = !isAnkan && tileIndex === meld.exposed_index;
+                    if(isKakan){
+                        // ★★★ 2番目の修正箇所 (PlayerDisplay) ★★★
+                        // 加槓の場合は中央2枚を横向きにする
+                        isExposed = tileIndex === 1 || tileIndex === 2;
+                    }
+
                     const finalTileNum = isClosed ? 'b' : tileNum;
                     const isSelected = selection.type === 'meld' && selection.playerKey === playerKey && selection.meldIndex === meldIndex && selection.tileIndex === tileIndex;
 
@@ -531,7 +539,15 @@ const OwnMeldArea = ({ melds, onMeldTileClick, selection, settings }) => {
           {meld.tiles.map((tileNum, tileIndex) => {
             const isAnkan = meld.type === 'ankan';
             const isClosed = isAnkan && (tileIndex === 0 || tileIndex === 3);
-            const isExposed = !isAnkan && meld.exposed_index === tileIndex;
+
+            // ★★★ 2番目の修正箇所 (OwnMeldArea) ★★★
+            const isKakan = meld.is_kakan;
+            let isExposed = !isAnkan && meld.exposed_index === tileIndex;
+            if(isKakan){
+                // 加槓の場合は中央2枚を横向きにする
+                isExposed = tileIndex === 1 || tileIndex === 2;
+            }
+
             const finalTileNum = isClosed ? 'b' : tileNum;
             const isSelected = selection.type === 'meld' && selection.playerKey === 'self' && selection.meldIndex === meldIndex && selection.tileIndex === tileIndex;
             return (
@@ -640,7 +656,7 @@ const WinTileConfirmModal = ({ tileNum, onConfirm, onCancel, settings }) => {
       <div className="modal-content" style={{ width: '300px', textAlign: 'center' }}>
         <div className="modal-header">この牌で和了しますか？</div>
         <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>
-           <Tile tileNum={tileNum} size="hand" showTooltips={settings.showTooltips} />
+          <Tile tileNum={tileNum} size="hand" showTooltips={settings.showTooltips} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-around' }}>
           <button className="meld-button" onClick={onConfirm}>はい</button>
@@ -818,7 +834,9 @@ const TileDisplayArea = ({
         if (meldToMake.type === 'kakan') {
             const meldToUpdate = newBoardState.melds.self[meldToMake.from_meld_index];
             if(removeTilesFromHand(meldToMake.tiles)) {
-                meldToUpdate.type = 'minkan'; // 加槓もminkanとして扱う
+                meldToUpdate.type = 'minkan';
+                // 加槓であることを示すフラグを追加
+                meldToUpdate.is_kakan = true; 
                 meldToUpdate.tiles.push(meldToMake.tiles[0]);
                 meldToUpdate.tiles.sort((a, b) => (a % 100) - (b % 100));
             }
@@ -836,19 +854,10 @@ const TileDisplayArea = ({
                 if(discardIndex > -1) discardPile.splice(discardIndex, 1);
 
                 const exposedTile = calledTile + 100;
-                // const exposedTile = calledTile
 
                 const meldTiles = [...meldToMake.hand_tiles, exposedTile].sort((a,b) => (a % 100) - (b % 100));
                 
-                let exposed_index;
-                if (meldToMake.type === 'chi') {
-                    exposed_index = meldTiles.findIndex(t => t === exposedTile);
-                } else { // ★★★ 修正箇所: ポンと大明槓のロジックを共通化 ★★★
-                    if (fromPlayer === 'kamicha') exposed_index = 0; 
-                    else if (fromPlayer === 'toimen') exposed_index = 1; 
-                    else if (fromPlayer === 'shimocha') exposed_index = 2; 
-                    else exposed_index = 0;
-                }
+                const exposed_index = meldTiles.findIndex(t => t === exposedTile);
 
                 const meldType = meldToMake.type === 'daiminkan' ? 'minkan' : meldToMake.type;
                 newBoardState.melds.self.push({ type: meldType, tiles: meldTiles, from: fromPlayer, exposed_index });
@@ -1043,7 +1052,8 @@ const TileDisplayArea = ({
                   const meldToBreak = newBoardState.melds.self[selection.meldIndex];
                   
                   if (meldToBreak) {
-                      const tilesFromMeld = meldToBreak.tiles;
+                      // 鳴きを解除する際、牌のIDを100で割った余り（元のID）にしてから手牌に戻す
+                      const tilesFromMeld = meldToBreak.tiles.map(tile => tile % 100);
                       
                       const newHand = [
                         ...newBoardState.hand_tiles,

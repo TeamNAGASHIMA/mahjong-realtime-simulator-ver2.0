@@ -490,7 +490,7 @@ const MainScreen = () => {
   // 牌譜管理
   const [kifuFileList, setKifuFileList] = useState([]); 
   const [selectedKifuData, setSelectedKifuData] = useState([]); 
-  const [currentKifuTurn, setCurrentKifuTurn] = useState(1);
+  const [currentKifuIndex, setCurrentKifuIndex] = useState(0); 
 
   // モーダル管理ステート
   const [activeModal, setActiveModal] = useState(null);
@@ -544,14 +544,19 @@ const MainScreen = () => {
     }
   }, [settings.flag]);
 
+  // ★★★ 修正2: インデックスを使って盤面データを取得するロジックに変更 ★★★
   useEffect(() => {
     if (selectedKifuData.length > 0) {
-      const turnData = selectedKifuData.find(d => d.turn === currentKifuTurn);
+      // 以前のコード: const turnData = selectedKifuData.find(d => d.turn === currentKifuTurn);
+      
+      // 新しいコード: インデックスで直接アクセスする
+      const turnData = selectedKifuData[currentKifuIndex];
+      
       if (turnData) {
         setBoardState(convertKifuDataToBoardState(turnData));
       }
     }
-  }, [selectedKifuData, currentKifuTurn]);
+  }, [selectedKifuData, currentKifuIndex]); // 依存配列も currentKifuIndex に変更
 
   // --- 4.4 カメラ制御ロジック ---
 
@@ -829,7 +834,8 @@ const MainScreen = () => {
         // 巡目順にソートしてステートへ保存
         const sorted = [...data.temp_result].sort((a, b) => (a.turn || 0) - (b.turn || 0));
         setSelectedKifuData(sorted);
-        setCurrentKifuTurn(sorted[0]?.turn || 1); 
+        // ★★★ 修正3: データ読み込み時はインデックスを 0 にリセット ★★★
+        setCurrentKifuIndex(0);
       } else {
         console.error("牌譜データ取得失敗:", data.message);
       }
@@ -964,13 +970,15 @@ const MainScreen = () => {
             onRecordingFunction={recordingFunction}
             onSendRecordingData={sendRecordingData}
             selectedKifuData={selectedKifuData}
-            onKifuTurnChange={setCurrentKifuTurn} 
+            // onKifuTurnChange={setCurrentKifuTurn} <-- 削除
+            onKifuIndexChange={setCurrentKifuIndex} // <-- 追加
             isSaving={isSaving}
             calculationError={calculationError}
             displaySettings={displaySettings}    
             kifuFileList={kifuFileList}
             onKifuSelect={handleKifuSelect}
-            currentKifuTurn={currentKifuTurn}
+            // currentKifuTurn={currentKifuTurn}  <-- 削除
+            currentKifuIndex={currentKifuIndex} // <-- 追加
             isSelectingWinTile={false} 
             onWinTileConfirmed={() => {}}
             onCancelWinSelection={() => {}}
