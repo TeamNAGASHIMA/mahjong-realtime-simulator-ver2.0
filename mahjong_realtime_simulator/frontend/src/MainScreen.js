@@ -780,6 +780,7 @@ const MainScreen = () => {
       const data = await response.json();
       if (response.status === 200) {
         console.log("message:", data.message);
+        if (recordingStatus.current === 1) setBoardState(syncBoardStateFromApiResponse(data.detection_result, boardState.round_wind, boardState.player_winds));
         if (!isQuickSave) {
           recordingStatus.current = 0;
           setIsModalOpen(false);
